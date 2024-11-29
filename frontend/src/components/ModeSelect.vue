@@ -1,0 +1,1 @@
+# select between playing mode or teacher/editing mode
