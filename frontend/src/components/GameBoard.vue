@@ -30,9 +30,7 @@ const gridStyle = computed(() => {
 <template>
   <div class="grid" :style="gridStyle">
     <template v-for="(row, rowIndex) in grid" :key="'row-' + rowIndex">
-      <template v-for="(char, colIndex) in row" :key="'cell-' + rowIndex + '-' + colIndex">
-        <GridCell :char="char" :row="rowIndex" :col="colIndex" />
-      </template>
+        <GridCell v-for="(char, colIndex) in row" :key="'cell-' + rowIndex + '-' + colIndex" :char="char" :row="rowIndex" :col="colIndex" />
     </template>
   </div>
 </template>

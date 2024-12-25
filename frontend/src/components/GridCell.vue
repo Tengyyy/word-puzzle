@@ -26,13 +26,13 @@ defineProps({
     display: flex;
     justify-content: center;
     align-items: center;
-    font-family: 'Courier New', Courier, monospace; /* Suitable for word search */
-    font-size: 20px; /* Readable font size */
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 20px;
     font-weight: bold;
-    color: #333; /* Dark text for readability */
-    width: 40px; /* Match gridTemplateColumns */
-    height: 40px; /* Uniform cell height */
-    border: 1px solid #ccc; /* Cell borders */
-    background-color: white; /* Uniform background */
+    color: #333;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ccc;
+    background-color: white;
   }
 </style>
