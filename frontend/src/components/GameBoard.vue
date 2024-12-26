@@ -9,6 +9,17 @@ const props = defineProps({
   }
 });
 
+const emit = defineEmits({
+  select: (word) => {
+    if (word) {
+      return true;
+    } else {
+      console.warn('Invalid word selection');
+      return false;
+    }
+  }
+});
+
 const selectedCells = ref([]);
 const isDragging = ref(false);
 const startCell = ref(null);
@@ -27,7 +38,7 @@ const calculateDirection = (startRow, startCol, currentRow, currentCol) => {
 
 const gridDimensions = computed(() => {
   if (!props.grid) {
-    return {rows: 0, cols: 0}
+    return { rows: 0, cols: 0 }
   }
 
   return { rows: props.grid.length, cols: props.grid[0] ? props.grid[0].length : 0 }
@@ -184,41 +195,43 @@ const handleMouseMove = (row, col) => {
 
 // Handle mouse up event to stop dragging
 const handleMouseUp = () => {
+  if (!isDragging.value)
+    return;
+
   isDragging.value = false;
   activeDirection.value = null;
   startCell.value = null;
+
+  handleSelection()
+};
+
+const handleSelection = () => {
+  if (!selectedCells.value || selectedCells.value.length == 0)
+    return;
+
+  let str = '';
+
+  selectedCells.value.forEach(cell => {
+    str += props.grid[cell.row][cell.col]
+  });
+
+  emit('select', str);
 };
 </script>
 
 <template>
-  <div
-    class="grid-container"
-    @mouseup="handleMouseUp"
-    @mouseleave="handleMouseUp"
-  >
+  <div class="grid-container" @mouseup="handleMouseUp" @mouseleave="handleMouseUp">
     <!-- Highlight overlay -->
-    <div
-      v-if="outlinePosition"
-      class="grid-outline"
-      :style="outlinePosition"
-    ></div>
+    <div v-if="outlinePosition" class="grid-outline" :style="outlinePosition"></div>
 
     <!-- Grid cells -->
-    <div
-      class="grid"
-      :style="{ display: 'grid', gridTemplateColumns: `repeat(${grid[0]?.length || 0}, ${gridCellSize}px)`, gap: '0px' }"
-    >
+    <div class="grid"
+      :style="{ display: 'grid', gridTemplateColumns: `repeat(${grid[0]?.length || 0}, ${gridCellSize}px)`, gap: '0px' }">
       <template v-for="(row, rowIndex) in grid">
-        <GridCell
-          v-for="(char, colIndex) in row"
-          :key="`cell-${rowIndex}-${colIndex}`"
-          :char="char"
-          :row="rowIndex"
-          :col="colIndex"
-          :isSelected="selectedCells.some(cell => cell.row === rowIndex && cell.col === colIndex)"
+        <GridCell v-for="(char, colIndex) in row" :key="`cell-${rowIndex}-${colIndex}`" :char="char" :row="rowIndex"
+          :col="colIndex" :isSelected="selectedCells.some(cell => cell.row === rowIndex && cell.col === colIndex)"
           @mousedown="() => handleMouseDown(rowIndex, colIndex)"
-          @mousemove="() => handleMouseMove(rowIndex, colIndex)"
-        />
+          @mousemove="() => handleMouseMove(rowIndex, colIndex)" />
       </template>
     </div>
   </div>
