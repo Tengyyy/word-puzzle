@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import GridCell from './GridCell.vue';
 
 const props = defineProps({
@@ -24,38 +24,13 @@ const calculateDirection = (startRow, startCol, currentRow, currentCol) => {
   return null;
 };
 
-// Handle mouse down event to start dragging
-const handleMouseDown = (row, col) => {
-  isDragging.value = true;
-  startCell.value = { row, col };
-  selectedCells.value = [{ row, col }];
-  activeDirection.value = null; // Reset direction on new selection
-};
-
-// Handle mouse move event for dragging selection
-const handleMouseMove = (row, col) => {
-  if (!isDragging.value || !startCell.value) return;
-
-  // Calculate direction based on mouse movement
-  const newDirection = calculateDirection(startCell.value.row, startCell.value.col, row, col);
-
-  // If a direction is detected and locked, continue in that direction
-  if (!activeDirection.value && newDirection) {
-    activeDirection.value = newDirection;
+const gridDimensions = computed(() => {
+  if (!props.grid) {
+    return {rows: 0, cols: 0}
   }
 
-  if (activeDirection.value) {
-    selectedCells.value = calculateCellsToHighlight(startCell.value, { row, col }, activeDirection.value);
-    outlinePosition.value = calculateOutline(startCell.value, { row, col }, activeDirection.value);
-  }
-};
-
-// Handle mouse up event to stop dragging
-const handleMouseUp = () => {
-  isDragging.value = false;
-  activeDirection.value = null;
-  startCell.value = null;
-};
+  return { rows: props.grid.length, cols: props.grid[0] ? props.grid[0].length : 0 }
+})
 
 // Calculate the cells to highlight based on the direction
 const calculateCellsToHighlight = (start, current, direction) => {
@@ -78,7 +53,14 @@ const calculateCellsToHighlight = (start, current, direction) => {
   } else if (direction === 'diagonal') {
     const rowStep = currentRow > startRow ? 1 : -1;
     const colStep = currentCol > startCol ? 1 : -1;
-    const steps = Math.abs(currentRow - startRow);
+
+    // Correct the maxRowSteps and maxColSteps to avoid going outside the grid
+    const maxRowSteps = rowStep === 1 ? gridDimensions.value.rows - startRow - 1 : startRow;
+    const maxColSteps = colStep === 1 ? gridDimensions.value.cols - startCol - 1 : startCol;
+
+    const maxSteps = Math.min(maxRowSteps, maxColSteps);
+    const steps = Math.min(maxSteps, Math.max(Math.abs(currentRow - startRow), Math.abs(currentCol - startCol)));
+
     for (let i = 0; i <= steps; i++) {
       cells.push({ row: startRow + i * rowStep, col: startCol + i * colStep });
     }
@@ -87,25 +69,62 @@ const calculateCellsToHighlight = (start, current, direction) => {
   return cells;
 };
 
-// Calculate the outline position and size based on the start and end cells
-const calculateOutline = (start, end, direction) => {
-  if (!start || !end || !direction) return {};
+// Calculate the outline position and size based on the start and current cells
+const calculateOutline = (highlightedCells, direction) => {
+  if (!highlightedCells || highlightedCells.length === 0) {
+    return null; // No outline if there are no highlighted cells
+  }
 
-  const startX = Math.min(start.col, end.col) * gridCellSize;
-  const startY = Math.min(start.row, end.row) * gridCellSize;
+  const startCell = highlightedCells[0];
+  const endCell = highlightedCells[highlightedCells.length - 1];
+
+  // Base starting position
+  let startX = startCell.col * gridCellSize;
+  let startY = startCell.row * gridCellSize;
 
   let width, height, transform = 'none';
 
   if (direction === 'horizontal') {
-    width = Math.abs(start.col - end.col) * gridCellSize + gridCellSize;
+    width = highlightedCells.length * gridCellSize;
     height = gridCellSize;
   } else if (direction === 'vertical') {
     width = gridCellSize;
-    height = Math.abs(start.row - end.row) * gridCellSize + gridCellSize;
+    height = highlightedCells.length * gridCellSize;
   } else if (direction === 'diagonal') {
-    const diagonal = Math.abs(start.row - end.row) * gridCellSize;
-    width = height = diagonal + gridCellSize;
-    transform = `rotate(${start.row < end.row && start.col < end.col ? 45 : start.row < end.row ? -45 : 135}deg)`;
+    const dx = endCell.col - startCell.col;
+    const dy = endCell.row - startCell.row;
+    const distance = Math.sqrt(dx * dx + dy * dy) * gridCellSize;
+    width = distance + gridCellSize; // Ensure it covers one cell width
+    height = gridCellSize; // Thin outline
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+    // Adjust start position based on the diagonal direction
+    const diagonalOffsets = {
+      SE: { x: gridCellSize / 2, y: -gridCellSize / 5 },
+      NW: { x: gridCellSize / 2, y: gridCellSize + gridCellSize / 5 },
+      NE: { x: -gridCellSize / 5, y: gridCellSize / 2 },
+      SW: { x: gridCellSize + gridCellSize / 5, y: gridCellSize / 2 }
+    };
+
+    if (dx > 0 && dy > 0) {
+      // South-East
+      startX += diagonalOffsets.SE.x;
+      startY += diagonalOffsets.SE.y;
+    } else if (dx < 0 && dy < 0) {
+      // North-West
+      startX += diagonalOffsets.NW.x;
+      startY += diagonalOffsets.NW.y;
+    } else if (dx > 0 && dy < 0) {
+      // North-East
+      startX += diagonalOffsets.NE.x;
+      startY += diagonalOffsets.NE.y;
+    } else if (dx < 0 && dy > 0) {
+      // South-West
+      startX += diagonalOffsets.SW.x;
+      startY += diagonalOffsets.SW.y;
+    }
+
+    transform = `rotate(${angle}deg)`;
   }
 
   return {
@@ -113,9 +132,54 @@ const calculateOutline = (start, end, direction) => {
     top: `${startY}px`,
     width: `${width}px`,
     height: `${height}px`,
+    border: '4px solid red',
+    borderRadius: '50px',
+    pointerEvents: 'none',
+    position: 'absolute',
+    zIndex: 0,
     transform,
+    transformOrigin: 'top left',
     transition: 'all 0.1s ease',
   };
+};
+
+
+// Handle mouse down event to start dragging
+const handleMouseDown = (row, col) => {
+  isDragging.value = true;
+  startCell.value = { row, col };
+  selectedCells.value = [{ row, col }];
+  activeDirection.value = null; // Reset direction on new selection
+};
+
+// Handle mouse move event for dragging selection
+const handleMouseMove = (row, col) => {
+  if (!isDragging.value || !startCell.value) return;
+
+  // Calculate direction based on mouse movement
+  const newDirection = calculateDirection(startCell.value.row, startCell.value.col, row, col);
+
+  if (newDirection && newDirection !== activeDirection.value) {
+    activeDirection.value = newDirection;
+  }
+
+  if (activeDirection.value) {
+    const cellsToHighlight = calculateCellsToHighlight(
+      startCell.value,
+      { row, col },
+      activeDirection.value
+    );
+
+    selectedCells.value = cellsToHighlight;
+    outlinePosition.value = calculateOutline(cellsToHighlight, activeDirection.value);
+  }
+};
+
+// Handle mouse up event to stop dragging
+const handleMouseUp = () => {
+  isDragging.value = false;
+  activeDirection.value = null;
+  startCell.value = null;
 };
 </script>
 
@@ -168,7 +232,7 @@ const calculateOutline = (start, end, direction) => {
   position: absolute;
   z-index: 0;
   border: 4px solid red;
-  border-radius: 10px;
+  border-radius: 50px;
   pointer-events: none;
   transition: all 0.1s;
 }
