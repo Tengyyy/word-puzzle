@@ -1,6 +1,11 @@
 <script setup>
+import { defineProps, computed } from 'vue';
 
-defineProps({
+const props = defineProps({
+  char: {
+    type: String,
+    required: true
+  },
   row: {
     type: Number,
     required: true
@@ -9,53 +14,43 @@ defineProps({
     type: Number,
     required: true
   },
-  char: {
-    type: String,
-    required: true
-  },
   isSelected: {
     type: Boolean,
     required: true
   }
-})
+});
 
+const cellStyle = computed(() => {
+  return {
+    width: '40px',
+    height: '40px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: props.isSelected ? 'rgba(255, 0, 0, 0.2)' : 'transparent',
+    border: '1px solid #ccc',
+    borderRadius: '5px',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    transition: 'background-color 0.2s ease',
+    position: 'relative',
+    zIndex: 1
+  };
+});
 </script>
 
 <template>
-  <div 
-    class="cell"
-    :class="{ selected: isSelected }"
-  >
+  <div class="grid-cell" :style="cellStyle">
     {{ char }}
   </div>
 </template>
 
 <style scoped>
-.cell {
+.grid-cell {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #ccc;
-  background-color: white;
-  position: relative;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
-}
-
-.cell:hover {
-  background-color: #f0f0f0;
-  transform: scale(1.05); /* Subtle zoom on hover */
-}
-
-.cell.selected {
-  background-color: rgba(255, 255, 0, 0.5); /* Highlight with a semi-transparent yellow */
-  border-radius: 50%; /* Make the highlight circular */
-  box-shadow: 0 0 5px 2px rgba(255, 255, 0, 0.8); /* Glow effect */
+  user-select: none;
 }
 </style>
