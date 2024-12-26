@@ -15,6 +15,7 @@ const startCell = ref(null);
 const activeDirection = ref(null);
 const outlinePosition = ref({});
 const gridCellSize = 40; // Grid cell size
+const lastProcessedCell = ref(null) // Track the last processed cell to avoid recalculations when moving mouse over the same cell
 
 // Calculate the direction based on the start and current position
 const calculateDirection = (startRow, startCol, currentRow, currentCol) => {
@@ -139,7 +140,7 @@ const calculateOutline = (highlightedCells, direction) => {
     zIndex: 0,
     transform,
     transformOrigin: 'top left',
-    transition: 'all 0.1s ease',
+    transition: 'all 1s ease',
   };
 };
 
@@ -154,6 +155,12 @@ const handleMouseDown = (row, col) => {
 
 // Handle mouse move event for dragging selection
 const handleMouseMove = (row, col) => {
+
+  // If we're still in the same cell, do nothing
+  if (lastProcessedCell.value && lastProcessedCell.value.row === row && lastProcessedCell.value.col === col) {
+    return;
+  }
+
   if (!isDragging.value || !startCell.value) return;
 
   // Calculate direction based on mouse movement
