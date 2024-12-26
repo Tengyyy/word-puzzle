@@ -20,6 +20,8 @@ const emit = defineEmits({
   }
 });
 
+const highlights = ref([]); // Highlighted words
+
 const selectedCells = ref([]);
 const isDragging = ref(false);
 const startCell = ref(null);
@@ -27,6 +29,18 @@ const activeDirection = ref(null);
 const outlinePosition = ref({});
 const gridCellSize = 40; // Grid cell size
 const lastProcessedCell = ref(null) // Track the last processed cell to avoid recalculations when moving mouse over the same cell
+
+// Resets/clears selection, if the selected word was in the word list, then the selection will be highlighted
+const resetSelection = (success) => {
+  if (success) {
+    highlights.value.push(outlinePosition.value);
+  }
+
+  selectedCells.value = [];
+  outlinePosition.value = {};
+}
+
+defineExpose({ resetSelection })
 
 // Calculate the direction based on the start and current position
 const calculateDirection = (startRow, startCol, currentRow, currentCol) => {
@@ -151,7 +165,7 @@ const calculateOutline = (highlightedCells, direction) => {
     zIndex: 0,
     transform,
     transformOrigin: 'top left',
-    transition: 'all 1s ease',
+    transition: 'all 0.1s ease',
   };
 };
 
@@ -221,7 +235,11 @@ const handleSelection = () => {
 
 <template>
   <div class="grid-container" @mouseup="handleMouseUp" @mouseleave="handleMouseUp">
-    <!-- Highlight overlay -->
+
+    <!--Highlighted/found words-->
+    <div v-for="(highlight, index) in highlights" :key="`highlight-${index}`" :style="highlight"></div>
+
+    <!-- Current selection outline -->
     <div v-if="outlinePosition" class="grid-outline" :style="outlinePosition"></div>
 
     <!-- Grid cells -->
@@ -245,15 +263,5 @@ const handleSelection = () => {
 
 .grid {
   position: relative;
-  z-index: 1;
-}
-
-.grid-outline {
-  position: absolute;
-  z-index: 0;
-  border: 4px solid red;
-  border-radius: 50px;
-  pointer-events: none;
-  transition: all 0.1s;
 }
 </style>

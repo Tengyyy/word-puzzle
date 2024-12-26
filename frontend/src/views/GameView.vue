@@ -33,12 +33,14 @@ const words = [
   'tiiger'
 ];
 
+const boardRef = ref(null);
 const wordsToFind = ref([...words]);
 const foundWords = ref([]);
 
 const handleSelect = (selectedWord) => {
   const forwards = selectedWord.toUpperCase();
   const backwards = selectedWord.split('').reverse().join('').toUpperCase();
+  let success = false;
   for (let i = 0; i < wordsToFind.value.length; i++) {
     // Check if selected word matches any in the word list, either forwards or backwards
     const word = wordsToFind.value[i];
@@ -47,16 +49,19 @@ const handleSelect = (selectedWord) => {
       console.log(selectedWord);
       wordsToFind.value.splice(i, 1);
       foundWords.value.push(word);
+      success = true;
       break;
     }
   }
+
+  boardRef.value.resetSelection(success);
 }
 
 </script>
 
 <template>
   <main>
-    <GameBoard :grid="grid" :words="words" @select="handleSelect" />
+    <GameBoard :grid="grid" :words="words" @select="handleSelect" ref="boardRef" />
     <WordList :words="words" :foundWords="foundWords" />
   </main>
 </template>
