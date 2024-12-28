@@ -30,10 +30,47 @@ const outlinePosition = ref({});
 const gridCellSize = 40; // Grid cell size
 const lastProcessedCell = ref(null) // Track the last processed cell to avoid recalculations when moving mouse over the same cell
 
+const lastColor = ref(null); // Store the last generated color to ensure sufficient difference
+
+// Utility function to get random rgb color, used to change the color of the highlight outline every time a word is found
+const getRandomColor = (opacity = 1) => {
+  const minRGB = 50; // Minimum RGB value to avoid very light colors
+  const maxRGB = 200; // Maximum RGB value to avoid extremely bright colors
+  const minDifference = 100; // Minimum difference between consecutive colors (sum of RGB differences)
+
+  let r, g, b;
+
+  let i = 0;
+  do {
+    r = Math.floor(Math.random() * (maxRGB - minRGB + 1)) + minRGB;
+    g = Math.floor(Math.random() * (maxRGB - minRGB + 1)) + minRGB;
+    b = Math.floor(Math.random() * (maxRGB - minRGB + 1)) + minRGB;
+
+    // If there's no last color, accept the first generated color
+    if (!lastColor.value) break;
+
+    // Calculate the difference between the new color and the last color
+    const diff = Math.abs(r - lastColor.value.r) + Math.abs(g - lastColor.value.g) + Math.abs(b - lastColor.value.b);
+    if (diff >= minDifference) break; // Ensure the difference is significant enough
+    i++
+  } while (i < 5);
+
+  lastColor.value = { r, g, b }; // Update the last color
+  return { r, g, b, opacity };
+};
+
+const outlineColor = ref(getRandomColor()); // Default color
+
 // Resets/clears selection, if the selected word was in the word list, then the selection will be highlighted
 const resetSelection = (success) => {
   if (success) {
-    highlights.value.push(outlinePosition.value);
+    // Add highlight with the same color as the outline but without a border
+    highlights.value.push({
+      ...outlinePosition.value,
+      border: 'none',
+      backgroundColor: `rgba(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b}, 0.9)` // Same color as outline with transparency
+    });
+    outlineColor.value = getRandomColor(); // Set a new random color
   }
 
   selectedCells.value = [];
@@ -153,12 +190,16 @@ const calculateOutline = (highlightedCells, direction) => {
     transform = `rotate(${angle}deg)`;
   }
 
+  const borderColor = `rgb(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b})`;
+  const backgroundColor = `rgba(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b}, 0.7)`;
+
   return {
     left: `${startX}px`,
     top: `${startY}px`,
     width: `${width}px`,
     height: `${height}px`,
-    border: '4px solid red',
+    border: `4px solid ${borderColor}`,
+    backgroundColor,
     borderRadius: '50px',
     pointerEvents: 'none',
     position: 'absolute',
@@ -243,8 +284,7 @@ const handleSelection = () => {
     <div v-if="outlinePosition" class="grid-outline" :style="outlinePosition"></div>
 
     <!-- Grid cells -->
-    <div class="grid"
-      :style="{ display: 'grid', gridTemplateColumns: `repeat(${grid[0]?.length || 0}, ${gridCellSize}px)`, gap: '0px' }">
+    <div class="grid" :style="{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, ${gridCellSize}px)` }">
       <template v-for="(row, rowIndex) in grid">
         <GridCell v-for="(char, colIndex) in row" :key="`cell-${rowIndex}-${colIndex}`" :char="char" :row="rowIndex"
           :col="colIndex" :isSelected="selectedCells.some(cell => cell.row === rowIndex && cell.col === colIndex)"
@@ -259,9 +299,34 @@ const handleSelection = () => {
 .grid-container {
   position: relative;
   display: inline-block;
+  background-image:
+    linear-gradient(to right, #ccc 1px, transparent 1px),
+    linear-gradient(to bottom, #ccc 1px, transparent 1px);
+  background-size: 40px 40px;
+  /* Match grid cell size exactly */
+  background-position: 0px 0px;
+  /* Start at top-left corner */
+  z-index: 0;
+  /* Ensure grid lines are beneath everything */
+  border: solid #ccc;
+  border-width: 0px 1px 1px 0px;
 }
 
 .grid {
   position: relative;
+  display: grid;
+  background-color: transparent;
+  gap: 0px;
+  /* Remove spacing between grid cells */
+}
+
+.grid-outline {
+  z-index: 1;
+  /* Place above grid lines but below letters */
+}
+
+.grid-container .grid-cell {
+  z-index: 2;
+  /* Letters on top */
 }
 </style>

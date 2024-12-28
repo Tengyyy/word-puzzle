@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
 
@@ -33,9 +33,32 @@ const words = [
   'tiiger'
 ];
 
+const gameEnded = ref(false);
+const gameInProgress = ref(false);
+
 const boardRef = ref(null);
 const wordsToFind = ref([...words]);
 const foundWords = ref([]);
+
+const loadGame = () => {
+  //TODO: send request to node server for new game
+  gameInProgress.value = true;
+  gameEnded.value = false;
+};
+
+const endGame = () => {
+  gameEnded.value = true;
+  gameInProgress.value = false;
+}
+  ;
+watch(() => wordsToFind.value,
+  (newArr) => {
+    if (newArr.length === 0) { // No words left to find, show congratulation message and button to play again
+      endGame();
+    }
+  },
+  { deep: true }
+);
 
 const handleSelect = (selectedWord) => {
   const forwards = selectedWord.toUpperCase();
@@ -55,14 +78,18 @@ const handleSelect = (selectedWord) => {
   }
 
   boardRef.value.resetSelection(success);
-}
+};
 
 </script>
 
 <template>
   <main>
-    <GameBoard :grid="grid" :words="words" @select="handleSelect" ref="boardRef" />
-    <WordList :words="words" :foundWords="foundWords" />
+    <p v-if="gameEnded">Congratulations! You found all the words!</p>
+    <template v-if="gameInProgress">
+      <GameBoard :grid="grid" :words="words" @select="handleSelect" ref="boardRef" />
+      <WordList :words="words" :foundWords="foundWords" />
+    </template>
+    <button v-else @click="loadGame">Play</button>
   </main>
 </template>
 
