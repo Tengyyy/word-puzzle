@@ -284,7 +284,8 @@ const handleSelection = () => {
     <div v-if="outlinePosition" class="grid-outline" :style="outlinePosition"></div>
 
     <!-- Grid cells -->
-    <div class="grid" :style="{ gridTemplateColumns: `repeat(${grid[0]?.length || 0}, ${gridCellSize}px)` }">
+    <div class="grid"
+      :style="{ gridTemplateColumns: `repeat(${grid && grid[0] ? grid[0].length : 0}, ${gridCellSize}px)` }">
       <template v-for="(row, rowIndex) in grid">
         <GridCell v-for="(char, colIndex) in row" :key="`cell-${rowIndex}-${colIndex}`" :char="char" :row="rowIndex"
           :col="colIndex" :isSelected="selectedCells.some(cell => cell.row === rowIndex && cell.col === colIndex)"
