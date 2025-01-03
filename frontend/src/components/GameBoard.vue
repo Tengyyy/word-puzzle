@@ -2,6 +2,10 @@
 import { ref, computed } from 'vue';
 import GridCell from './GridCell.vue';
 
+import correct_sound from '../assets/sounds/correct.wav'
+import wrong_sound from '../assets/sounds/wrong.wav'
+
+
 const props = defineProps({
   grid: {
     type: Array,
@@ -19,6 +23,9 @@ const emit = defineEmits({
     }
   }
 });
+
+const correct_audio = new Audio(correct_sound);
+const wrong_audio = new Audio(wrong_sound);
 
 const highlights = ref([]); // Highlighted words
 
@@ -71,6 +78,10 @@ const resetSelection = (success) => {
       backgroundColor: `rgba(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b}, 0.9)` // Same color as outline with transparency
     });
     outlineColor.value = getRandomColor(); // Set a new random color
+
+    correct_audio.play();
+  } else {
+    wrong_audio.play();
   }
 
   selectedCells.value = [];

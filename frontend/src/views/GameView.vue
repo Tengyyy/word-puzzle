@@ -52,7 +52,6 @@ const handleSelect = (selectedWord) => {
     const word = wordsToFind.value[i];
     const upper = word.toUpperCase();
     if (upper === forwards || upper === backwards) {
-      console.log(selectedWord);
       wordsToFind.value.splice(i, 1);
       foundWords.value.push(word);
       success = true;
