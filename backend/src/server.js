@@ -13,7 +13,3 @@ require("./routes")(app);
 app.listen(config.port, config.host, () => {
   console.log(`Server running at http://${config.host}:${config.port}/`);
 });
-
-app.use((req, res) => {
-  res.status(404).send("Resource not found.");
-});

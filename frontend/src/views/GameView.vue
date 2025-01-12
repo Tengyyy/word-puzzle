@@ -1,37 +1,49 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
+import { useGameStore } from '@/stores/gameStore';
+import { useRouter } from 'vue-router';
+
+
 
 const gameEnded = ref(false);
 const gameInProgress = ref(false);
 
 const boardRef = ref(null);
 
+const title = ref(null);
+
 const grid = ref(null);
 const words = ref(null);
 const wordsToFind = ref(null);
 const foundWords = ref([]);
 
-const loadGame = () => {
-  fetch("http://127.0.0.1:8081/random-game", { method: "GET" })
-    .then((response) => response.json())
-    .then((response) => {
-      grid.value = response.grid;
-      words.value = response.words;
-      wordsToFind.value = [...response.words];
-      foundWords.value = [];
-      gameInProgress.value = true;
-      gameEnded.value = false;
-    })
-    .catch((e) => {
-      console.log(e);
-    });
+const gameStore = useGameStore();
+const router = useRouter();
+
+onMounted(() => {
+  loadGame(gameStore.gameData);
+});
+
+const loadGame = (data) => {
+  title.value = data.title;
+  grid.value = data.grid;
+  words.value = data.words;
+  wordsToFind.value = [...data.words];
+  foundWords.value = [];
+  gameInProgress.value = true;
+  gameEnded.value = false;
 };
 
 const endGame = () => {
   gameEnded.value = true;
   gameInProgress.value = false;
+};
+
+const goHome = () => {
+  router.push({ path: `/` });
+
 };
 
 watch(() => wordsToFind.value,
@@ -66,12 +78,15 @@ const handleSelect = (selectedWord) => {
 
 <template>
   <main>
-    <p v-if="gameEnded">Congratulations! You found all the words!</p>
     <template v-if="gameInProgress">
+      <h1>{{ title }}</h1>
       <GameBoard :grid="grid" :words="words" @select="handleSelect" ref="boardRef" />
       <WordList :words="words" :foundWords="foundWords" />
     </template>
-    <button v-else @click="loadGame">Play</button>
+    <template v-else>
+      <p>Congratulations! You found all the words!</p>
+      <button @click="goHome">Continue</button>
+    </template>
   </main>
 </template>
 

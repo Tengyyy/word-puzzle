@@ -1,26 +1,65 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
+
+import { useLoadingStore } from '@/stores/loadingStore';
+import { computed } from 'vue';
+
+const loadingStore = useLoadingStore();
+const isLoading = computed(() => loadingStore.isLoading);
 </script>
 
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
-
     <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-
+      <RouterLink to="/">Sõnarägastikud</RouterLink>
       <nav>
-        <RouterLink to="/">Game</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
+        <RouterLink to="/create">Loo oma sõnarägastik</RouterLink>
+        <a>Github</a>
+        <button>Settings</button>
       </nav>
     </div>
   </header>
-
-  <RouterView />
+  <main>
+    <RouterView />
+  </main>
+  <div v-if="isLoading" class="spinner-overlay">
+    <div class="spinner"></div>
+  </div>
 </template>
 
 <style scoped>
+.spinner-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.spinner {
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border-left-color: #09f;
+  animation: spin 1s ease infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 header {
   line-height: 1.5;
   max-height: 100vh;
