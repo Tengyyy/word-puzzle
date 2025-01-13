@@ -1,6 +1,10 @@
 const pool = require("../database");
 const Puzzle = require("../workers/GridGenerator.js");
 
+const easy = "easy";
+const medium = "medium";
+const hard = "hard";
+
 const words1 = [
   "elevant",
   "kaelkirjak",
@@ -35,13 +39,14 @@ function capitalizeFirstLetter(val) {
   return String(val).charAt(0).toUpperCase() + String(val).slice(1);
 }
 
-function createGrid(words) {
+function createGrid(words, difficulty) {
+  const size = difficulty === easy ? 10 : difficulty === medium ? 15 : 20;
   const options = {
-    rows: 15, // number of rows in the grid
-    columns: 15, // number of columns in the grid
-    diagonal: true, // allow diagonal word placement
-    backward: true, // allow words to be placed backwards
-    allowOverlap: true,
+    rows: size, // number of rows in the grid
+    columns: size, // number of columns in the grid
+    diagonal: difficulty === hard, // allow diagonal word placement
+    backward: difficulty !== easy, // allow words to be placed backwards
+    allowOverlap: difficulty !== easy, // allow words to overlap on common letters
   };
 
   wordsUppercase = words.map((word) => word.toUpperCase());
@@ -55,6 +60,7 @@ function createGrid(words) {
 module.exports = {
   async createGame(req, res) {
     const topic = req.query.topic;
+    const difficulty = req.query.difficulty;
 
     if (!topic) {
       res.status(400).send("Topic not specified.");
@@ -66,7 +72,7 @@ module.exports = {
 
     try {
       if (topic === topic1) {
-        const grid = createGrid(words1);
+        const grid = createGrid(words1, difficulty);
         const game = await pool.query(
           "INSERT INTO games (topic, title, grid, words) VALUES ($1, $2, $3, $4) RETURNING *",
           [topic1, capitalizeFirstLetter(topic1), grid, words1]
@@ -81,7 +87,7 @@ module.exports = {
           })
           .end();
       } else {
-        const grid = createGrid(words2);
+        const grid = createGrid(words2, difficulty);
         const game = await pool.query(
           "INSERT INTO games (topic, title, grid, words) VALUES ($1, $2, $3, $4) RETURNING *",
           [topic2, capitalizeFirstLetter(topic2), grid, words2]

@@ -84,8 +84,8 @@ const handleSelect = (selectedWord) => {
       <WordList :words="words" :foundWords="foundWords" />
     </template>
     <template v-else>
-      <p>Congratulations! You found all the words!</p>
-      <button @click="goHome">Continue</button>
+      <p>Kõik sõnad leitud!</p>
+      <button @click="goHome">Jätka</button>
     </template>
   </main>
 </template>

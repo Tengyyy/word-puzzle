@@ -14,7 +14,7 @@ const isLoading = computed(() => loadingStore.isLoading);
       <RouterLink to="/">Sõnarägastikud</RouterLink>
       <nav>
         <RouterLink to="/create">Loo oma sõnarägastik</RouterLink>
-        <a>Github</a>
+        <a href="https://github.com/Tengyyy/word-puzzle">Github</a>
         <button>Settings</button>
       </nav>
     </div>
