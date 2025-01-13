@@ -31,8 +31,8 @@ const startGame = () => {
 
 <template>
   <main>
-    <label for="topicField">Sisesta sõnarägastiku teema:</label><br>
-    <input type="text" id="topicField" name="topicField" v-model="topic"><br><br>
+    <label for="topic-field">Sisesta sõnarägastiku teema:</label><br>
+    <input type="text" id="topic-field" name="topic-field" v-model="topic"><br><br>
     <label for="difficulty-select">Vali raskusaste:</label><br>
     <select name="difficulty-select" id="difficulty-select" v-model="difficulty">
       <option value="easy">Lihtne</option>
