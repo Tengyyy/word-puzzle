@@ -9,6 +9,9 @@ import wrong_sound from '../assets/sounds/wrong.wav'
 const props = defineProps({
   grid: {
     type: Array,
+  },
+  playable: {
+    type: Boolean,
     required: true
   }
 });

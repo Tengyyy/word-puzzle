@@ -80,8 +80,8 @@ const handleSelect = (selectedWord) => {
   <main>
     <template v-if="gameInProgress">
       <h1>{{ title }}</h1>
-      <GameBoard :grid="grid" :words="words" @select="handleSelect" ref="boardRef" />
-      <WordList :words="words" :foundWords="foundWords" />
+      <GameBoard :grid="grid" :playable="true" @select="handleSelect" ref="boardRef" />
+      <WordList :words="words" :foundWords="foundWords" :editable="false" />
     </template>
     <template v-else>
       <p>Kõik sõnad leitud!</p>
