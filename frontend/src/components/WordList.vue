@@ -1,43 +1,63 @@
 <script setup>
-import { ref } from 'vue';
+import { useCreatorStore } from '@/stores/creatorStore';
+import { useGameStore } from '@/stores/gameStore';
+import { useLoadingStore } from '@/stores/loadingStore';
+import { ref, computed } from 'vue';
+
 const props = defineProps({
-  words: {
-    type: Array,
-  },
-  foundWords: {
-    type: Array,
-  },
   editable: {
     type: Boolean,
     required: true
   }
 });
 
+const store = props.editable ? useCreatorStore() : useGameStore();
+
+const loadingStore = useLoadingStore();
+
 const topic = ref(null);
 const wordInput = ref(null);
-const alphabetize = ref(false);
 
 const addWord = () => {
+  if (!props.editable) {
+    return;
+  }
 
+  if (!wordInput.value) {
+    return;
+  }
+
+  const success = store.addWord(wordInput.value);
+  if (!success) {
+    console.log('Duplicate word');
+  }
 };
 
-const reorderWords = () => {
-
+const generateWords = () => {
+  if (!topic.value) {
+    console.log('Topic empty')
+    return;
+  }
+  loadingStore.startLoading();
 };
 </script>
 
 <template>
   <template v-if="props.editable">
     <label for="topic-input">Teema:</label><br>
-    <input type="text" name="topic-input" id="topic-input" v-model="topic" /><br><br>
-    <input type="checkbox" id="alphabetize-checkbox" v-model="alphabetize" @change="reorderWords">
+    <input type="text" name="topic-input" id="topic-input" v-model="topic" /><br>
+    <button @click="generateWords">Genereeri sõnade list</button><br><br>
+    <input type="checkbox" id="alphabetize-checkbox" v-model="alphabetize">
     <label for="alphabetize-checkbox">Kuva sõnad tähestikulises järjekorras</label>
   </template>
   <div class="word-list">
     <ul>
-      <li v-for="(word, index) in words" :key="index"
-        :class="{ found: foundWords.some(foundWord => foundWord === word) }">
+      <li v-for="(word, index) in store.getWords()" :key="index"
+        :class="{ found: !props.editable && store.foundWords.some(foundWord => foundWord === word) }">
         {{ word }}
+        <button v-if="props.editable" @click="store.removeWord(word)">
+          Remove
+        </button>
       </li>
     </ul>
   </div>

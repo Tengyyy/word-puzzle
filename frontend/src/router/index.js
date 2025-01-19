@@ -26,7 +26,7 @@ const router = createRouter({
         const gameStore = useGameStore()
         const gameId = to.params.id
 
-        if (!gameStore.gameData || gameStore.gameData.id !== gameId) {
+        if (!gameStore.id || gameStore.id !== gameId) {
           const loadingStore = useLoadingStore()
           loadingStore.startLoading()
 

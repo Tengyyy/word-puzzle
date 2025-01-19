@@ -84,6 +84,7 @@ module.exports = {
             grid: grid,
             words: words1,
             topic: topic1,
+            title: capitalizeFirstLetter(topic1),
           })
           .end();
       } else {
@@ -99,6 +100,7 @@ module.exports = {
             grid: grid,
             words: words2,
             topic: topic2,
+            title: capitalizeFirstLetter(topic2),
           })
           .end();
       }

@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 
-const props = defineProps({
+defineProps({
   char: {
     type: String,
     required: true

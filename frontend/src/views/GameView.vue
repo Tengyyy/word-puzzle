@@ -1,75 +1,28 @@
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
 import { useGameStore } from '@/stores/gameStore';
 import { useRouter } from 'vue-router';
 
-
-
-const gameEnded = ref(false);
-const gameInProgress = ref(false);
-
 const boardRef = ref(null);
-
-const title = ref(null);
-
-const grid = ref(null);
-const words = ref(null);
-const wordsToFind = ref(null);
-const foundWords = ref([]);
 
 const gameStore = useGameStore();
 const router = useRouter();
 
 onMounted(() => {
-  loadGame(gameStore.gameData);
+  gameStore.startGame();
 });
-
-const loadGame = (data) => {
-  title.value = data.title;
-  grid.value = data.grid;
-  words.value = data.words;
-  wordsToFind.value = [...data.words];
-  foundWords.value = [];
-  gameInProgress.value = true;
-  gameEnded.value = false;
-};
-
-const endGame = () => {
-  gameEnded.value = true;
-  gameInProgress.value = false;
-};
 
 const goHome = () => {
   router.push({ path: `/` });
 
 };
 
-watch(() => wordsToFind.value,
-  (newArr) => {
-    if (newArr.length === 0) { // No words left to find, show congratulation message and button to play again
-      endGame();
-    }
-  },
-  { deep: true }
-);
-
 const handleSelect = (selectedWord) => {
   const forwards = selectedWord.toUpperCase();
   const backwards = selectedWord.split('').reverse().join('').toUpperCase();
-  let success = false;
-  for (let i = 0; i < wordsToFind.value.length; i++) {
-    // Check if selected word matches any in the word list, either forwards or backwards
-    const word = wordsToFind.value[i];
-    const upper = word.toUpperCase();
-    if (upper === forwards || upper === backwards) {
-      wordsToFind.value.splice(i, 1);
-      foundWords.value.push(word);
-      success = true;
-      break;
-    }
-  }
+  let success = gameStore.selectWord(forwards, backwards);
 
   boardRef.value.resetSelection(success);
 };
@@ -78,10 +31,10 @@ const handleSelect = (selectedWord) => {
 
 <template>
   <main>
-    <template v-if="gameInProgress">
-      <h1>{{ title }}</h1>
-      <GameBoard :grid="grid" :playable="true" @select="handleSelect" ref="boardRef" />
-      <WordList :words="words" :foundWords="foundWords" :editable="false" />
+    <template v-if="gameStore.gameInProgress">
+      <h1>{{ gameStore.title }}</h1>
+      <GameBoard :playable="true" @select="handleSelect" ref="boardRef" />
+      <WordList :editable="false" />
     </template>
     <template v-else>
       <p>Kõik sõnad leitud!</p>

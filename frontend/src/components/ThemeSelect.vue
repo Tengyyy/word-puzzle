@@ -1,3 +1,0 @@
-# Enter a theme to text input to generate themed word search puzzle or select one from cached gameboards, also maybe a puzzle of the day or sth...
-
-# Also difficulty level should be set here, maybe rename to GameSelect.vue

@@ -1,4 +1,5 @@
 <script setup>
+import { useCreatorStore } from '@/stores/creatorStore';
 import { ref } from 'vue';
 
 const width = ref(15);
@@ -9,6 +10,8 @@ const backwardsEnabled = ref(false);
 const diagonalsEnabled = ref(false);
 
 const casing = ref('uppercase');
+
+const creatorStore = useCreatorStore();
 </script>
 
 <template>

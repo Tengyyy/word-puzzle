@@ -1,20 +1,20 @@
 <script setup>
 import { ref, computed } from 'vue';
 import GridCell from './GridCell.vue';
-
 import correct_sound from '../assets/sounds/correct.wav'
 import wrong_sound from '../assets/sounds/wrong.wav'
+import { useCreatorStore } from '@/stores/creatorStore';
+import { useGameStore } from '@/stores/gameStore';
 
 
 const props = defineProps({
-  grid: {
-    type: Array,
-  },
   playable: {
     type: Boolean,
     required: true
   }
 });
+
+const store = props.playable ? useGameStore() : useCreatorStore();
 
 const emit = defineEmits({
   select: (word) => {
@@ -73,6 +73,10 @@ const outlineColor = ref(getRandomColor()); // Default color
 
 // Resets/clears selection, if the selected word was in the word list, then the selection will be highlighted
 const resetSelection = (success) => {
+  if (!props.playable) {
+    return;
+  }
+
   if (success) {
     // Add highlight with the same color as the outline but without a border
     highlights.value.push({
@@ -102,11 +106,11 @@ const calculateDirection = (startRow, startCol, currentRow, currentCol) => {
 };
 
 const gridDimensions = computed(() => {
-  if (!props.grid) {
+  if (!store.getGrid() || store.getGrid().length() === 0) {
     return { rows: 0, cols: 0 }
   }
 
-  return { rows: props.grid.length, cols: props.grid[0] ? props.grid[0].length : 0 }
+  return { rows: store.getGrid().length, cols: store.getGrid()[0] ? store.getGrid()[0].length : 0 }
 })
 
 // Calculate the cells to highlight based on the direction
@@ -227,6 +231,10 @@ const calculateOutline = (highlightedCells, direction) => {
 
 // Handle mouse down event to start dragging
 const handleMouseDown = (row, col) => {
+  if (!props.playable) {
+    return;
+  }
+
   isDragging.value = true;
   startCell.value = { row, col };
   selectedCells.value = [{ row, col }];
@@ -235,6 +243,9 @@ const handleMouseDown = (row, col) => {
 
 // Handle mouse move event for dragging selection
 const handleMouseMove = (row, col) => {
+  if (!props.playable) {
+    return;
+  }
 
   // If we're still in the same cell, do nothing
   if (lastProcessedCell.value && lastProcessedCell.value.row === row && lastProcessedCell.value.col === col) {
@@ -264,7 +275,7 @@ const handleMouseMove = (row, col) => {
 
 // Handle mouse up event to stop dragging
 const handleMouseUp = () => {
-  if (!isDragging.value)
+  if (!isDragging.value || !props.playable)
     return;
 
   isDragging.value = false;
@@ -275,13 +286,17 @@ const handleMouseUp = () => {
 };
 
 const handleSelection = () => {
+  if (!props.playable) {
+    return;
+  }
+
   if (!selectedCells.value || selectedCells.value.length == 0)
     return;
 
   let str = '';
 
   selectedCells.value.forEach(cell => {
-    str += props.grid[cell.row][cell.col]
+    str += store.getGrid()[cell.row][cell.col]
   });
 
   emit('select', str);
@@ -299,8 +314,8 @@ const handleSelection = () => {
 
     <!-- Grid cells -->
     <div class="grid"
-      :style="{ gridTemplateColumns: `repeat(${grid && grid[0] ? grid[0].length : 0}, ${gridCellSize}px)` }">
-      <template v-for="(row, rowIndex) in grid">
+      :style="{ gridTemplateColumns: `repeat(${store.getGrid() && store.getGrid()[0] ? store.getGrid()[0].length : 0}, ${gridCellSize}px)` }">
+      <template v-for="(row, rowIndex) in store.getGrid()">
         <GridCell v-for="(char, colIndex) in row" :key="`cell-${rowIndex}-${colIndex}`" :char="char" :row="rowIndex"
           :col="colIndex" :isSelected="selectedCells.some(cell => cell.row === rowIndex && cell.col === colIndex)"
           @mousedown="() => handleMouseDown(rowIndex, colIndex)"
