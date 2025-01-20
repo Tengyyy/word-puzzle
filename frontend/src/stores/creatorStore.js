@@ -4,9 +4,18 @@ export const useCreatorStore = defineStore('creator', {
   state: () => ({
     width: 15,
     height: 15,
+    overlap: 'no-overlap',
+    backwardsEnabled: false,
+    diagonalsEnabled: false,
+    casing: 'uppercase',
     grid: [],
     words: [],
     alphabetize: false,
+    highlight: false,
+    title: null,
+    wordPositions: [],
+    widthInput: 15,
+    heightInput: 15,
   }),
   getters: {
     getGrid: state => {
@@ -27,15 +36,6 @@ export const useCreatorStore = defineStore('creator', {
     },
   },
   actions: {
-    setWidth(width) {
-      this.width = width
-    },
-    setHeight(height) {
-      this.height = height
-    },
-    setGrid(grid) {
-      this.grid = grid
-    },
     addWord(input) {
       if (this.words.some(word => word === input)) {
         return false
@@ -46,15 +46,27 @@ export const useCreatorStore = defineStore('creator', {
     removeWord(word) {
       this.words = this.words.filter(item => item !== word)
     },
-    setAlphabetize(alphabetize) {
-      this.alphabetize = alphabetize
+    generateGrid(data) {
+      this.width = this.widthInput
+      this.height = this.heightInput
+      this.grid = data.grid
+      this.wordPositions = data.wordPositions
     },
     clearData() {
       this.width = 15
       this.height = 15
+      this.overlap = 'no-overlap'
+      this.backwardsEnabled = false
+      this.diagonalsEnabled = false
+      this.casing = 'uppercase'
       this.grid = []
       this.words = []
       this.alphabetize = false
+      this.highlight = false
+      this.title = null
+      this.wordPositions = []
+      this.widthInput = 15
+      this.heightInput = 15
     },
   },
 })

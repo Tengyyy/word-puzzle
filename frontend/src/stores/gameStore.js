@@ -43,7 +43,9 @@ export const useGameStore = defineStore('game', {
       this.gameInProgress = false
       this.gameEnded = true
     },
-    selectWord(forwards, backwards) {
+    selectWord(selection) {
+      const forwards = selection.toUpperCase()
+      const backwards = selection.split('').reverse().join('').toUpperCase()
       let success = false
       for (let i = 0; i < this.wordsToFind.length; i++) {
         // Check if selected word matches any in the word list, either forwards or backwards

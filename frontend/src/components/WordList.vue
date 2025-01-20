@@ -2,7 +2,7 @@
 import { useCreatorStore } from '@/stores/creatorStore';
 import { useGameStore } from '@/stores/gameStore';
 import { useLoadingStore } from '@/stores/loadingStore';
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 
 const props = defineProps({
   editable: {
@@ -15,7 +15,7 @@ const store = props.editable ? useCreatorStore() : useGameStore();
 
 const loadingStore = useLoadingStore();
 
-const topic = ref(null);
+const topicInput = ref(null);
 const wordInput = ref(null);
 
 const addWord = () => {
@@ -34,10 +34,11 @@ const addWord = () => {
 };
 
 const generateWords = () => {
-  if (!topic.value) {
+  if (!topicInput.value) {
     console.log('Topic empty')
     return;
   }
+
   loadingStore.startLoading();
 };
 </script>
@@ -45,9 +46,9 @@ const generateWords = () => {
 <template>
   <template v-if="props.editable">
     <label for="topic-input">Teema:</label><br>
-    <input type="text" name="topic-input" id="topic-input" v-model="topic" /><br>
+    <input type="text" name="topic-input" id="topic-input" v-model="topicInput" /><br>
     <button @click="generateWords">Genereeri sõnade list</button><br><br>
-    <input type="checkbox" id="alphabetize-checkbox" v-model="alphabetize">
+    <input type="checkbox" id="alphabetize-checkbox" v-model="store.alphabetize" />
     <label for="alphabetize-checkbox">Kuva sõnad tähestikulises järjekorras</label>
   </template>
   <div class="word-list">

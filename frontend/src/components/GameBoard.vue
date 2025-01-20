@@ -42,6 +42,28 @@ const lastProcessedCell = ref(null) // Track the last processed cell to avoid re
 
 const lastColor = ref(null); // Store the last generated color to ensure sufficient difference
 
+const toggleHighlights = () => {
+  if (props.playable) {
+    return;
+  }
+
+  if (!store.highlight) {
+    highlights.value = [];
+  } else {
+    highlights.value = store.wordPositions.map((pos) => {
+      const direction = calculateDirection(pos.startRow, pos.startCol, pos.endRow, pos.endCol);
+      const cells = calculateCellsToHighlight({ row: pos.startRow, col: pos.startCol }, { row: pos.endRow, col: pos.endCol }, direction);
+      const outline = calculateOutline(cells, direction);
+      outlineColor.value = getRandomColor()
+      return {
+        ...outline,
+        border: 'none',
+        backgroundColor: `rgba(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b}, 0.9)`
+      };
+    });
+  }
+};
+
 // Utility function to get random rgb color, used to change the color of the highlight outline every time a word is found
 const getRandomColor = (opacity = 1) => {
   const minRGB = 50; // Minimum RGB value to avoid very light colors
@@ -93,9 +115,9 @@ const resetSelection = (success) => {
 
   selectedCells.value = [];
   outlinePosition.value = {};
-}
+};
 
-defineExpose({ resetSelection })
+defineExpose({ resetSelection, toggleHighlights });
 
 // Calculate the direction based on the start and current position
 const calculateDirection = (startRow, startCol, currentRow, currentCol) => {
@@ -111,7 +133,7 @@ const gridDimensions = computed(() => {
   }
 
   return { rows: store.getGrid().length, cols: store.getGrid()[0] ? store.getGrid()[0].length : 0 }
-})
+});
 
 // Calculate the cells to highlight based on the direction
 const calculateCellsToHighlight = (start, current, direction) => {
@@ -305,7 +327,6 @@ const handleSelection = () => {
 
 <template>
   <div class="grid-container" @mouseup="handleMouseUp" @mouseleave="handleMouseUp">
-
     <!--Highlighted/found words-->
     <div v-for="(highlight, index) in highlights" :key="`highlight-${index}`" :style="highlight"></div>
 

@@ -20,9 +20,7 @@ const goHome = () => {
 };
 
 const handleSelect = (selectedWord) => {
-  const forwards = selectedWord.toUpperCase();
-  const backwards = selectedWord.split('').reverse().join('').toUpperCase();
-  let success = gameStore.selectWord(forwards, backwards);
+  let success = gameStore.selectWord(selectedWord);
 
   boardRef.value.resetSelection(success);
 };

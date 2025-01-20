@@ -1,9 +1,30 @@
 const pool = require("../database");
 const Puzzle = require("../workers/GridGenerator.js");
 
-const easy = "easy";
-const medium = "medium";
-const hard = "hard";
+class ApiException extends Error {
+  constructor(statusCode, message) {
+    super(message);
+    this.name = "ApiException";
+    this.statusCode = statusCode;
+  }
+}
+
+const overlap = Object.freeze({
+  NO_OVERLAP: "no-overlap",
+  POSSIBLE_OVERLAP: "possible-overlap",
+  FORCE_OVERLAP: "force-overlap",
+});
+
+const difficulty = Object.freeze({
+  EASY: "easy",
+  MEDIUM: "medium",
+  HARD: "hard",
+});
+
+const casing = Object.freeze({
+  UPPERCASE: "uppercase",
+  LOWERCASE: "lowercase",
+});
 
 const words1 = [
   "elevant",
@@ -39,28 +60,84 @@ function capitalizeFirstLetter(val) {
   return String(val).charAt(0).toUpperCase() + String(val).slice(1);
 }
 
-function createGrid(words, difficulty) {
-  const size = difficulty === easy ? 10 : difficulty === medium ? 15 : 20;
-  const options = {
-    rows: size, // number of rows in the grid
-    columns: size, // number of columns in the grid
-    diagonal: difficulty === hard, // allow diagonal word placement
-    backward: difficulty !== easy, // allow words to be placed backwards
-    allowOverlap: difficulty !== easy, // allow words to overlap on common letters
+function validateDimension(val) {
+  if (!val) {
+    throw new ApiException(400, "Grid dimensions missing");
+  }
+
+  if (val < 5 || val > 30) {
+    throw new ApiException(400, "Grid dimensions out of range 5-30");
+  }
+
+  return val;
+}
+
+function validateCasing(val) {
+  if (!val) {
+    return casing.UPPERCASE;
+  }
+
+  const formatted = val.toLowerCase().trim();
+  if (!Object.values(casing).includes(formatted)) {
+    throw new ApiException(400, `Casing not any of ${Object.values(casing)}`);
+  }
+
+  return formatted;
+}
+
+function validateOverlap(val) {
+  if (!val) {
+    return overlap.NO_OVERLAP;
+  }
+
+  const formatted = val.toLowerCase().trim();
+  if (!Object.values(overlap).includes(formatted)) {
+    throw new ApiException(400, `Overlap not any of ${Object.values(overlap)}`);
+  }
+
+  return formatted;
+}
+
+function validateDifficulty(val) {
+  if (!val) {
+    return difficulty.MEDIUM;
+  }
+
+  const formatted = val.toLowerCase().trim();
+  if (!Object.values(difficulty).includes(formatted)) {
+    throw new ApiException(
+      400,
+      `Overlap not any of ${Object.values(difficulty)}`
+    );
+  }
+
+  return formatted;
+}
+
+function optionsFromDifficulty(diff) {
+  const size =
+    diff === difficulty.EASY ? 10 : diff === difficulty.MEDIUM ? 15 : 20;
+
+  return {
+    rows: size,
+    columns: size,
+    diagonal: diff === difficulty.HARD,
+    backward: diff !== difficulty.EASY,
+    allowOverlap: diff !== difficulty.EASY,
+    uppercase: true,
   };
+}
 
-  wordsUppercase = words.map((word) => word.toUpperCase());
-
-  const puzzle = new Puzzle(wordsUppercase, options);
+function createGrid(words, options) {
+  const puzzle = new Puzzle(words, options);
   const grid = puzzle.to2DArray();
   console.log(grid);
-  return grid;
+  return { grid: grid, wordPositions: puzzle.wordPositions };
 }
 
 module.exports = {
   async createGame(req, res) {
     const topic = req.query.topic;
-    const difficulty = req.query.difficulty;
 
     if (!topic) {
       res.status(400).send("Topic not specified.");
@@ -71,8 +148,9 @@ module.exports = {
     }
 
     try {
+      const diff = validateDifficulty(req.query.difficulty);
       if (topic === topic1) {
-        const grid = createGrid(words1, difficulty);
+        const grid = createGrid(words1, optionsFromDifficulty(diff)).grid;
         const game = await pool.query(
           "INSERT INTO games (topic, title, grid, words) VALUES ($1, $2, $3, $4) RETURNING *",
           [topic1, capitalizeFirstLetter(topic1), grid, words1]
@@ -83,12 +161,11 @@ module.exports = {
             id: game.rows[0].id,
             grid: grid,
             words: words1,
-            topic: topic1,
             title: capitalizeFirstLetter(topic1),
           })
           .end();
       } else {
-        const grid = createGrid(words2, difficulty);
+        const grid = createGrid(words2, optionsFromDifficulty(diff)).grid;
         const game = await pool.query(
           "INSERT INTO games (topic, title, grid, words) VALUES ($1, $2, $3, $4) RETURNING *",
           [topic2, capitalizeFirstLetter(topic2), grid, words2]
@@ -99,14 +176,14 @@ module.exports = {
             id: game.rows[0].id,
             grid: grid,
             words: words2,
-            topic: topic2,
             title: capitalizeFirstLetter(topic2),
           })
           .end();
       }
     } catch (err) {
       console.error(err);
-      res.status(500).send("Server error");
+
+      res.status(err.status || 500).send(err.message || "Server error");
     }
   },
 
@@ -130,7 +207,6 @@ module.exports = {
       res
         .json({
           id: game.id,
-          topic: game.topic,
           title: game.title,
           grid: game.grid,
           words: game.words,
@@ -139,6 +215,57 @@ module.exports = {
     } catch (err) {
       console.error(err);
       res.status(500).send("Server error");
+    }
+  },
+
+  async createCustomGame(req, res) {
+    const data = req.body;
+
+    try {
+      const width = validateDimension(data.width);
+      const height = validateDimension(data.height);
+      const overlap = validateOverlap(data.overlap);
+      const backwardsEnabled = validateBool(data.backwardsEnabled);
+      const diagonalsEnabled = validateBool(data.diagonalsEnabled);
+      const casing = validateCasing(data.casing);
+      const words = validateWords(data.words, width, height);
+
+      const options = {
+        rows: height,
+        columns: width,
+        diagonal: diagonalsEnabled,
+        backward: backwardsEnabled,
+        allowOverlap:
+          overlap === overlap.POSSIBLE_OVERLAP ||
+          overlap === overlap.FORCE_OVERLAP,
+        uppercase: casing === casing.UPPERCASE,
+      };
+
+      const resp = createGrid(words, options);
+      res.json(resp).end();
+    } catch (err) {
+      console.error(err);
+      res.status(err.status || 500).send(err.message || "Server error");
+    }
+  },
+
+  async saveGame(req, res) {
+    const data = req.body;
+
+    try {
+      const grid = validateGrid(data.grid);
+      const words = validateWords(data.words, grid.length(), grid[0].length);
+      const title = validateTitle(data.title);
+
+      const game = await pool.query(
+        "INSERT INTO games (topic, title, grid, words) VALUES ($1, $2, $3, $4) RETURNING *",
+        ["custom", title, grid, words]
+      );
+
+      res.json({ id: game.rows[0].id }).end();
+    } catch (err) {
+      console.error(err);
+      res.status(err.status || 500).send(err.message || "Server error");
     }
   },
 };

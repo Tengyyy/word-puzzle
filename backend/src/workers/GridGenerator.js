@@ -42,14 +42,16 @@ class Grid {
     return new Grid(this.rows, this.columns, [...this.grid]);
   }
 
-  fill(message = null) {
+  fill(message = null, uppercase = true) {
     const processedMessage = (message || "")
-      .toLowerCase()
-      .replace(/[^a-z]/g, "")
+      [uppercase ? "toUpperCase" : "toLowerCase"]()
+      .replace(uppercase ? /[^A-Z]/g : /[^a-z]/g, "")
       .split("");
     const unused = this.grid.filter((n) => n === undefined).length;
-    //const letters = Array.from("abcdefghijklmnopqrstuvwxyz");
-    const letters = Array.from("?");
+    const letters = Array.from(
+      uppercase ? "ABCDEFGHIJKLMNOPQRSTUVWXYZ" : "abcdefghijklmnopqrstuvwxyz"
+    );
+    //const letters = Array.from("?");
 
     for (let pos = 0; pos < this.size; pos++) {
       if (!this.grid[pos]) {
@@ -82,6 +84,8 @@ class Puzzle {
       diagonal = false,
       backward = false,
       allowOverlap = false,
+      forceOverlap = false,
+      uppercase = true,
       message = null,
       seed = Date.now(),
     } = {}
@@ -92,8 +96,11 @@ class Puzzle {
     this.diagonal = diagonal;
     this.backward = backward;
     this.allowOverlap = allowOverlap;
+    this.forceOverlap = forceOverlap;
+    this.uppercase = uppercase;
     this.message = message;
     this.seed = seed;
+    this.wordPositions = [];
 
     this._setSeed(this.seed);
     this._generate();
@@ -108,7 +115,11 @@ class Puzzle {
   }
 
   _generate() {
-    const words = [...this.vocabulary].sort((a, b) => b.length - a.length); // Sort words by length descending
+    const words = [...this.vocabulary]
+      .sort((a, b) => b.length - a.length)
+      .map((word) =>
+        this.uppercase ? word.toUpperCase() : word.toLowerCase()
+      ); // Sort words by length descending
 
     let directions = ["right", "down"];
     if (this.diagonal) directions.push("rightdown");
@@ -156,7 +167,7 @@ class Puzzle {
           } else {
             this.grid = newGrid;
             this.solution = newGrid.dup();
-            this.unusedSquares = this.grid.fill(this.message);
+            this.unusedSquares = this.grid.fill(this.message, this.uppercase);
             break;
           }
         }
@@ -178,6 +189,11 @@ class Puzzle {
     const [dr, dc] = Puzzle.DIRS[direction];
     const letters = word.split("");
 
+    const startRow = row;
+    const startCol = column;
+    let endRow = row;
+    let endCol = column;
+
     while (
       row >= 0 &&
       row < copy.rows &&
@@ -196,12 +212,29 @@ class Puzzle {
         copy.set(row, column, letter);
         row += dr;
         column += dc;
+
+        if (!letters.length) {
+          endRow = row - dr; // Last valid position
+          endCol = column - dc; // Last valid position
+        }
       } else {
         return null;
       }
     }
 
-    return letters.length > 0 ? null : copy;
+    if (letters.length === 0) {
+      this.wordPositions.push({
+        word,
+        startRow,
+        startCol,
+        endRow,
+        endCol,
+      });
+
+      return copy;
+    }
+
+    return null;
   }
 
   to2DArray() {
