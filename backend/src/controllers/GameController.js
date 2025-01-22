@@ -61,6 +61,7 @@ function capitalizeFirstLetter(val) {
 }
 
 function validateDimension(val) {
+  //TODO: check val is an integer
   if (!val) {
     throw new ApiException(400, "Grid dimensions missing");
   }
@@ -73,6 +74,7 @@ function validateDimension(val) {
 }
 
 function validateCasing(val) {
+  //TODO: check val is string
   if (!val) {
     return casing.UPPERCASE;
   }
@@ -86,6 +88,7 @@ function validateCasing(val) {
 }
 
 function validateOverlap(val) {
+  //TODO: check val is string
   if (!val) {
     return overlap.NO_OVERLAP;
   }
@@ -99,6 +102,7 @@ function validateOverlap(val) {
 }
 
 function validateDifficulty(val) {
+  //TODO: check val is string
   if (!val) {
     return difficulty.MEDIUM;
   }
@@ -112,6 +116,19 @@ function validateDifficulty(val) {
   }
 
   return formatted;
+}
+
+function validateBool(val) {
+  //TODO: check val is a boolean
+}
+
+function validateWords(words, width, height) {
+  //TODO: check words are all string and not empty and do not exceed width and height
+}
+
+function validateGrid(val) {
+  //TODO: check that grid is a 2d array and all the nested arrays are the same length
+  //TODO: check that all elements in the rows are single characters and are not some weird special characterss
 }
 
 function optionsFromDifficulty(diff) {
@@ -220,6 +237,7 @@ module.exports = {
 
   async createCustomGame(req, res) {
     const data = req.body;
+    console.log("data: " + JSON.stringify(data));
 
     try {
       const width = validateDimension(data.width);

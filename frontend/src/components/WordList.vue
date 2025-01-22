@@ -53,7 +53,7 @@ const generateWords = () => {
   </template>
   <div class="word-list">
     <ul>
-      <li v-for="(word, index) in store.getWords()" :key="index"
+      <li v-for="(word, index) in store.getWords" :key="index"
         :class="{ found: !props.editable && store.foundWords.some(foundWord => foundWord === word) }">
         {{ word }}
         <button v-if="props.editable" @click="store.removeWord(word)">

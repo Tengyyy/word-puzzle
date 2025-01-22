@@ -59,7 +59,7 @@ export const useGameStore = defineStore('game', {
         }
       }
 
-      if (this.foundWords.length === 0) {
+      if (this.wordsToFind.length === 0) {
         this.endGame()
       }
 

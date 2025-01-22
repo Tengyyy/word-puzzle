@@ -128,11 +128,11 @@ const calculateDirection = (startRow, startCol, currentRow, currentCol) => {
 };
 
 const gridDimensions = computed(() => {
-  if (!store.getGrid() || store.getGrid().length() === 0) {
+  if (!store.getGrid || store.getGrid.length === 0) {
     return { rows: 0, cols: 0 }
   }
 
-  return { rows: store.getGrid().length, cols: store.getGrid()[0] ? store.getGrid()[0].length : 0 }
+  return { rows: store.getGrid.length, cols: store.getGrid[0] ? store.getGrid[0].length : 0 }
 });
 
 // Calculate the cells to highlight based on the direction
@@ -318,7 +318,7 @@ const handleSelection = () => {
   let str = '';
 
   selectedCells.value.forEach(cell => {
-    str += store.getGrid()[cell.row][cell.col]
+    str += store.getGrid[cell.row][cell.col]
   });
 
   emit('select', str);
@@ -335,8 +335,8 @@ const handleSelection = () => {
 
     <!-- Grid cells -->
     <div class="grid"
-      :style="{ gridTemplateColumns: `repeat(${store.getGrid() && store.getGrid()[0] ? store.getGrid()[0].length : 0}, ${gridCellSize}px)` }">
-      <template v-for="(row, rowIndex) in store.getGrid()">
+      :style="{ gridTemplateColumns: `repeat(${store.getGrid && store.getGrid[0] ? store.getGrid[0].length : 0}, ${gridCellSize}px)` }">
+      <template v-for="(row, rowIndex) in store.getGrid">
         <GridCell v-for="(char, colIndex) in row" :key="`cell-${rowIndex}-${colIndex}`" :char="char" :row="rowIndex"
           :col="colIndex" :isSelected="selectedCells.some(cell => cell.row === rowIndex && cell.col === colIndex)"
           @mousedown="() => handleMouseDown(rowIndex, colIndex)"

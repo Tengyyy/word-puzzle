@@ -19,6 +19,9 @@ const generate = () => {
   loadingStore.startLoading();
   fetch("http://127.0.0.1:8081/api/createCustomGame", {
     method: "POST",
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({
       width: creatorStore.widthInput,
       height: creatorStore.heightInput,
@@ -26,7 +29,7 @@ const generate = () => {
       backwardsEnabled: creatorStore.backwardsEnabled,
       diagonalsEnabled: creatorStore.diagonalsEnabled,
       casing: creatorStore.casing,
-      words: creatorStore.getWords()
+      words: creatorStore.getWords
     })
   })
     .then((response) => response.json())
@@ -44,9 +47,12 @@ const share = () => {
   loadingStore.startLoading();
   fetch("http://127.0.0.1:8081/api/saveGame", {
     method: "POST",
+    headers: {
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({
-      grid: creatorStore.getGrid(),
-      words: creatorStore.getWords(),
+      grid: creatorStore.getGrid,
+      words: creatorStore.getWords,
       title: creatorStore.title
     })
   })

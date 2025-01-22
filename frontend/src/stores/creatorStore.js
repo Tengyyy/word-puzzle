@@ -19,7 +19,7 @@ export const useCreatorStore = defineStore('creator', {
   }),
   getters: {
     getGrid: state => {
-      if (state.grid && state.grid.length() > 0) {
+      if (state.grid && state.grid.length > 0) {
         return state.grid
       }
 
