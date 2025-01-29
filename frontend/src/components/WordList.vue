@@ -30,6 +30,8 @@ const addWord = () => {
   const success = store.addWord(wordInput.value);
   if (!success) {
     console.log('Duplicate word');
+  } else {
+    wordInput.value = null;
   }
 };
 

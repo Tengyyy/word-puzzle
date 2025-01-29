@@ -9,19 +9,19 @@ class ApiException extends Error {
   }
 }
 
-const overlap = Object.freeze({
+const OVERLAP = Object.freeze({
   NO_OVERLAP: "no-overlap",
   POSSIBLE_OVERLAP: "possible-overlap",
   FORCE_OVERLAP: "force-overlap",
 });
 
-const difficulty = Object.freeze({
+const DIFFICULTY = Object.freeze({
   EASY: "easy",
   MEDIUM: "medium",
   HARD: "hard",
 });
 
-const casing = Object.freeze({
+const CASING = Object.freeze({
   UPPERCASE: "uppercase",
   LOWERCASE: "lowercase",
 });
@@ -61,41 +61,56 @@ function capitalizeFirstLetter(val) {
 }
 
 function validateDimension(val) {
-  //TODO: check val is an integer
   if (!val) {
     throw new ApiException(400, "Grid dimensions missing");
   }
 
+  if (!Number.isInteger(val)) {
+    throw new ApiException(400, "Grid dimensions must be integers");
+  }
+
   if (val < 5 || val > 30) {
-    throw new ApiException(400, "Grid dimensions out of range 5-30");
+    throw new ApiException(400, "Grid dimensions must be in the range 5-30");
   }
 
   return val;
 }
 
 function validateCasing(val) {
-  //TODO: check val is string
   if (!val) {
-    return casing.UPPERCASE;
+    return CASING.UPPERCASE;
+  }
+
+  if (typeof val !== "string") {
+    throw new ApiException(400, "Casing must be a string");
   }
 
   const formatted = val.toLowerCase().trim();
-  if (!Object.values(casing).includes(formatted)) {
-    throw new ApiException(400, `Casing not any of ${Object.values(casing)}`);
+  if (!Object.values(CASING).includes(formatted)) {
+    throw new ApiException(
+      400,
+      `Casing must be one of the following values: ${Object.values(CASING)}`
+    );
   }
 
   return formatted;
 }
 
 function validateOverlap(val) {
-  //TODO: check val is string
   if (!val) {
-    return overlap.NO_OVERLAP;
+    return OVERLAP.NO_OVERLAP;
+  }
+
+  if (typeof val !== "string") {
+    throw new ApiException(400, "Overlap must be a string");
   }
 
   const formatted = val.toLowerCase().trim();
-  if (!Object.values(overlap).includes(formatted)) {
-    throw new ApiException(400, `Overlap not any of ${Object.values(overlap)}`);
+  if (!Object.values(OVERLAP).includes(formatted)) {
+    throw new ApiException(
+      400,
+      `Overlap must be one of the following values: ${Object.values(OVERLAP)}`
+    );
   }
 
   return formatted;
@@ -104,43 +119,125 @@ function validateOverlap(val) {
 function validateDifficulty(val) {
   //TODO: check val is string
   if (!val) {
-    return difficulty.MEDIUM;
+    return DIFFICULTY.MEDIUM;
+  }
+
+  if (typeof val !== "string") {
+    throw new ApiException(400, "Difficulty must be a string");
   }
 
   const formatted = val.toLowerCase().trim();
-  if (!Object.values(difficulty).includes(formatted)) {
+  if (!Object.values(DIFFICULTY).includes(formatted)) {
     throw new ApiException(
       400,
-      `Overlap not any of ${Object.values(difficulty)}`
+      `Difficulty must be one of the following values: ${Object.values(
+        DIFFICULTY
+      )}`
     );
   }
 
   return formatted;
 }
 
-function validateBool(val) {
-  //TODO: check val is a boolean
+function validateBool(val, fieldName, defaultVal) {
+  if (typeof val === "undefined") {
+    return defaultVal;
+  }
+
+  if (typeof val !== "boolean") {
+    throw new ApiException(400, fieldName + " must be a boolean");
+  }
+
+  return val;
 }
 
 function validateWords(words, width, height) {
-  //TODO: check words are all string and not empty and do not exceed width and height
+  if (!words) {
+    throw new ApiException(400, "Word list is missing");
+  }
+
+  if (!Array.isArray(words)) {
+    throw new ApiException(400, "Word list must be an array");
+  }
+
+  words.forEach((item) => {
+    if (typeof item !== "string") {
+      throw new ApiException(400, "Word list must be an array of strings");
+    }
+
+    if (item.length < 2 || item.length > Math.min(width, height)) {
+      throw new ApiException(
+        400,
+        "All words must be longer than 1 character and shorter than the smallest grid dimension"
+      );
+    }
+  });
+
+  return words;
 }
 
-function validateGrid(val) {
-  //TODO: check that grid is a 2d array and all the nested arrays are the same length
-  //TODO: check that all elements in the rows are single characters and are not some weird special characterss
+function validateGrid(grid) {
+  if (!Array.isArray(grid)) {
+    throw new ApiException(400, "Grid must be an array.");
+  }
+
+  if (grid.length === 0) {
+    throw new ApiException("Grid can't be empty");
+  }
+
+  const width = grid[0].length;
+
+  grid.forEach((row) => {
+    if (!Array.isArray(row)) {
+      throw new ApiException(400, "Grid rows must be arrays.");
+    }
+
+    if (row.length !== width) {
+      throw new ApiException(400, "Grid rows must be the same length");
+    }
+
+    row.forEach((item) => {
+      if (typeof item !== "string") {
+        throw new ApiException(400, "Grid elements must be strings");
+      }
+      if (item.length !== 1) {
+        throw new ApiException(400, "Grid elements must be single characters");
+      }
+    });
+  });
+
+  return grid;
+}
+
+function validateTitle(title) {
+  if (!title) {
+    throw new ApiException(400, "Title is missing");
+  }
+
+  if (typeof title !== "string") {
+    throw new ApiException(400, "Title must be a string");
+  }
+
+  if (title.length < 1 || title.length > 50) {
+    throw new ApiException(
+      400,
+      "Title length must be between 1 and 50 characters"
+    );
+  }
+
+  return title;
 }
 
 function optionsFromDifficulty(diff) {
   const size =
-    diff === difficulty.EASY ? 10 : diff === difficulty.MEDIUM ? 15 : 20;
+    diff === DIFFICULTY.EASY ? 10 : diff === DIFFICULTY.MEDIUM ? 15 : 20;
 
   return {
     rows: size,
     columns: size,
-    diagonal: diff === difficulty.HARD,
-    backward: diff !== difficulty.EASY,
-    allowOverlap: diff !== difficulty.EASY,
+    diagonal: diff === DIFFICULTY.HARD,
+    backward: diff !== DIFFICULTY.EASY,
+    allowOverlap: diff !== DIFFICULTY.EASY,
     uppercase: true,
   };
 }
@@ -243,8 +340,16 @@ module.exports = {
       const width = validateDimension(data.width);
       const height = validateDimension(data.height);
       const overlap = validateOverlap(data.overlap);
-      const backwardsEnabled = validateBool(data.backwardsEnabled);
-      const diagonalsEnabled = validateBool(data.diagonalsEnabled);
+      const backwardsEnabled = validateBool(
+        data.backwardsEnabled,
+        "backwardsEnabled",
+        false
+      );
+      const diagonalsEnabled = validateBool(
+        data.diagonalsEnabled,
+        "backwardsEnabled",
+        false
+      );
       const casing = validateCasing(data.casing);
       const words = validateWords(data.words, width, height);
 
@@ -254,9 +359,9 @@ module.exports = {
         diagonal: diagonalsEnabled,
         backward: backwardsEnabled,
         allowOverlap:
-          overlap === overlap.POSSIBLE_OVERLAP ||
-          overlap === overlap.FORCE_OVERLAP,
-        uppercase: casing === casing.UPPERCASE,
+          overlap === OVERLAP.POSSIBLE_OVERLAP ||
+          overlap === OVERLAP.FORCE_OVERLAP,
+        uppercase: casing === CASING.UPPERCASE,
       };
 
       const resp = createGrid(words, options);
@@ -272,7 +377,7 @@ module.exports = {
 
     try {
       const grid = validateGrid(data.grid);
-      const words = validateWords(data.words, grid.length(), grid[0].length);
+      const words = validateWords(data.words, grid.length, grid[0].length);
       const title = validateTitle(data.title);
 
       const game = await pool.query(
@@ -280,7 +385,7 @@ module.exports = {
         ["custom", title, grid, words]
       );
 
-      res.json({ id: game.rows[0].id }).end();
+      res.json({ link: "http://localhost:5173/game/" + game.rows[0].id }).end();
     } catch (err) {
       console.error(err);
       res.status(err.status || 500).send(err.message || "Server error");

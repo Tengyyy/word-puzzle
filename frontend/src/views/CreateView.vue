@@ -34,7 +34,18 @@ const generate = () => {
   })
     .then((response) => response.json())
     .then((response) => {
+      const highlightsToggled = creatorStore.highlight;
+      if (highlightsToggled) {
+        creatorStore.highlight = false;
+        boardRef.value.toggleHighlights();
+      }
       creatorStore.generateGrid(response);
+      if (highlightsToggled) {
+        creatorStore.highlight = true;
+        boardRef.value.toggleHighlights();
+      }
+      linkCopied.value = false;
+      gameSaved.value = false;
       loadingStore.stopLoading();
     })
     .catch((e) => {
@@ -77,6 +88,7 @@ const copyLink = () => {
   navigator.clipboard.writeText(link.value)
     .then(() => {
       console.log('Link copied');
+      linkCopied.value = true;
     })
     .catch(err => {
       console.log('Failed to copy link: ', err)
@@ -100,7 +112,7 @@ const print = () => {
       @change="boardRef.toggleHighlights()" />
     <label for="highlight-checkbox">Kuva peidetud sõnad</label>
     <button @click="generate">Genereeri</button>
-    <button @click="share">Jaga mängu</button>
+    <button @click="share" :disabled="gameSaved">Jaga mängu</button>
     <template v-if="gameSaved">
       <input type="text" id="link-field" name="link-field" readonly :value="link" ref="linkFieldRef" />
       <button @click="copyLink">{{ linkCopied ? "Kopeeritud" : "Kopeeri" }}</button>
