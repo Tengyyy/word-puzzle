@@ -25,6 +25,7 @@ const createTablesQuery = `
         title TEXT NOT NULL,
         grid TEXT[][] NOT NULL,
         words TEXT[] NOT NULL,
+        wordPositions JSON NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
 `;

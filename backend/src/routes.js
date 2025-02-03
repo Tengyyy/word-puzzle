@@ -5,7 +5,9 @@ module.exports = (app) => {
 
   app.get("/api/game/:gameId", GameController.loadGame);
 
-  app.post("/api/createCustomGame", GameController.createCustomGame);
+  app.post("/api/create-custom-game", GameController.createCustomGame);
 
-  app.post("/api/saveGame", GameController.saveGame);
+  app.post("/api/persist-game", GameController.persistGame);
+
+  app.post("/api/save-game", GameController.saveGame);
 };

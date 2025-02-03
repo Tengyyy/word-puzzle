@@ -16,8 +16,13 @@ onMounted(() => {
 
 const goHome = () => {
   router.push({ path: `/` });
-
 };
+
+const print = () => {
+  //TODO: route with gameId param, target _blank
+  router.push({ path: `/print` });
+}
+
 
 const handleSelect = (selectedWord) => {
   let success = gameStore.selectWord(selectedWord);
@@ -31,8 +36,8 @@ const handleSelect = (selectedWord) => {
   <main>
     <template v-if="gameStore.gameInProgress">
       <h1>{{ gameStore.title }}</h1>
-      <GameBoard :playable="true" @select="handleSelect" ref="boardRef" />
-      <WordList :editable="false" />
+      <GameBoard mode="game" @select="handleSelect" ref="boardRef" />
+      <WordList mode="game" />
     </template>
     <template v-else>
       <p>Kõik sõnad leitud!</p>

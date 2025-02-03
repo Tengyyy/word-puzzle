@@ -6,15 +6,29 @@ import wrong_sound from '../assets/sounds/wrong.wav'
 import { useCreatorStore } from '@/stores/creatorStore';
 import { useGameStore } from '@/stores/gameStore';
 
+const MODE = Object.freeze({
+  GAME: 'game',
+  CREATE: 'create',
+});
 
 const props = defineProps({
-  playable: {
+  mode: {
+    type: String,
+    required: true,
+    validator: value => ['game', 'create'].includes(value)
+  },
+  printView: {
     type: Boolean,
-    required: true
+    required: false,
+    default: false,
   }
 });
 
-const store = props.playable ? useGameStore() : useCreatorStore();
+const playable = computed(() => {
+  return props.mode === MODE.GAME && !props.printView;
+});
+
+const store = props.mode === MODE.GAME ? useGameStore() : useCreatorStore();
 
 const emit = defineEmits({
   select: (word) => {
@@ -43,11 +57,11 @@ const lastProcessedCell = ref(null) // Track the last processed cell to avoid re
 const lastColor = ref(null); // Store the last generated color to ensure sufficient difference
 
 const toggleHighlights = () => {
-  if (props.playable) {
+  if (props.mode === MODE.GAME) {
     return;
   }
 
-  if (!store.highlight) {
+  if (!store.highlight && !props.printView) {
     highlights.value = [];
   } else {
     highlights.value = store.wordPositions.map((pos) => {
@@ -95,7 +109,7 @@ const outlineColor = ref(getRandomColor()); // Default color
 
 // Resets/clears selection, if the selected word was in the word list, then the selection will be highlighted
 const resetSelection = (success) => {
-  if (!props.playable) {
+  if (!playable.value) {
     return;
   }
 
@@ -253,7 +267,7 @@ const calculateOutline = (highlightedCells, direction) => {
 
 // Handle mouse down event to start dragging
 const handleMouseDown = (row, col) => {
-  if (!props.playable) {
+  if (!playable.value) {
     return;
   }
 
@@ -265,7 +279,7 @@ const handleMouseDown = (row, col) => {
 
 // Handle mouse move event for dragging selection
 const handleMouseMove = (row, col) => {
-  if (!props.playable) {
+  if (!playable.value) {
     return;
   }
 
@@ -297,7 +311,7 @@ const handleMouseMove = (row, col) => {
 
 // Handle mouse up event to stop dragging
 const handleMouseUp = () => {
-  if (!isDragging.value || !props.playable)
+  if (!isDragging.value || !playable.value)
     return;
 
   isDragging.value = false;
@@ -308,7 +322,7 @@ const handleMouseUp = () => {
 };
 
 const handleSelection = () => {
-  if (!props.playable) {
+  if (!playable.value) {
     return;
   }
 

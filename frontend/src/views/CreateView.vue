@@ -4,6 +4,7 @@ import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
 import { useCreatorStore } from '@/stores/creatorStore';
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { useLoadingStore } from '@/stores/loadingStore';
 
 const creatorStore = useCreatorStore();
@@ -11,13 +12,16 @@ const loadingStore = useLoadingStore();
 
 const boardRef = ref(null);
 
+const router = useRouter();
+
 const link = ref(null);
 const linkCopied = ref(false);
 const gameSaved = ref(false);
+const generated = ref(false);
 
 const generate = () => {
   loadingStore.startLoading();
-  fetch("http://127.0.0.1:8081/api/createCustomGame", {
+  fetch("http://127.0.0.1:8081/api/create-custom-game", {
     method: "POST",
     headers: {
       'Content-Type': 'application/json'
@@ -44,6 +48,7 @@ const generate = () => {
         creatorStore.highlight = true;
         boardRef.value.toggleHighlights();
       }
+      generated.value = true;
       linkCopied.value = false;
       gameSaved.value = false;
       loadingStore.stopLoading();
@@ -56,7 +61,7 @@ const generate = () => {
 
 const share = () => {
   loadingStore.startLoading();
-  fetch("http://127.0.0.1:8081/api/saveGame", {
+  fetch("http://127.0.0.1:8081/api/persist-game", {
     method: "POST",
     headers: {
       'Content-Type': 'application/json'
@@ -64,13 +69,14 @@ const share = () => {
     body: JSON.stringify({
       grid: creatorStore.getGrid,
       words: creatorStore.getWords,
-      title: creatorStore.title
+      title: creatorStore.title,
+      wordPositions: creatorStore.wordPositions,
     })
   })
     .then((response) => response.json())
     .then((response) => {
       loadingStore.stopLoading();
-      link.value = response.link;
+      link.value = "http://localhost:5173/game/" + response.link;
       gameSaved.value = true;
     })
     .catch((e) => {
@@ -96,27 +102,33 @@ const copyLink = () => {
 };
 
 const print = () => {
-
+  //TODO : save game before, get id and then route with id and query param showAnswers=1, target = _blank
+  router.push({ path: '/print' });
 };
 </script>
 
 
 <template>
   <main>
+    <template>
+
+    </template>
     <GameSettings />
     <label for="title-input">Pealkiri:</label><br>
     <input type="text" id="title-input" name="title-input" v-model="creatorStore.title" /><br><br>
-    <GameBoard :playable="false" ref="boardRef" />
-    <WordList :editable="true" /><br><br>
+    <GameBoard mode="create" ref="boardRef" />
+    <WordList mode="create" /><br><br>
     <input type="checkbox" name="highlight-checkbox" id="highlight-checkbox" v-model="creatorStore.highlight"
       @change="boardRef.toggleHighlights()" />
     <label for="highlight-checkbox">Kuva peidetud sõnad</label>
     <button @click="generate">Genereeri</button>
-    <button @click="share" :disabled="gameSaved">Jaga mängu</button>
+    <button @click="share" :disabled="!generated || gameSaved">Jaga mängu</button>
     <template v-if="gameSaved">
       <input type="text" id="link-field" name="link-field" readonly :value="link" ref="linkFieldRef" />
       <button @click="copyLink">{{ linkCopied ? "Kopeeritud" : "Kopeeri" }}</button>
     </template>
-    <button @click="print">Prindi mäng</button>
+    <button @click="print" :disabled="!generated">Prindi mäng</button>
   </main>
 </template>
+
+<style scoped></style>

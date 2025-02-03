@@ -209,6 +209,10 @@ function validateGrid(grid) {
   return grid;
 }
 
+function validateWordPositions(wordPositions, grid, words) {
+  return wordPositions;
+}
+
 function validateTitle(title) {
   if (!title) {
     throw new ApiException(400, "Title is missing");
@@ -249,6 +253,29 @@ function createGrid(words, options) {
   return { grid: grid, wordPositions: puzzle.wordPositions };
 }
 
+const dataStore = new Map();
+
+function storeData(id, data) {
+  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes from now
+  dataStore.set(id, { data, expiresAt });
+}
+
+function getData(id) {
+  return dataStore.get(id) || null; // Return data or null if not found
+}
+
+function cleanupExpiredEntries() {
+  const now = Date.now();
+  for (const [id, { expiresAt }] of dataStore) {
+    if (expiresAt <= now) {
+      dataStore.delete(id);
+    }
+  }
+}
+
+// Run cleanup every minute
+setInterval(cleanupExpiredEntries, 60 * 1000);
+
 module.exports = {
   async createGame(req, res) {
     const topic = req.query.topic;
@@ -264,35 +291,60 @@ module.exports = {
     try {
       const diff = validateDifficulty(req.query.difficulty);
       if (topic === topic1) {
-        const grid = createGrid(words1, optionsFromDifficulty(diff)).grid;
+        const { grid, wordPositions } = createGrid(
+          words1,
+          optionsFromDifficulty(diff)
+        );
         const game = await pool.query(
-          "INSERT INTO games (topic, title, grid, words) VALUES ($1, $2, $3, $4) RETURNING *",
-          [topic1, capitalizeFirstLetter(topic1), grid, words1]
+          "INSERT INTO games (topic, title, grid, words, wordPositions) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+          [
+            topic1,
+            capitalizeFirstLetter(topic1),
+            grid,
+            words1,
+            JSON.stringify(wordPositions),
+          ]
         );
 
-        res
-          .json({
-            id: game.rows[0].id,
-            grid: grid,
-            words: words1,
-            title: capitalizeFirstLetter(topic1),
-          })
-          .end();
+        const id = game.rows[0].id;
+        const data = {
+          id: id,
+          grid: grid,
+          words: words1,
+          title: capitalizeFirstLetter(topic1),
+          wordPositions: wordPositions,
+        };
+        storeData(id, data);
+
+        res.json(data).end();
       } else {
-        const grid = createGrid(words2, optionsFromDifficulty(diff)).grid;
+        const { grid, wordPositions } = createGrid(
+          words2,
+          optionsFromDifficulty(diff)
+        );
         const game = await pool.query(
-          "INSERT INTO games (topic, title, grid, words) VALUES ($1, $2, $3, $4) RETURNING *",
-          [topic2, capitalizeFirstLetter(topic2), grid, words2]
+          "INSERT INTO games (topic, title, grid, words, wordPositions) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+          [
+            topic2,
+            capitalizeFirstLetter(topic2),
+            grid,
+            words2,
+            JSON.stringify(wordPositions),
+          ]
         );
 
-        res
-          .json({
-            id: game.rows[0].id,
-            grid: grid,
-            words: words2,
-            title: capitalizeFirstLetter(topic2),
-          })
-          .end();
+        const id = game.rows[0].id;
+        const data = {
+          id: game.rows[0].id,
+          grid: grid,
+          words: words2,
+          title: capitalizeFirstLetter(topic2),
+          wordPositions: wordPositions,
+        };
+
+        storeData(id, data);
+
+        res.json(data).end();
       }
     } catch (err) {
       console.error(err);
@@ -303,27 +355,37 @@ module.exports = {
 
   async loadGame(req, res) {
     const id = req.params.gameId;
+    const showAnswers =
+      req.query.showAnswers === "true" || req.query.showAnswers === "1";
 
     if (!id) {
       res.status(400).send("No id in request");
     }
 
     try {
-      const result = await pool.query("SELECT * FROM games WHERE id = $1", [
-        id,
-      ]);
+      const data = getData(id);
 
-      if (result.rows.length === 0) {
-        return res.status(404).send("Game not found");
+      if (!data) {
+        // Game not found in the in-memory dataStore
+        const result = await pool.query(
+          "SELECT id, title, grid, words, wordPositions FROM games WHERE id = $1",
+          [id]
+        );
+
+        if (result.rows.length === 0) {
+          return res.status(404).send("Game not found");
+        }
+
+        data = result.rows[0];
       }
 
-      const game = result.rows[0];
       res
         .json({
-          id: game.id,
-          title: game.title,
-          grid: game.grid,
-          words: game.words,
+          id: data.id,
+          title: data.title,
+          grid: data.grid,
+          words: data.words,
+          wordPositions: showAnswers ? data.wordPositions : null,
         })
         .end();
     } catch (err) {
@@ -334,7 +396,6 @@ module.exports = {
 
   async createCustomGame(req, res) {
     const data = req.body;
-    console.log("data: " + JSON.stringify(data));
 
     try {
       const width = validateDimension(data.width);
@@ -372,20 +433,66 @@ module.exports = {
     }
   },
 
+  async persistGame(req, res) {
+    const data = req.body;
+
+    try {
+      const grid = validateGrid(data.grid);
+      const words = validateWords(data.words, grid.length, grid[0].length);
+      const wordPositions = validateWordPositions(
+        data.wordPositions,
+        grid,
+        words
+      );
+      const title = validateTitle(data.title);
+
+      const game = await pool.query(
+        "INSERT INTO games (topic, title, grid, words, wordPositions) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        ["custom", title, grid, words, wordPositions]
+      );
+
+      const id = game.rows[0].id;
+      const gameData = {
+        id: id,
+        grid: grid,
+        title: title,
+        words: words,
+        wordPositions: wordPositions,
+      };
+
+      storeData(id, gameData);
+
+      res.json({ id: id }).end();
+    } catch (err) {
+      console.error(err);
+      res.status(err.status || 500).send(err.message || "Server error");
+    }
+  },
+
   async saveGame(req, res) {
     const data = req.body;
 
     try {
       const grid = validateGrid(data.grid);
       const words = validateWords(data.words, grid.length, grid[0].length);
+      const wordPositions = validateWordPositions(
+        data.wordPositions,
+        grid,
+        words
+      );
       const title = validateTitle(data.title);
 
-      const game = await pool.query(
-        "INSERT INTO games (topic, title, grid, words) VALUES ($1, $2, $3, $4) RETURNING *",
-        ["custom", title, grid, words]
-      );
+      const id = crypto.randomUUID();
+      const game = {
+        id: id,
+        grid: grid,
+        title: title,
+        words: words,
+        wordPositions: wordPositions,
+      };
+      storeData(id, game);
 
-      res.json({ link: "http://localhost:5173/game/" + game.rows[0].id }).end();
+      res.json({ id: id }).end();
     } catch (err) {
       console.error(err);
       res.status(err.status || 500).send(err.message || "Server error");
