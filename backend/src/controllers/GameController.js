@@ -1,5 +1,6 @@
 const pool = require("../database");
 const Puzzle = require("../workers/GridGenerator.js");
+const { randomUUID } = require("crypto");
 
 class ApiException extends Error {
   constructor(statusCode, message) {
@@ -160,6 +161,10 @@ function validateWords(words, width, height) {
     throw new ApiException(400, "Word list must be an array");
   }
 
+  if (words.length === 0) {
+    throw new ApiException(400, "Word list must contain at least 1 word");
+  }
+
   words.forEach((item) => {
     if (typeof item !== "string") {
       throw new ApiException(400, "Word list must be an array of strings");
@@ -182,10 +187,14 @@ function validateGrid(grid) {
   }
 
   if (grid.length === 0) {
-    throw new ApiException("Grid can't be empty");
+    throw new ApiException(400, "Grid can't be empty");
   }
 
   const width = grid[0].length;
+
+  if (width === 0) {
+    throw new ApiException(400, "Grid can't be empty");
+  }
 
   grid.forEach((row) => {
     if (!Array.isArray(row)) {
@@ -209,8 +218,8 @@ function validateGrid(grid) {
   return grid;
 }
 
-function validateWordPositions(wordPositions, grid, words) {
-  return wordPositions;
+function validateAnswers(answers, grid, words) {
+  return answers;
 }
 
 function validateTitle(title) {
@@ -250,7 +259,7 @@ function createGrid(words, options) {
   const puzzle = new Puzzle(words, options);
   const grid = puzzle.to2DArray();
   console.log(grid);
-  return { grid: grid, wordPositions: puzzle.wordPositions };
+  return { grid: grid, answers: puzzle.answers };
 }
 
 const dataStore = new Map();
@@ -291,18 +300,18 @@ module.exports = {
     try {
       const diff = validateDifficulty(req.query.difficulty);
       if (topic === topic1) {
-        const { grid, wordPositions } = createGrid(
+        const { grid, answers } = createGrid(
           words1,
           optionsFromDifficulty(diff)
         );
         const game = await pool.query(
-          "INSERT INTO games (topic, title, grid, words, wordPositions) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+          "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
           [
             topic1,
             capitalizeFirstLetter(topic1),
             grid,
             words1,
-            JSON.stringify(wordPositions),
+            JSON.stringify(answers),
           ]
         );
 
@@ -312,24 +321,24 @@ module.exports = {
           grid: grid,
           words: words1,
           title: capitalizeFirstLetter(topic1),
-          wordPositions: wordPositions,
+          answers: answers,
         };
         storeData(id, data);
 
         res.json(data).end();
       } else {
-        const { grid, wordPositions } = createGrid(
+        const { grid, answers } = createGrid(
           words2,
           optionsFromDifficulty(diff)
         );
         const game = await pool.query(
-          "INSERT INTO games (topic, title, grid, words, wordPositions) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+          "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
           [
             topic2,
             capitalizeFirstLetter(topic2),
             grid,
             words2,
-            JSON.stringify(wordPositions),
+            JSON.stringify(answers),
           ]
         );
 
@@ -339,7 +348,7 @@ module.exports = {
           grid: grid,
           words: words2,
           title: capitalizeFirstLetter(topic2),
-          wordPositions: wordPositions,
+          answers: answers,
         };
 
         storeData(id, data);
@@ -363,12 +372,15 @@ module.exports = {
     }
 
     try {
-      const data = getData(id);
+      let data = getData(id);
+
+      console.log(data);
 
       if (!data) {
+        console.log("test");
         // Game not found in the in-memory dataStore
         const result = await pool.query(
-          "SELECT id, title, grid, words, wordPositions FROM games WHERE id = $1",
+          "SELECT id, title, grid, words, answers FROM games WHERE id = $1",
           [id]
         );
 
@@ -377,15 +389,24 @@ module.exports = {
         }
 
         data = result.rows[0];
+      } else {
+        data = data.data;
       }
 
+      console.log(JSON.stringify(data));
+
+      console.log(data.id);
+      console.log(data.title);
+      console.log(data.grid);
+      console.log(data.words);
+      console.log(data.answers);
       res
         .json({
           id: data.id,
           title: data.title,
           grid: data.grid,
           words: data.words,
-          wordPositions: showAnswers ? data.wordPositions : null,
+          answers: showAnswers ? data.answers : null,
         })
         .end();
     } catch (err) {
@@ -396,7 +417,7 @@ module.exports = {
 
   async createCustomGame(req, res) {
     const data = req.body;
-
+    console.log(JSON.stringify(data));
     try {
       const width = validateDimension(data.width);
       const height = validateDimension(data.height);
@@ -439,16 +460,12 @@ module.exports = {
     try {
       const grid = validateGrid(data.grid);
       const words = validateWords(data.words, grid.length, grid[0].length);
-      const wordPositions = validateWordPositions(
-        data.wordPositions,
-        grid,
-        words
-      );
+      const answers = validateAnswers(data.answers, grid, words);
       const title = validateTitle(data.title);
 
       const game = await pool.query(
-        "INSERT INTO games (topic, title, grid, words, wordPositions) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        ["custom", title, grid, words, wordPositions]
+        "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        ["custom", title, grid, words, JSON.stringify(answers)]
       );
 
       const id = game.rows[0].id;
@@ -457,7 +474,7 @@ module.exports = {
         grid: grid,
         title: title,
         words: words,
-        wordPositions: wordPositions,
+        answers: answers,
       };
 
       storeData(id, gameData);
@@ -475,20 +492,16 @@ module.exports = {
     try {
       const grid = validateGrid(data.grid);
       const words = validateWords(data.words, grid.length, grid[0].length);
-      const wordPositions = validateWordPositions(
-        data.wordPositions,
-        grid,
-        words
-      );
+      const answers = validateAnswers(data.answers, grid, words);
       const title = validateTitle(data.title);
 
-      const id = crypto.randomUUID();
+      const id = randomUUID();
       const game = {
         id: id,
         grid: grid,
         title: title,
         words: words,
-        wordPositions: wordPositions,
+        answers: answers,
       };
       storeData(id, game);
 

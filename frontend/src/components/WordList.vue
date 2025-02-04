@@ -2,6 +2,7 @@
 import { useCreatorStore } from '@/stores/creatorStore';
 import { useGameStore } from '@/stores/gameStore';
 import { useLoadingStore } from '@/stores/loadingStore';
+import { usePrintStore } from '@/stores/printStore';
 import { ref, computed } from 'vue';
 
 const MODE = Object.freeze({
@@ -26,7 +27,11 @@ const editable = computed(() => {
   return props.mode === MODE.CREATE && !props.printView
 });
 
-const store = props.mode === MODE.CREATE ? useCreatorStore() : useGameStore();
+const store = props.printView
+  ? usePrintStore()
+  : props.mode === MODE.GAME
+    ? useGameStore()
+    : useCreatorStore();
 
 const loadingStore = useLoadingStore();
 
@@ -62,7 +67,7 @@ const generateWords = () => {
 
 <template>
   <template v-if="editable">
-    <label for="topic-input">Teema:</label><br>
+    <br><label for="topic-input">Teema:</label><br>
     <input type="text" name="topic-input" id="topic-input" v-model="topicInput" /><br>
     <button @click="generateWords">Genereeri sõnade list</button><br><br>
     <input type="checkbox" id="alphabetize-checkbox" v-model="store.alphabetize" />
@@ -81,7 +86,7 @@ const generateWords = () => {
   </div>
   <template v-if="editable">
     <label for="word-input">Lisa sõna:</label><br>
-    <input type="text" name="word-input" id="word-input" v-model="wordInput" /><br><br>
+    <input type="text" name="word-input" id="word-input" v-model="wordInput" @keyup.enter="addWord" /><br><br>
     <button @click="addWord">Lisa</button>
   </template>
 </template>

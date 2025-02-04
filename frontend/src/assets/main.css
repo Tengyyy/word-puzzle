@@ -33,3 +33,9 @@ a,
     padding: 0 2rem;
   }
 }
+
+@media print {
+  header {
+    display: none !important;
+  }
+}

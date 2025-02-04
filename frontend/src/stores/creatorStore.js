@@ -13,7 +13,7 @@ export const useCreatorStore = defineStore('creator', {
     alphabetize: false,
     highlight: false,
     title: null,
-    wordPositions: [],
+    answers: [],
     widthInput: 15,
     heightInput: 15,
   }),
@@ -50,7 +50,7 @@ export const useCreatorStore = defineStore('creator', {
       this.width = this.widthInput
       this.height = this.heightInput
       this.grid = data.grid
-      this.wordPositions = data.wordPositions
+      this.answers = data.answers
     },
     clearData() {
       this.width = 15
@@ -64,7 +64,7 @@ export const useCreatorStore = defineStore('creator', {
       this.alphabetize = false
       this.highlight = false
       this.title = null
-      this.wordPositions = []
+      this.answers = []
       this.widthInput = 15
       this.heightInput = 15
     },

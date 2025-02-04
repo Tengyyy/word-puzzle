@@ -100,7 +100,7 @@ class Puzzle {
     this.uppercase = uppercase;
     this.message = message;
     this.seed = seed;
-    this.wordPositions = [];
+    this.answers = [];
 
     this._setSeed(this.seed);
     this._generate();
@@ -223,7 +223,7 @@ class Puzzle {
     }
 
     if (letters.length === 0) {
-      this.wordPositions.push({
+      this.answers.push({
         word,
         startRow,
         startCol,

@@ -5,6 +5,7 @@ import correct_sound from '../assets/sounds/correct.wav'
 import wrong_sound from '../assets/sounds/wrong.wav'
 import { useCreatorStore } from '@/stores/creatorStore';
 import { useGameStore } from '@/stores/gameStore';
+import { usePrintStore } from '@/stores/printStore';
 
 const MODE = Object.freeze({
   GAME: 'game',
@@ -28,7 +29,11 @@ const playable = computed(() => {
   return props.mode === MODE.GAME && !props.printView;
 });
 
-const store = props.mode === MODE.GAME ? useGameStore() : useCreatorStore();
+const store = props.printView
+  ? usePrintStore()
+  : props.mode === MODE.GAME
+    ? useGameStore()
+    : useCreatorStore();
 
 const emit = defineEmits({
   select: (word) => {
@@ -64,7 +69,7 @@ const toggleHighlights = () => {
   if (!store.highlight && !props.printView) {
     highlights.value = [];
   } else {
-    highlights.value = store.wordPositions.map((pos) => {
+    highlights.value = store.answers.map((pos) => {
       const direction = calculateDirection(pos.startRow, pos.startCol, pos.endRow, pos.endCol);
       const cells = calculateCellsToHighlight({ row: pos.startRow, col: pos.startCol }, { row: pos.endRow, col: pos.endCol }, direction);
       const outline = calculateOutline(cells, direction);

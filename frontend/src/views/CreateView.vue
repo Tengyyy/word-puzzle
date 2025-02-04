@@ -3,7 +3,7 @@ import GameSettings from '@/components/GameSettings.vue';
 import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
 import { useCreatorStore } from '@/stores/creatorStore';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useLoadingStore } from '@/stores/loadingStore';
 
@@ -14,7 +14,11 @@ const boardRef = ref(null);
 
 const router = useRouter();
 
-const link = ref(null);
+const id = ref(null);
+const link = computed(() => {
+  return "http://localhost:5173/game/" + id.value;
+});
+
 const linkCopied = ref(false);
 const gameSaved = ref(false);
 const generated = ref(false);
@@ -70,13 +74,13 @@ const share = () => {
       grid: creatorStore.getGrid,
       words: creatorStore.getWords,
       title: creatorStore.title,
-      wordPositions: creatorStore.wordPositions,
+      answers: creatorStore.answers,
     })
   })
     .then((response) => response.json())
     .then((response) => {
       loadingStore.stopLoading();
-      link.value = "http://localhost:5173/game/" + response.link;
+      id.value = response.id;
       gameSaved.value = true;
     })
     .catch((e) => {
@@ -102,17 +106,39 @@ const copyLink = () => {
 };
 
 const print = () => {
-  //TODO : save game before, get id and then route with id and query param showAnswers=1, target = _blank
-  router.push({ path: '/print' });
+  if (gameSaved.value) {
+    window.open(`/print/${id.value}?showAnswers=1`, "_blank"); // Open print page in a new tab
+  } else {
+    loadingStore.startLoading();
+    fetch("http://127.0.0.1:8081/api/save-game", {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        grid: creatorStore.getGrid,
+        words: creatorStore.getWords,
+        title: creatorStore.title,
+        answers: creatorStore.answers,
+      })
+    })
+      .then((response) => response.json())
+      .then((response) => {
+        loadingStore.stopLoading();
+        id.value = response.id;
+        window.open(`/print/${id.value}?showAnswers=1`, "_blank"); // Open print page in a new tab
+      })
+      .catch((e) => {
+        console.log(e);
+        loadingStore.stopLoading();
+      })
+  }
 };
 </script>
 
 
 <template>
   <main>
-    <template>
-
-    </template>
     <GameSettings />
     <label for="title-input">Pealkiri:</label><br>
     <input type="text" id="title-input" name="title-input" v-model="creatorStore.title" /><br><br>

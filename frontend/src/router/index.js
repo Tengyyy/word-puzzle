@@ -34,7 +34,7 @@ const router = createRouter({
 
           try {
             const response = await fetch(
-              `http://127.0.0.1:8081/api/game/${to.params.id}`,
+              `http://127.0.0.1:8081/api/game/${gameId}`,
             )
             const data = await response.json()
             gameStore.setGameData(data)

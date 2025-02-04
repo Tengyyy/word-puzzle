@@ -19,8 +19,7 @@ const goHome = () => {
 };
 
 const print = () => {
-  //TODO: route with gameId param, target _blank
-  router.push({ path: `/print` });
+  window.open(`/print/${gameStore.id}`, "_blank"); // Open print page in a new tab
 }
 
 
@@ -37,7 +36,8 @@ const handleSelect = (selectedWord) => {
     <template v-if="gameStore.gameInProgress">
       <h1>{{ gameStore.title }}</h1>
       <GameBoard mode="game" @select="handleSelect" ref="boardRef" />
-      <WordList mode="game" />
+      <WordList mode="game" /><br>
+      <button @click="print">Prindi mäng</button>
     </template>
     <template v-else>
       <p>Kõik sõnad leitud!</p>
