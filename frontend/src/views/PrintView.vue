@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
 import { usePrintStore } from '@/stores/printStore';
@@ -20,8 +20,9 @@ onMounted(() => {
   if (printStore.isCreateView) {
     answerBoard.value.toggleHighlights();
   }
-
-  showPrintModal();
+  nextTick(() => {
+    showPrintModal();
+  });
 })
 
 const showPrintModal = () => {
@@ -36,7 +37,8 @@ const showPrintModal = () => {
     <GameBoard :mode="mode" :printView="true" />
     <WordList :mode="mode" :printView="true" />
     <template v-if="printStore.isCreateView">
-      <GameBoard :mode="mode" :printView="true" class="page-break" ref="answerBoard" />
+      <h1 class="page-break">{{ printStore.title }}</h1>
+      <GameBoard :mode="mode" :printView="true" ref="answerBoard" />
       <WordList :mode="mode" :printView="true" />
     </template>
   </main>
@@ -46,16 +48,5 @@ const showPrintModal = () => {
 @page {
   margin: 0;
   size: A4;
-}
-
-@media print {
-  .page-break {
-    break-before: page !important;
-    page-break-before: always !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
 }
 </style>

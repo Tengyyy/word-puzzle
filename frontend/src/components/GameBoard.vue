@@ -12,6 +12,32 @@ const MODE = Object.freeze({
   CREATE: 'create',
 });
 
+const GRID_CELL_SIZE = 40;
+
+const DIRECTION = Object.freeze({
+  EAST: 0,
+  SOUTH_EAST: 45,
+  SOUTH: 90,
+  SOUTH_WEST: 135,
+  WEST: 180,
+  NORTH_WEST: 225,
+  NORTH: 270,
+  NORTH_EAST: 315,
+});
+
+const OFFSETS = Object.freeze({
+  E: { x: 0, y: 0 },
+  SE: { x: GRID_CELL_SIZE / 2, y: -GRID_CELL_SIZE / 5 },
+  S: { x: GRID_CELL_SIZE, y: 0 },
+  SW: { x: GRID_CELL_SIZE + GRID_CELL_SIZE / 5, y: GRID_CELL_SIZE / 2 },
+  W: { x: GRID_CELL_SIZE, y: GRID_CELL_SIZE },
+  NW: { x: GRID_CELL_SIZE / 2, y: GRID_CELL_SIZE + GRID_CELL_SIZE / 5 },
+  N: { x: 0, y: GRID_CELL_SIZE },
+  NE: { x: -GRID_CELL_SIZE / 5, y: GRID_CELL_SIZE / 2 },
+});
+
+let lastAngle = null;
+
 const props = defineProps({
   mode: {
     type: String,
@@ -56,9 +82,7 @@ const isDragging = ref(false);
 const startCell = ref(null);
 const activeDirection = ref(null);
 const outlinePosition = ref({});
-const gridCellSize = 40; // Grid cell size
 const lastProcessedCell = ref(null) // Track the last processed cell to avoid recalculations when moving mouse over the same cell
-
 const lastColor = ref(null); // Store the last generated color to ensure sufficient difference
 
 const toggleHighlights = () => {
@@ -140,11 +164,34 @@ defineExpose({ resetSelection, toggleHighlights });
 
 // Calculate the direction based on the start and current position
 const calculateDirection = (startRow, startCol, currentRow, currentCol) => {
-  if (startRow === currentRow) return 'horizontal';   // horizontal if rows are the same
-  if (startCol === currentCol) return 'vertical';     // vertical if columns are the same
-  if (Math.abs(currentRow - startRow) === Math.abs(currentCol - startCol)) return 'diagonal';  // diagonal if row/col difference is the same
+  if (startRow === currentRow) {
+    if (startCol < currentCol) {
+      return DIRECTION.EAST;
+    } else if (startCol > currentCol) {
+      return DIRECTION.WEST;
+    } else {
+      return null;
+    }
+  }
+  if (startCol === currentCol) {
+    if (startRow < currentRow) {
+      return DIRECTION.SOUTH;
+    } else if (startRow > currentRow) {
+      return DIRECTION.NORTH;
+    } else {
+      return null;
+    }
+  }
+  if (Math.abs(currentRow - startRow) === Math.abs(currentCol - startCol)) {
+    if (startRow < currentRow) {
+      return startCol < currentCol ? DIRECTION.SOUTH_EAST : DIRECTION.SOUTH_WEST;
+    } else {
+      return startCol < currentCol ? DIRECTION.NORTH_EAST : DIRECTION.NORTH_WEST;
+    }
+  }
+
   return null;
-};
+}
 
 const gridDimensions = computed(() => {
   if (!store.getGrid || store.getGrid.length === 0) {
@@ -154,25 +201,40 @@ const gridDimensions = computed(() => {
   return { rows: store.getGrid.length, cols: store.getGrid[0] ? store.getGrid[0].length : 0 }
 });
 
+const gridWidth = computed(() => {
+  return gridDimensions.value.cols * GRID_CELL_SIZE;
+});
+
+const gridHeight = computed(() => {
+  return gridDimensions.value.rows * GRID_CELL_SIZE;
+});
+
 // Calculate the cells to highlight based on the direction
 const calculateCellsToHighlight = (start, current, direction) => {
   const cells = [];
   const [startRow, startCol] = [start.row, start.col];
   const [currentRow, currentCol] = [current.row, current.col];
 
-  if (direction === 'horizontal') {
-    const colStart = Math.min(startCol, currentCol);
-    const colEnd = Math.max(startCol, currentCol);
-    for (let col = colStart; col <= colEnd; col++) {
+  if (direction === DIRECTION.EAST) {
+    for (let col = startCol; col <= currentCol; col++) {
       cells.push({ row: startRow, col });
     }
-  } else if (direction === 'vertical') {
-    const rowStart = Math.min(startRow, currentRow);
-    const rowEnd = Math.max(startRow, currentRow);
-    for (let row = rowStart; row <= rowEnd; row++) {
+  } else if (direction === DIRECTION.WEST) {
+    for (let col = startCol; col >= currentCol; col--) {
+      cells.push({ row: startRow, col });
+
+    }
+  }
+  else if (direction === DIRECTION.SOUTH) {
+    for (let row = startRow; row <= currentRow; row++) {
       cells.push({ row, col: startCol });
     }
-  } else if (direction === 'diagonal') {
+  } else if (direction === DIRECTION.NORTH) {
+    for (let row = startRow; row >= currentRow; row--) {
+      cells.push({ row, col: startCol });
+    }
+  }
+  else {
     const rowStep = currentRow > startRow ? 1 : -1;
     const colStep = currentCol > startCol ? 1 : -1;
 
@@ -201,54 +263,75 @@ const calculateOutline = (highlightedCells, direction) => {
   const endCell = highlightedCells[highlightedCells.length - 1];
 
   // Base starting position
-  let startX = startCell.col * gridCellSize;
-  let startY = startCell.row * gridCellSize;
+  let startX = startCell.col * GRID_CELL_SIZE;
+  let startY = startCell.row * GRID_CELL_SIZE;
 
-  let width, height, transform = 'none';
+  let width = 0;
+  let height = GRID_CELL_SIZE;
 
-  if (direction === 'horizontal') {
-    width = highlightedCells.length * gridCellSize;
-    height = gridCellSize;
-  } else if (direction === 'vertical') {
-    width = gridCellSize;
-    height = highlightedCells.length * gridCellSize;
-  } else if (direction === 'diagonal') {
-    const dx = endCell.col - startCell.col;
-    const dy = endCell.row - startCell.row;
-    const distance = Math.sqrt(dx * dx + dy * dy) * gridCellSize;
-    width = distance + gridCellSize; // Ensure it covers one cell width
-    height = gridCellSize; // Thin outline
-    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+  const transitionDuration = getTransitionDuration(direction);
+  lastAngle = calculateAngle(direction)
 
-    // Adjust start position based on the diagonal direction
-    const diagonalOffsets = {
-      SE: { x: gridCellSize / 2, y: -gridCellSize / 5 },
-      NW: { x: gridCellSize / 2, y: gridCellSize + gridCellSize / 5 },
-      NE: { x: -gridCellSize / 5, y: gridCellSize / 2 },
-      SW: { x: gridCellSize + gridCellSize / 5, y: gridCellSize / 2 }
-    };
-
-    if (dx > 0 && dy > 0) {
-      // South-East
-      startX += diagonalOffsets.SE.x;
-      startY += diagonalOffsets.SE.y;
-    } else if (dx < 0 && dy < 0) {
-      // North-West
-      startX += diagonalOffsets.NW.x;
-      startY += diagonalOffsets.NW.y;
-    } else if (dx > 0 && dy < 0) {
-      // North-East
-      startX += diagonalOffsets.NE.x;
-      startY += diagonalOffsets.NE.y;
-    } else if (dx < 0 && dy > 0) {
-      // South-West
-      startX += diagonalOffsets.SW.x;
-      startY += diagonalOffsets.SW.y;
+  switch (direction) {
+    case DIRECTION.EAST:
+      width = highlightedCells.length * GRID_CELL_SIZE;
+      startX += OFFSETS.E.x;
+      startY += OFFSETS.E.y;
+      break;
+    case DIRECTION.WEST:
+      width = highlightedCells.length * GRID_CELL_SIZE;
+      startX += OFFSETS.W.x;
+      startY += OFFSETS.W.y;
+      break;
+    case DIRECTION.NORTH:
+      width = highlightedCells.length * GRID_CELL_SIZE;
+      startX += OFFSETS.N.x;
+      startY += OFFSETS.N.y;
+      break;
+    case DIRECTION.SOUTH:
+      width = highlightedCells.length * GRID_CELL_SIZE;
+      startX += OFFSETS.S.x;
+      startY += OFFSETS.S.y;
+      break;
+    case DIRECTION.SOUTH_EAST: {
+      const dx = endCell.col - startCell.col;
+      const dy = endCell.row - startCell.row;
+      const distance = Math.sqrt(dx * dx + dy * dy) * GRID_CELL_SIZE;
+      width = distance + GRID_CELL_SIZE;
+      startX += OFFSETS.SE.x;
+      startY += OFFSETS.SE.y;
+      break;
     }
-
-    transform = `rotate(${angle}deg)`;
+    case DIRECTION.SOUTH_WEST: {
+      const dx = endCell.col - startCell.col;
+      const dy = endCell.row - startCell.row;
+      const distance = Math.sqrt(dx * dx + dy * dy) * GRID_CELL_SIZE;
+      width = distance + GRID_CELL_SIZE;
+      startX += OFFSETS.SW.x;
+      startY += OFFSETS.SW.y;
+      break;
+    }
+    case DIRECTION.NORTH_WEST: {
+      const dx = endCell.col - startCell.col;
+      const dy = endCell.row - startCell.row;
+      const distance = Math.sqrt(dx * dx + dy * dy) * GRID_CELL_SIZE;
+      width = distance + GRID_CELL_SIZE;
+      startX += OFFSETS.NW.x;
+      startY += OFFSETS.NW.y;
+      break;
+    }
+    case DIRECTION.NORTH_EAST: {
+      const dx = endCell.col - startCell.col;
+      const dy = endCell.row - startCell.row;
+      const distance = Math.sqrt(dx * dx + dy * dy) * GRID_CELL_SIZE;
+      width = distance + GRID_CELL_SIZE;
+      startX += OFFSETS.NE.x;
+      startY += OFFSETS.NE.y;
+      break;
+    }
   }
 
+  const transform = `rotate(${lastAngle.adjusted}deg)`;
   const borderColor = `rgb(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b})`;
   const backgroundColor = `rgba(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b}, 0.7)`;
 
@@ -265,9 +348,36 @@ const calculateOutline = (highlightedCells, direction) => {
     zIndex: 0,
     transform,
     transformOrigin: 'top left',
-    transition: 'all 0.1s ease',
+    transition: `all ${transitionDuration}s ease`,
   };
 };
+
+function getTransitionDuration(direction) {
+  if (lastAngle === null) {
+    return 0;
+  }
+
+  if (Math.abs(direction - lastAngle.real) === 180) {
+    return 0;
+  }
+
+  return 0.1
+}
+
+function calculateAngle(direction) {
+  if (lastAngle === null) {
+    return { real: direction, adjusted: direction }
+  }
+  const delta = direction - lastAngle.real;
+  let adjusted = lastAngle.adjusted + delta;
+  if (delta > 180) {
+    adjusted -= 360;
+  } else if (delta < -180) {
+    adjusted += 360;
+  }
+
+  return { real: direction, adjusted: adjusted };
+}
 
 
 // Handle mouse down event to start dragging
@@ -298,11 +408,11 @@ const handleMouseMove = (row, col) => {
   // Calculate direction based on mouse movement
   const newDirection = calculateDirection(startCell.value.row, startCell.value.col, row, col);
 
-  if (newDirection && newDirection !== activeDirection.value) {
+  if (newDirection !== null && newDirection !== activeDirection.value) {
     activeDirection.value = newDirection;
   }
 
-  if (activeDirection.value) {
+  if (activeDirection.value !== null) {
     const cellsToHighlight = calculateCellsToHighlight(
       startCell.value,
       { row, col },
@@ -322,6 +432,8 @@ const handleMouseUp = () => {
   isDragging.value = false;
   activeDirection.value = null;
   startCell.value = null;
+
+  lastAngle = null;
 
   handleSelection()
 };
@@ -345,16 +457,18 @@ const handleSelection = () => {
 </script>
 
 <template>
-  <div class="grid-container" @mouseup="handleMouseUp" @mouseleave="handleMouseUp">
+  <div class="grid-container" @mouseup="handleMouseUp" @mouseleave="handleMouseUp"
+    :style="{ width: gridWidth + 'px', height: gridHeight + 'px' }">
     <!--Highlighted/found words-->
-    <div v-for="(highlight, index) in highlights" :key="`highlight-${index}`" :style="highlight"></div>
+    <div v-for="(highlight, index) in highlights" :key="`highlight-${index}`" :style="highlight" class="highlight">
+    </div>
 
     <!-- Current selection outline -->
     <div v-if="outlinePosition" class="grid-outline" :style="outlinePosition"></div>
 
     <!-- Grid cells -->
     <div class="grid"
-      :style="{ gridTemplateColumns: `repeat(${store.getGrid && store.getGrid[0] ? store.getGrid[0].length : 0}, ${gridCellSize}px)` }">
+      :style="{ gridTemplateRows: `repeat(${store.getGrid ? store.getGrid.length : 0}, ${GRID_CELL_SIZE}px)`, gridTemplateColumns: `repeat(${store.getGrid && store.getGrid[0] ? store.getGrid[0].length : 0}, ${GRID_CELL_SIZE}px)` }">
       <template v-for="(row, rowIndex) in store.getGrid">
         <GridCell v-for="(char, colIndex) in row" :key="`cell-${rowIndex}-${colIndex}`" :char="char" :row="rowIndex"
           :col="colIndex" :isSelected="selectedCells.some(cell => cell.row === rowIndex && cell.col === colIndex)"
@@ -368,9 +482,10 @@ const handleSelection = () => {
 <style scoped>
 .grid-container {
   position: relative;
-  display: inline-block;
-  background-image:
-    linear-gradient(to right, #ccc 1px, transparent 1px),
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-image: linear-gradient(to right, #ccc 1px, transparent 1px),
     linear-gradient(to bottom, #ccc 1px, transparent 1px);
   background-size: 40px 40px;
   /* Match grid cell size exactly */
