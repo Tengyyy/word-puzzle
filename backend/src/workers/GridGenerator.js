@@ -1,3 +1,9 @@
+const OVERLAP = Object.freeze({
+  NO_OVERLAP: "no-overlap",
+  POSSIBLE_OVERLAP: "possible-overlap",
+  FORCE_OVERLAP: "force-overlap",
+});
+
 class Grid {
   constructor(rows, columns, grid = null) {
     this.rows = rows;
@@ -45,21 +51,100 @@ class Grid {
   fill(message = null, uppercase = true) {
     const processedMessage = (message || "")
       [uppercase ? "toUpperCase" : "toLowerCase"]()
-      .replace(uppercase ? /[^A-Z]/g : /[^a-z]/g, "")
+      .replace(uppercase ? /[^A-ZÕÜÖÄŠŽ]/g : /[^a-zõüöäšž]/g, "")
       .split("");
+
     const unused = this.grid.filter((n) => n === undefined).length;
-    const letters = Array.from(
-      uppercase ? "ABCDEFGHIJKLMNOPQRSTUVWXYZ" : "abcdefghijklmnopqrstuvwxyz"
-    );
-    //const letters = Array.from("?");
+
+    // EKI korpus märkide statistika: https://en.eki.ee/corpus
+    // A  8100857
+    // E  7028435
+    // I  6542963
+    // S  5776376
+    // T  4851121
+    // L  4121993
+    // U  3741561
+    // N  3374496
+    // K  3046708
+    // O  2608481
+    // D  2527407
+    // M  2434348
+    // R  2322550
+    // V  1588836
+    // P  1251495
+    // G  1224764
+    // J  1102623
+    // H  1098427
+    // Ä  852155
+    // Õ  721423
+    // B  615187
+    // Ü  494098
+    // Ö  198498
+    // F  136160
+    // C  106239
+    // Y  40591
+    // W  35353
+    // Z  29078
+    // X  9960
+    // Š  6212
+    // Q  3780
+    // Ž  3391
+    // Kokku 65995566
+
+    const letterFrequencies = {
+      A: 12.27,
+      E: 10.65,
+      I: 9.91,
+      S: 8.75,
+      T: 7.35,
+      L: 6.25,
+      U: 5.67,
+      N: 5.11,
+      K: 4.62,
+      O: 3.95,
+      D: 3.83,
+      M: 3.69,
+      R: 3.52,
+      V: 2.41,
+      P: 1.9,
+      G: 1.86,
+      J: 1.67,
+      H: 1.66,
+      Ä: 1.29,
+      Õ: 1.1,
+      B: 0.93,
+      Ü: 0.75,
+      Ö: 0.3,
+      F: 0.2,
+      C: 0.2,
+      Y: 0.06,
+      W: 0.05,
+      Z: 0.04,
+      X: 0.02,
+      Š: 0.01,
+      Q: 0.01,
+      Ž: 0.01,
+    };
+
+    const letters = Object.keys(letterFrequencies);
+    const weights = Object.values(letterFrequencies);
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+
+    // Function to pick a weighted random letter
+    function weightedRandom() {
+      let rand = Math.random() * totalWeight;
+      for (let i = 0; i < letters.length; i++) {
+        if (rand < weights[i]) return letters[i];
+        rand -= weights[i];
+      }
+    }
 
     for (let pos = 0; pos < this.size; pos++) {
       if (!this.grid[pos]) {
-        this.grid[pos] =
-          processedMessage.shift() ||
-          letters[Math.floor(Math.random() * letters.length)];
+        this.grid[pos] = processedMessage.shift() || weightedRandom();
       }
     }
+
     return unused;
   }
 }
@@ -83,8 +168,7 @@ class Puzzle {
       columns = 15,
       diagonal = false,
       backward = false,
-      allowOverlap = false,
-      forceOverlap = false,
+      overlap = OVERLAP.NO_OVERLAP,
       uppercase = true,
       message = null,
       seed = Date.now(),
@@ -95,8 +179,7 @@ class Puzzle {
     this.columns = columns;
     this.diagonal = diagonal;
     this.backward = backward;
-    this.allowOverlap = allowOverlap;
-    this.forceOverlap = forceOverlap;
+    this.overlap = overlap;
     this.uppercase = uppercase;
     this.message = message;
     this.seed = seed;
@@ -129,50 +212,45 @@ class Puzzle {
 
     const grid = new Grid(this.rows, this.columns);
     const positions = Array.from({ length: grid.size }, (_, i) => i);
-    const stack = [
-      {
-        grid,
-        word: words.shift(),
-        dirs: this._shuffle([...directions]),
-        positions: this._shuffle([...positions]),
-      },
-    ];
+    const stack = [];
 
-    while (true) {
-      const current = stack[stack.length - 1];
-      if (!current) throw new Error("no solution possible");
+    while (words.length > 0) {
+      const word = words.shift();
+      let placed = false;
 
-      let dir = current.dirs.pop();
-      if (!dir) {
-        current.positions.pop();
-        current.dirs = this._shuffle([...directions]);
-        dir = current.dirs.pop();
+      for (
+        let attempt = 0;
+        attempt < (this.overlap === OVERLAP.FORCE_OVERLAP ? 2 : 1);
+        attempt++
+      ) {
+        const forceOverlap =
+          attempt === 0 && this.overlap === OVERLAP.FORCE_OVERLAP; // First attempt: enforce overlap, second: relax it
+        const shuffledPositions = this._shuffle([...positions]);
+        const shuffledDirections = this._shuffle([...directions]);
+
+        for (const pos of shuffledPositions) {
+          for (const dir of shuffledDirections) {
+            const newGrid = this._tryWord(grid, word, pos, dir, forceOverlap);
+            if (newGrid) {
+              grid.grid = newGrid.grid;
+              placed = true;
+              break;
+            }
+          }
+          if (placed) break;
+        }
+
+        if (placed) break; // Stop attempting once placed
       }
 
-      const pos = current.positions[current.positions.length - 1];
-
-      if (pos === undefined) {
-        words.unshift(current.word);
-        stack.pop();
-      } else {
-        const newGrid = this._tryWord(current.grid, current.word, pos, dir);
-        if (newGrid) {
-          if (words.length > 0) {
-            stack.push({
-              grid: newGrid,
-              word: words.shift(),
-              dirs: this._shuffle([...directions]),
-              positions: this._shuffle([...positions]),
-            });
-          } else {
-            this.grid = newGrid;
-            this.solution = newGrid.dup();
-            this.unusedSquares = this.grid.fill(this.message, this.uppercase);
-            break;
-          }
-        }
+      if (!placed) {
+        throw new Error(`Could not place word: ${word}`);
       }
     }
+
+    this.grid = grid;
+    this.solution = grid.dup();
+    this.unusedSquares = this.grid.fill(this.message, this.uppercase);
   }
 
   _shuffle(array) {
@@ -183,7 +261,7 @@ class Puzzle {
     return array;
   }
 
-  _tryWord(grid, word, position, direction) {
+  _tryWord(grid, word, position, direction, forceOverlap) {
     const copy = grid.dup();
     let [row, column] = copy.at(position);
     const [dr, dc] = Puzzle.DIRS[direction];
@@ -193,6 +271,8 @@ class Puzzle {
     const startCol = column;
     let endRow = row;
     let endCol = column;
+
+    let hasOverlap = false;
 
     while (
       row >= 0 &&
@@ -205,17 +285,17 @@ class Puzzle {
 
       const existingLetter = copy.get(row, column);
 
-      if (
-        existingLetter === undefined ||
-        (this.allowOverlap && existingLetter === letter)
-      ) {
+      if (existingLetter === undefined || existingLetter === letter) {
+        if (existingLetter === letter) {
+          hasOverlap = true;
+        }
         copy.set(row, column, letter);
         row += dr;
         column += dc;
 
         if (!letters.length) {
-          endRow = row - dr; // Last valid position
-          endCol = column - dc; // Last valid position
+          endRow = row - dr;
+          endCol = column - dc;
         }
       } else {
         return null;
@@ -223,6 +303,14 @@ class Puzzle {
     }
 
     if (letters.length === 0) {
+      if (this.overlap === OVERLAP.NO_OVERLAP && hasOverlap) {
+        return null;
+      }
+
+      if (forceOverlap && !hasOverlap) {
+        return null;
+      }
+
       this.answers.push({
         word,
         startRow,

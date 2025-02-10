@@ -1,6 +1,7 @@
-const pool = require("../database");
-const Puzzle = require("../workers/GridGenerator.js");
+const pool = require("../database.js");
 const { randomUUID } = require("crypto");
+const { Worker } = require("worker_threads");
+const path = require("path");
 
 class ApiException extends Error {
   constructor(statusCode, message) {
@@ -219,6 +220,97 @@ function validateGrid(grid) {
 }
 
 function validateAnswers(answers, grid, words) {
+  if (!Array.isArray(answers)) {
+    throw new ApiException(400, "Answers must be an array.");
+  }
+
+  const numRows = grid.length;
+  const numCols = grid[0].length;
+  const normalizedWords = new Set(words.map((word) => word.toUpperCase()));
+
+  answers.forEach((answer, index) => {
+    if (
+      typeof answer !== "object" ||
+      answer === null ||
+      !("word" in answer) ||
+      !("startRow" in answer) ||
+      !("startCol" in answer) ||
+      !("endRow" in answer) ||
+      !("endCol" in answer)
+    ) {
+      throw new ApiException(
+        400,
+        `Answer at index ${index} is not a valid object.`
+      );
+    }
+
+    const { word, startRow, startCol, endRow, endCol } = answer;
+    const upperWord = word.toUpperCase();
+
+    if (!normalizedWords.has(upperWord)) {
+      throw new ApiException(400, `Word '${word}' is not in the word list.`);
+    }
+
+    if (
+      !Number.isInteger(startRow) ||
+      !Number.isInteger(startCol) ||
+      !Number.isInteger(endRow) ||
+      !Number.isInteger(endCol)
+    ) {
+      throw new ApiException(
+        400,
+        `Answer at index ${index} has invalid coordinates.`
+      );
+    }
+
+    if (
+      startRow < 0 ||
+      startRow >= numRows ||
+      startCol < 0 ||
+      startCol >= numCols ||
+      endRow < 0 ||
+      endRow >= numRows ||
+      endCol < 0 ||
+      endCol >= numCols
+    ) {
+      throw new ApiException(
+        400,
+        `Answer at index ${index} has out-of-bounds coordinates.`
+      );
+    }
+
+    const rowStep = Math.sign(endRow - startRow);
+    const colStep = Math.sign(endCol - startCol);
+    const wordLength = upperWord.length;
+
+    if (
+      Math.max(Math.abs(endRow - startRow), Math.abs(endCol - startCol)) + 1 !==
+      wordLength
+    ) {
+      throw new ApiException(
+        400,
+        `Answer at index ${index} has incorrect word length.`
+      );
+    }
+
+    let extractedWord = "";
+    let r = startRow;
+    let c = startCol;
+
+    for (let i = 0; i < wordLength; i++) {
+      extractedWord += grid[r][c].toUpperCase();
+      r += rowStep;
+      c += colStep;
+    }
+
+    if (extractedWord !== upperWord) {
+      throw new ApiException(
+        400,
+        `Answer at index ${index} does not match grid characters.`
+      );
+    }
+  });
+
   return answers;
 }
 
@@ -250,16 +342,44 @@ function optionsFromDifficulty(diff) {
     columns: size,
     diagonal: diff === DIFFICULTY.HARD,
     backward: diff !== DIFFICULTY.EASY,
-    allowOverlap: diff !== DIFFICULTY.EASY,
+    overlap:
+      diff == DIFFICULTY.EASY ? OVERLAP.NO_OVERLAP : OVERLAP.POSSIBLE_OVERLAP,
     uppercase: true,
   };
 }
 
 function createGrid(words, options) {
-  const puzzle = new Puzzle(words, options);
-  const grid = puzzle.to2DArray();
-  console.log(grid);
-  return { grid: grid, answers: puzzle.answers };
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(
+      path.resolve(__dirname, "../workers", "gridWorker.js")
+    );
+
+    const timeout = setTimeout(() => {
+      worker.terminate();
+      reject(
+        new ApiException(
+          500,
+          "Failed to create the word search puzzle: Grid generation timed out"
+        )
+      );
+    }, 5000); // Set a 5-second timeout
+
+    worker.on("message", (message) => {
+      clearTimeout(timeout);
+      if (message.success) {
+        resolve({ grid: message.grid, answers: message.answers });
+      } else {
+        reject(new Error(message.error));
+      }
+    });
+
+    worker.on("error", (err) => {
+      clearTimeout(timeout);
+      reject(err);
+    });
+
+    worker.postMessage({ words, options });
+  });
 }
 
 const dataStore = new Map();
@@ -300,7 +420,7 @@ module.exports = {
     try {
       const diff = validateDifficulty(req.query.difficulty);
       if (topic === topic1) {
-        const { grid, answers } = createGrid(
+        const { grid, answers } = await createGrid(
           words1,
           optionsFromDifficulty(diff)
         );
@@ -327,7 +447,7 @@ module.exports = {
 
         res.json(data).end();
       } else {
-        const { grid, answers } = createGrid(
+        const { grid, answers } = await createGrid(
           words2,
           optionsFromDifficulty(diff)
         );
@@ -374,10 +494,7 @@ module.exports = {
     try {
       let data = getData(id);
 
-      console.log(data);
-
       if (!data) {
-        console.log("test");
         // Game not found in the in-memory dataStore
         const result = await pool.query(
           "SELECT id, title, grid, words, answers FROM games WHERE id = $1",
@@ -393,13 +510,6 @@ module.exports = {
         data = data.data;
       }
 
-      console.log(JSON.stringify(data));
-
-      console.log(data.id);
-      console.log(data.title);
-      console.log(data.grid);
-      console.log(data.words);
-      console.log(data.answers);
       res
         .json({
           id: data.id,
@@ -417,7 +527,6 @@ module.exports = {
 
   async createCustomGame(req, res) {
     const data = req.body;
-    console.log(JSON.stringify(data));
     try {
       const width = validateDimension(data.width);
       const height = validateDimension(data.height);
@@ -440,13 +549,11 @@ module.exports = {
         columns: width,
         diagonal: diagonalsEnabled,
         backward: backwardsEnabled,
-        allowOverlap:
-          overlap === OVERLAP.POSSIBLE_OVERLAP ||
-          overlap === OVERLAP.FORCE_OVERLAP,
+        overlap: overlap,
         uppercase: casing === CASING.UPPERCASE,
       };
 
-      const resp = createGrid(words, options);
+      const resp = await createGrid(words, options);
       res.json(resp).end();
     } catch (err) {
       console.error(err);
