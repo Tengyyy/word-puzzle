@@ -1,7 +1,7 @@
 const pool = require("../database.js");
 const { randomUUID } = require("crypto");
-const { Worker } = require("worker_threads");
-const path = require("path");
+const GridGeneratorService = require("../services/GridGeneratorService");
+const WordNetService = require("../services/WordNetService.js");
 
 class ApiException extends Error {
   constructor(statusCode, message) {
@@ -348,40 +348,6 @@ function optionsFromDifficulty(diff) {
   };
 }
 
-function createGrid(words, options) {
-  return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      path.resolve(__dirname, "../workers", "gridWorker.js")
-    );
-
-    const timeout = setTimeout(() => {
-      worker.terminate();
-      reject(
-        new ApiException(
-          500,
-          "Failed to create the word search puzzle: Grid generation timed out"
-        )
-      );
-    }, 5000); // Set a 5-second timeout
-
-    worker.on("message", (message) => {
-      clearTimeout(timeout);
-      if (message.success) {
-        resolve({ grid: message.grid, answers: message.answers });
-      } else {
-        reject(new Error(message.error));
-      }
-    });
-
-    worker.on("error", (err) => {
-      clearTimeout(timeout);
-      reject(err);
-    });
-
-    worker.postMessage({ words, options });
-  });
-}
-
 const dataStore = new Map();
 
 function storeData(id, data) {
@@ -413,68 +379,35 @@ module.exports = {
       res.status(400).send("Topic not specified.");
     }
 
-    if (topic !== topic1 && topic !== topic2) {
-      res.status(400).send("Unknown topic.");
-    }
-
     try {
       const diff = validateDifficulty(req.query.difficulty);
-      if (topic === topic1) {
-        const { grid, answers } = await createGrid(
+      const vocabulary = await WordNetService.getWordsByTopic(topic);
+      const { grid, answers } = await GridGeneratorService.generateGrid(
+        vocabulary,
+        optionsFromDifficulty(diff)
+      );
+      const game = await pool.query(
+        "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        [
+          topic1,
+          capitalizeFirstLetter(topic1),
+          grid,
           words1,
-          optionsFromDifficulty(diff)
-        );
-        const game = await pool.query(
-          "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-          [
-            topic1,
-            capitalizeFirstLetter(topic1),
-            grid,
-            words1,
-            JSON.stringify(answers),
-          ]
-        );
+          JSON.stringify(answers),
+        ]
+      );
 
-        const id = game.rows[0].id;
-        const data = {
-          id: id,
-          grid: grid,
-          words: words1,
-          title: capitalizeFirstLetter(topic1),
-          answers: answers,
-        };
-        storeData(id, data);
+      const id = game.rows[0].id;
+      const data = {
+        id: id,
+        grid: grid,
+        words: words1,
+        title: capitalizeFirstLetter(topic1),
+        answers: answers,
+      };
+      storeData(id, data);
 
-        res.json(data).end();
-      } else {
-        const { grid, answers } = await createGrid(
-          words2,
-          optionsFromDifficulty(diff)
-        );
-        const game = await pool.query(
-          "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-          [
-            topic2,
-            capitalizeFirstLetter(topic2),
-            grid,
-            words2,
-            JSON.stringify(answers),
-          ]
-        );
-
-        const id = game.rows[0].id;
-        const data = {
-          id: game.rows[0].id,
-          grid: grid,
-          words: words2,
-          title: capitalizeFirstLetter(topic2),
-          answers: answers,
-        };
-
-        storeData(id, data);
-
-        res.json(data).end();
-      }
+      res.json(data).end();
     } catch (err) {
       console.error(err);
 
@@ -553,8 +486,8 @@ module.exports = {
         uppercase: casing === CASING.UPPERCASE,
       };
 
-      const resp = await createGrid(words, options);
-      res.json(resp).end();
+      const result = await GridGeneratorService.generateGrid(words, options);
+      res.json(result).end();
     } catch (err) {
       console.error(err);
       res.status(err.status || 500).send(err.message || "Server error");
