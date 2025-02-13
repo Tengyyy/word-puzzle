@@ -28,36 +28,6 @@ const CASING = Object.freeze({
   LOWERCASE: "lowercase",
 });
 
-const words1 = [
-  "elevant",
-  "kaelkirjak",
-  "ninasarvik",
-  "jääkaru",
-  "lõvi",
-  "skorpion",
-  "jõehobu",
-  "madu",
-  "tiiger",
-];
-
-const topic1 = "animals";
-
-const words2 = [
-  "roosa",
-  "must",
-  "sinine",
-  "oranž",
-  "roheline",
-  "kollane",
-  "hall",
-  "valge",
-  "punane",
-  "lilla",
-  "pruun",
-];
-
-const topic2 = "colors";
-
 function capitalizeFirstLetter(val) {
   return String(val).charAt(0).toUpperCase() + String(val).slice(1);
 }
@@ -139,6 +109,21 @@ function validateDifficulty(val) {
   }
 
   return formatted;
+}
+
+function validateString(val, fieldName) {
+  if (typeof val !== "string") {
+    throw new ApiException(400, fieldName + " must be a string");
+  }
+
+  if (val.length === 0 || val.length > 50) {
+    throw new ApiException(
+      400,
+      "length of " + fieldName + " must be 1-50 characters"
+    );
+  }
+
+  return val;
 }
 
 function validateBool(val, fieldName, defaultVal) {
@@ -382,6 +367,7 @@ module.exports = {
     try {
       const diff = validateDifficulty(req.query.difficulty);
       const vocabulary = await WordNetService.getWordsByTopic(topic);
+      console.log(vocabulary);
       const { grid, answers } = await GridGeneratorService.generateGrid(
         vocabulary,
         optionsFromDifficulty(diff)
@@ -389,10 +375,10 @@ module.exports = {
       const game = await pool.query(
         "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [
-          topic1,
-          capitalizeFirstLetter(topic1),
+          topic,
+          capitalizeFirstLetter(topic),
           grid,
-          words1,
+          vocabulary,
           JSON.stringify(answers),
         ]
       );
@@ -401,8 +387,8 @@ module.exports = {
       const data = {
         id: id,
         grid: grid,
-        words: words1,
-        title: capitalizeFirstLetter(topic1),
+        words: vocabulary,
+        title: capitalizeFirstLetter(topic),
         answers: answers,
       };
       storeData(id, data);
@@ -455,6 +441,20 @@ module.exports = {
     } catch (err) {
       console.error(err);
       res.status(500).send("Server error");
+    }
+  },
+
+  async createWordList(req, res) {
+    const data = req.body;
+    try {
+      const width = validateDimension(data.width);
+      const height = validateDimension(data.height);
+      const topic = validateString(data.topic, "topic");
+      const vocabulary = await WordNetService.getWordsByTopic(topic);
+      res.json(vocabulary).end();
+    } catch (err) {
+      console.error(err);
+      res.status(err.status || 500).send(err.message || "Server error");
     }
   },
 

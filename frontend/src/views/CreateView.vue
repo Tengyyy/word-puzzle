@@ -4,15 +4,12 @@ import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
 import { useCreatorStore } from '@/stores/creatorStore';
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
 import { useLoadingStore } from '@/stores/loadingStore';
 
 const creatorStore = useCreatorStore();
 const loadingStore = useLoadingStore();
 
 const boardRef = ref(null);
-
-const router = useRouter();
 
 const id = ref(null);
 const link = computed(() => {
@@ -22,6 +19,37 @@ const link = computed(() => {
 const linkCopied = ref(false);
 const gameSaved = ref(false);
 const generated = ref(false);
+
+const generateWords = () => {
+  console.log('generating words for topic ' + creatorStore.topic);
+  loadingStore.startLoading();
+  fetch("http://127.0.0.1:8081/api/create-word-list", {
+    method: "POST",
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      width: creatorStore.widthInput,
+      height: creatorStore.heightInput,
+      topic: creatorStore.topic,
+    })
+  })
+    .then((response) => response.json())
+    .then((response) => {
+      console.log(response);
+      if (response) {
+        response.forEach(word => {
+          creatorStore.addWord(word);
+        });
+      }
+
+      loadingStore.stopLoading();
+    })
+    .catch((e) => {
+      console.log(e);
+      loadingStore.stopLoading();
+    });
+};
 
 const generate = () => {
   loadingStore.startLoading();
@@ -143,7 +171,7 @@ const print = () => {
     <label for="title-input">Pealkiri:</label><br>
     <input type="text" id="title-input" name="title-input" v-model="creatorStore.title" /><br><br>
     <GameBoard mode="create" ref="boardRef" />
-    <WordList mode="create" /><br><br>
+    <WordList mode="create" @generate-words="generateWords" /><br><br>
     <input type="checkbox" name="highlight-checkbox" id="highlight-checkbox" v-model="creatorStore.highlight"
       @change="boardRef.toggleHighlights()" />
     <label for="highlight-checkbox">Kuva peidetud sõnad</label>

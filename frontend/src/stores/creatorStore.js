@@ -9,6 +9,7 @@ export const useCreatorStore = defineStore('creator', {
     diagonalsEnabled: false,
     casing: 'uppercase',
     grid: [],
+    topic: '',
     words: [],
     alphabetize: false,
     highlight: false,
@@ -60,6 +61,7 @@ export const useCreatorStore = defineStore('creator', {
       this.diagonalsEnabled = false
       this.casing = 'uppercase'
       this.grid = []
+      this.topic = ''
       this.words = []
       this.alphabetize = false
       this.highlight = false

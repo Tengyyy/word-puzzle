@@ -3,8 +3,9 @@ const fs = require("fs");
 const path = require("path");
 const xml2js = require("xml2js");
 
-let wordNet = new Map();
-let synsets = {};
+const lemmaToSynsets = new Map(); // lemma -> [synset IDs]
+const synsetToLemmas = new Map(); // synset ID -> [lemmas]
+const synsetRelations = new Map(); // synset ID -> {hypernyms: [synset IDs], hyponyms: [synset IDs], similar: [synset IDs] ...}
 
 // Function to load and process WordNet
 async function loadWordNet() {
@@ -14,46 +15,99 @@ async function loadWordNet() {
   const parser = new xml2js.Parser();
   const result = await parser.parseStringPromise(xmlData);
 
-  const lexicon = result.LexicalResource.Lexicon[0];
+  const lexicalEntries = result.LexicalResource.Lexicon[0].LexicalEntry || [];
+  const synsets = result.LexicalResource.Lexicon[0].Synset || [];
 
-  // Store synsets
-  lexicon.Synset.forEach((synset) => {
-    synsets[synset.$.id] = synset;
-  });
+  // Process lexical entries
+  lexicalEntries.forEach((entry) => {
+    const lemma = entry.Lemma[0].$.writtenForm;
+    if (!entry.Sense) return; // Skip entries without senses
+    const senses = entry.Sense;
 
-  // Store words and relationships
-  lexicon.LexicalEntry.forEach((entry) => {
-    const lemma = entry.Lemma[0].$.writtenForm.toLowerCase();
-    const synsetId = entry.Sense[0].$.synset;
-
-    if (!wordNet.has(lemma)) {
-      wordNet.set(lemma, {
-        synonyms: new Set(),
-        hypernyms: new Set(),
-        hyponyms: new Set(),
-      });
+    if (!lemmaToSynsets.has(lemma)) {
+      lemmaToSynsets.set(lemma, []);
     }
 
-    const synset = synsets[synsetId];
-    synset.LexicalEntry?.forEach((synEntry) => {
-      const synLemma = synEntry.Lemma[0].$.writtenForm.toLowerCase();
-      if (synLemma !== lemma) {
-        wordNet.get(lemma).synonyms.add(synLemma);
+    senses.forEach((sense) => {
+      const synsetID = sense.$.synset;
+      lemmaToSynsets.get(lemma).push(synsetID);
+
+      if (!synsetToLemmas.has(synsetID)) {
+        synsetToLemmas.set(synsetID, []);
       }
+      synsetToLemmas.get(synsetID).push(lemma);
     });
   });
 
+  // Process synsets
+  synsets.forEach((synset) => {
+    const synsetID = synset.$.id;
+    if (!synsetID) return; //invalid entry
+
+    const relations = { hypernyms: [], hyponyms: [], similar: [] };
+
+    (synset.SynsetRelation || []).forEach((relation) => {
+      const relType = relation.$.relType;
+      const targetSynset = relation.$.target;
+
+      if (relType === "hypernym") {
+        relations.hypernyms.push(targetSynset);
+      } else if (relType === "hyponym") {
+        relations.hyponyms.push(targetSynset);
+      } else if (relType === "similar") {
+        relations.similar.push(targetSynset);
+      }
+    });
+
+    synsetRelations.set(synsetID, relations);
+  });
+
   parentPort.postMessage({ status: "ready" });
+}
+
+function getWordsByTopic(topic) {
+  const synsets = lemmaToSynsets.get(topic);
+  if (!synsets || synsets.length === 0) {
+    return [];
+  }
+
+  const words = [];
+  const synset = getRandomElement(synsets);
+  const relations = synsetRelations.get(synset);
+  relations.hypernyms.forEach((id) => {
+    const lemmas = synsetToLemmas.get(id);
+    if (lemmas && lemmas.length > 0) {
+      words.push(getRandomElement(lemmas));
+    }
+  });
+
+  relations.hyponyms.forEach((id) => {
+    const lemmas = synsetToLemmas.get(id);
+    if (lemmas && lemmas.length > 0) {
+      words.push(getRandomElement(lemmas));
+    }
+  });
+
+  relations.similar.forEach((id) => {
+    const lemmas = synsetToLemmas.get(id);
+    if (lemmas && lemmas.length > 0) {
+      words.push(getRandomElement(lemmas));
+    }
+  });
+
+  return words;
+}
+
+function getRandomElement(arr) {
+  const randomIndex = Math.floor(Math.random() * arr.length);
+  return arr[randomIndex];
 }
 
 parentPort.on("message", (message) => {
   if (message.type === "load") {
     loadWordNet();
   } else if (message.type === "getWordsByTopic") {
-    const topic = message.topic.toLowerCase();
-    const words = wordNet.has(topic)
-      ? Array.from(wordNet.get(topic).synonyms)
-      : [];
+    const words = getWordsByTopic(message.topic.toLowerCase());
     parentPort.postMessage({ type: "result", words });
   }
 });
