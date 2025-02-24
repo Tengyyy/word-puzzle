@@ -1,6 +1,5 @@
 <script setup>
 import { useCreatorStore } from '@/stores/creatorStore';
-import { ref } from 'vue';
 
 const creatorStore = useCreatorStore();
 </script>

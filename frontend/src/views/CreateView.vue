@@ -32,6 +32,9 @@ const generateWords = () => {
       width: creatorStore.widthInput,
       height: creatorStore.heightInput,
       topic: creatorStore.topic,
+      inputLanguage: creatorStore.inputLanguage,
+      outputLanguage: creatorStore.outputLanguage,
+      mode: creatorStore.mode,
     })
   })
     .then((response) => response.json())
@@ -65,7 +68,7 @@ const generate = () => {
       backwardsEnabled: creatorStore.backwardsEnabled,
       diagonalsEnabled: creatorStore.diagonalsEnabled,
       casing: creatorStore.casing,
-      words: creatorStore.getWords
+      words: creatorStore.getWords.map((word) => word.word)
     })
   })
     .then((response) => response.json())

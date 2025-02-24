@@ -10,6 +10,9 @@ export const useCreatorStore = defineStore('creator', {
     casing: 'uppercase',
     grid: [],
     topic: '',
+    inputLanguage: 'et',
+    outputLanguage: 'et',
+    mode: 'words',
     words: [],
     alphabetize: false,
     highlight: false,
@@ -33,19 +36,29 @@ export const useCreatorStore = defineStore('creator', {
         return state.words
       }
 
-      return state.words.toSorted()
+      return state.words.slice().sort((a, b) => a.hint.localeCompare(b.hint))
     },
   },
   actions: {
     addWord(input) {
-      if (this.words.some(word => word === input)) {
+      if (!input.hint) {
+        input.hint = input.word
+      }
+
+      if (
+        this.words.some(
+          word => word.word === input.word || word.hint === input.hint,
+        )
+      ) {
         return false
       }
       this.words.push(input)
       return true
     },
     removeWord(word) {
-      this.words = this.words.filter(item => item !== word)
+      this.words = this.words.filter(
+        item => item.word !== word.word && item.hint !== word.hint,
+      )
     },
     generateGrid(data) {
       this.width = this.widthInput
@@ -62,6 +75,9 @@ export const useCreatorStore = defineStore('creator', {
       this.casing = 'uppercase'
       this.grid = []
       this.topic = ''
+      this.inputLanguage = 'et'
+      this.outputLanguage = 'et'
+      this.mode = 'words'
       this.words = []
       this.alphabetize = false
       this.highlight = false

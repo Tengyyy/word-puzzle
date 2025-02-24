@@ -50,7 +50,7 @@ export const useGameStore = defineStore('game', {
       for (let i = 0; i < this.wordsToFind.length; i++) {
         // Check if selected word matches any in the word list, either forwards or backwards
         const word = this.wordsToFind[i]
-        const upper = word.toUpperCase()
+        const upper = word.word.toUpperCase()
         if (upper === forwards || upper === backwards) {
           this.wordsToFind.splice(i, 1)
           this.foundWords.push(word)

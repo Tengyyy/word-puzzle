@@ -39,7 +39,7 @@ const showPrintModal = () => {
     <template v-if="printStore.isCreateView">
       <h1 class="page-break">{{ printStore.title }}</h1>
       <GameBoard :mode="mode" :printView="true" ref="answerBoard" />
-      <WordList :mode="mode" :printView="true" />
+      <WordList :mode="mode" :printView="true" :answerList="true" />
     </template>
   </main>
 </template>

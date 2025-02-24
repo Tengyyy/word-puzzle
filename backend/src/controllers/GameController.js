@@ -28,8 +28,58 @@ const CASING = Object.freeze({
   LOWERCASE: "lowercase",
 });
 
+const LANGUAGE = Object.freeze({
+  ESTONIAN: "et",
+  ENGLISH: "en",
+});
+
+const MODE = Object.freeze({
+  WORDS: "words",
+  HINTS: "hints",
+});
+
 function capitalizeFirstLetter(val) {
   return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+}
+
+function validateLanguage(val) {
+  if (!val) {
+    return LANGUAGE.ESTONIAN;
+  }
+
+  if (typeof val !== "string") {
+    throw new ApiException(400, "Language must be a string");
+  }
+
+  const formatted = val.toLowerCase().trim();
+  if (!Object.values(LANGUAGE).includes(formatted)) {
+    throw new ApiException(
+      400,
+      `Language must be one of the following values: ${Object.values(LANGUAGE)}`
+    );
+  }
+
+  return formatted;
+}
+
+function validateMode(val) {
+  if (!val) {
+    return MODE.WORDS;
+  }
+
+  if (typeof val !== "string") {
+    throw new ApiException(400, "Mode must be a string");
+  }
+
+  const formatted = val.toLowerCase().trim();
+  if (!Object.values(MODE).includes(formatted)) {
+    throw new ApiException(
+      400,
+      `Mode must be one of the following values: ${Object.values(MODE)}`
+    );
+  }
+
+  return formatted;
 }
 
 function validateDimension(val) {
@@ -89,7 +139,6 @@ function validateOverlap(val) {
 }
 
 function validateDifficulty(val) {
-  //TODO: check val is string
   if (!val) {
     return DIFFICULTY.MEDIUM;
   }
@@ -116,7 +165,7 @@ function validateString(val, fieldName) {
     throw new ApiException(400, fieldName + " must be a string");
   }
 
-  if (val.length === 0 || val.length > 50) {
+  if (val.length === 0 || val.length > 100) {
     throw new ApiException(
       400,
       "length of " + fieldName + " must be 1-50 characters"
@@ -165,6 +214,24 @@ function validateWords(words, width, height) {
   });
 
   return words;
+}
+
+function validateWordHints(wordHints, width, height) {
+  if (!Array.isArray(wordHints)) {
+    throw new ApiException(400, "WordHints must be an array");
+  }
+
+  if (wordHints.length === 0) {
+    throw new ApiException(400, "WordHints can't be empty");
+  }
+
+  const words = wordHints.map((wordHint) => wordHint.word);
+  validateWords(words, width, height);
+  wordHints.forEach((wordHint) => {
+    validateString(wordHint.hint, "wordHint");
+  });
+
+  return wordHints;
 }
 
 function validateGrid(grid) {
@@ -341,7 +408,12 @@ function storeData(id, data) {
 }
 
 function getData(id) {
-  return dataStore.get(id) || null; // Return data or null if not found
+  const data = dataStore.get(id);
+  if (data) {
+    storeData(id, data.data); //reset expiration time
+    return data.data;
+  }
+  return null;
 }
 
 function cleanupExpiredEntries() {
@@ -358,28 +430,43 @@ setInterval(cleanupExpiredEntries, 60 * 1000);
 
 module.exports = {
   async createGame(req, res) {
-    const topic = req.query.topic;
-
-    if (!topic) {
-      res.status(400).send("Topic not specified.");
-    }
-
     try {
+      const topic = validateString(req.query.topic);
       const diff = validateDifficulty(req.query.difficulty);
-      const vocabulary = await WordNetService.getWordsByTopic(topic);
-      console.log(vocabulary);
+      const inputLanguage = validateLanguage(req.query.inputLanguage);
+      const outputLanguage = validateLanguage(req.query.outputLanguage);
+      const mode = validateMode(req.query.mode);
+      const { inputs, outputs } = await WordNetService.getWords(
+        topic,
+        inputLanguage,
+        outputLanguage,
+        mode
+      );
+
+      console.log(inputs);
+      console.log(outputs);
       const { grid, answers } = await GridGeneratorService.generateGrid(
-        vocabulary,
+        outputs,
         optionsFromDifficulty(diff)
       );
+      const words = inputs.map((hint, index) => ({
+        hint: hint,
+        word: outputs[index],
+      }));
       const game = await pool.query(
-        "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        "INSERT INTO games (topic, title, grid, words, answers, metadata) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
         [
           topic,
           capitalizeFirstLetter(topic),
           grid,
-          vocabulary,
+          JSON.stringify(words),
           JSON.stringify(answers),
+          JSON.stringify({
+            inputLanguage: inputLanguage,
+            outputLanguage: outputLanguage,
+            mode: mode,
+            difficulty: diff,
+          }),
         ]
       );
 
@@ -387,7 +474,7 @@ module.exports = {
       const data = {
         id: id,
         grid: grid,
-        words: vocabulary,
+        words: words,
         title: capitalizeFirstLetter(topic),
         answers: answers,
       };
@@ -425,8 +512,6 @@ module.exports = {
         }
 
         data = result.rows[0];
-      } else {
-        data = data.data;
       }
 
       res
@@ -450,8 +535,20 @@ module.exports = {
       const width = validateDimension(data.width);
       const height = validateDimension(data.height);
       const topic = validateString(data.topic, "topic");
-      const vocabulary = await WordNetService.getWordsByTopic(topic);
-      res.json(vocabulary).end();
+      const inputLanguage = validateLanguage(data.inputLanguage);
+      const outputLanguage = validateLanguage(data.outputLanguage);
+      const mode = validateMode(data.mode);
+      const { inputs, outputs } = await WordNetService.getWords(
+        topic,
+        inputLanguage,
+        outputLanguage,
+        mode
+      );
+      const words = inputs.map((hint, index) => ({
+        hint: hint,
+        word: outputs[index],
+      }));
+      res.json(words).end();
     } catch (err) {
       console.error(err);
       res.status(err.status || 500).send(err.message || "Server error");
@@ -499,13 +596,24 @@ module.exports = {
 
     try {
       const grid = validateGrid(data.grid);
-      const words = validateWords(data.words, grid.length, grid[0].length);
+      const wordHints = validateWordHints(
+        data.words,
+        grid.length,
+        grid[0].length
+      );
+      const words = wordHints.map((wordHint) => wordHint.word);
       const answers = validateAnswers(data.answers, grid, words);
       const title = validateTitle(data.title);
 
       const game = await pool.query(
         "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        ["custom", title, grid, words, JSON.stringify(answers)]
+        [
+          "custom",
+          title,
+          grid,
+          JSON.stringify(wordHints),
+          JSON.stringify(answers),
+        ]
       );
 
       const id = game.rows[0].id;
@@ -513,7 +621,7 @@ module.exports = {
         id: id,
         grid: grid,
         title: title,
-        words: words,
+        words: wordHints,
         answers: answers,
       };
 
@@ -531,7 +639,12 @@ module.exports = {
 
     try {
       const grid = validateGrid(data.grid);
-      const words = validateWords(data.words, grid.length, grid[0].length);
+      const wordHints = validateWordHints(
+        data.words,
+        grid.length,
+        grid[0].length
+      );
+      const words = wordHints.map((wordHint) => wordHint.word);
       const answers = validateAnswers(data.answers, grid, words);
       const title = validateTitle(data.title);
 
@@ -540,7 +653,7 @@ module.exports = {
         id: id,
         grid: grid,
         title: title,
-        words: words,
+        words: wordHints,
         answers: answers,
       };
       storeData(id, game);

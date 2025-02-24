@@ -24,9 +24,10 @@ const createTablesQuery = `
         topic TEXT NOT NULL,
         title TEXT NOT NULL,
         grid TEXT[][] NOT NULL,
-        words TEXT[] NOT NULL,
+        words JSON NOT NULL,
         answers JSON NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        metadata JSON
     );
 `;
 
