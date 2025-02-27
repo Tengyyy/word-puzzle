@@ -17,6 +17,7 @@ const difficulty = ref('medium');
 const languages = ref([
   { text: "Eesti keel", value: "et" },
   { text: "Inglise keel", value: "en" },
+  { text: "Saksa keel", value: "de" },
 ]);
 
 const inputLanguage = ref('et');

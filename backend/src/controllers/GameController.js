@@ -26,17 +26,41 @@ const DIFFICULTY = Object.freeze({
 const CASING = Object.freeze({
   UPPERCASE: "uppercase",
   LOWERCASE: "lowercase",
+  MAINTAIN_CASING: "maintainCasing",
 });
 
 const LANGUAGE = Object.freeze({
   ESTONIAN: "et",
   ENGLISH: "en",
+  GERMAN: "de",
 });
 
 const MODE = Object.freeze({
   WORDS: "words",
   HINTS: "hints",
 });
+
+function applyCasing(wordHints, wordListCasing) {
+  return wordHints.map((hintObj) => {
+    let { hint } = hintObj;
+
+    switch (wordListCasing) {
+      case CASING.UPPERCASE:
+        hint = hint.toUpperCase();
+        break;
+      case CASING.LOWERCASE:
+        hint = hint.toLowerCase();
+        break;
+      case CASING.MAINTAIN_CASING:
+        // Do nothing, keep the original casing
+        break;
+      default:
+        throw new ApiException(400, `Invalid casing option: ${wordListCasing}`);
+    }
+
+    return { ...hintObj, hint };
+  });
+}
 
 function capitalizeFirstLetter(val) {
   return String(val).charAt(0).toUpperCase() + String(val).slice(1);
@@ -98,9 +122,9 @@ function validateDimension(val) {
   return val;
 }
 
-function validateCasing(val) {
+function validateCasing(val, isGrid) {
   if (!val) {
-    return CASING.UPPERCASE;
+    return isGrid ? CASING.UPPERCASE : CASING.MAINTAIN_CASING;
   }
 
   if (typeof val !== "string") {
@@ -436,18 +460,23 @@ module.exports = {
       const inputLanguage = validateLanguage(req.query.inputLanguage);
       const outputLanguage = validateLanguage(req.query.outputLanguage);
       const mode = validateMode(req.query.mode);
+      const options = optionsFromDifficulty(diff);
+
       const { inputs, outputs } = await WordNetService.getWords(
         topic,
         inputLanguage,
         outputLanguage,
-        mode
+        mode,
+        options.columns,
+        options.rows,
+        false
       );
 
       console.log(inputs);
       console.log(outputs);
       const { grid, answers } = await GridGeneratorService.generateGrid(
         outputs,
-        optionsFromDifficulty(diff)
+        options
       );
       const words = inputs.map((hint, index) => ({
         hint: hint,
@@ -538,11 +567,15 @@ module.exports = {
       const inputLanguage = validateLanguage(data.inputLanguage);
       const outputLanguage = validateLanguage(data.outputLanguage);
       const mode = validateMode(data.mode);
+      const spacesAllowed = validateBool(data.spacesAllowed, false);
       const { inputs, outputs } = await WordNetService.getWords(
         topic,
         inputLanguage,
         outputLanguage,
-        mode
+        mode,
+        width,
+        height,
+        spacesAllowed
       );
       const words = inputs.map((hint, index) => ({
         hint: hint,
@@ -571,7 +604,7 @@ module.exports = {
         "backwardsEnabled",
         false
       );
-      const casing = validateCasing(data.casing);
+      const casing = validateCasing(data.casing, true);
       const words = validateWords(data.words, width, height);
 
       const options = {
@@ -596,11 +629,13 @@ module.exports = {
 
     try {
       const grid = validateGrid(data.grid);
-      const wordHints = validateWordHints(
+      const wordListCasing = validateCasing(data.wordListCasing, false);
+      let wordHints = validateWordHints(
         data.words,
         grid.length,
         grid[0].length
       );
+      wordHints = applyCasing(wordHints, wordListCasing);
       const words = wordHints.map((wordHint) => wordHint.word);
       const answers = validateAnswers(data.answers, grid, words);
       const title = validateTitle(data.title);
@@ -639,11 +674,13 @@ module.exports = {
 
     try {
       const grid = validateGrid(data.grid);
-      const wordHints = validateWordHints(
+      const wordListCasing = validateCasing(data.wordListCasing, false);
+      let wordHints = validateWordHints(
         data.words,
         grid.length,
         grid[0].length
       );
+      wordHints = applyCasing(wordHints, wordListCasing);
       const words = wordHints.map((wordHint) => wordHint.word);
       const answers = validateAnswers(data.answers, grid, words);
       const title = validateTitle(data.title);

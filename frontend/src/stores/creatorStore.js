@@ -20,6 +20,8 @@ export const useCreatorStore = defineStore('creator', {
     answers: [],
     widthInput: 15,
     heightInput: 15,
+    wordListCasing: 'maintainCasing',
+    spacesAllowed: false,
   }),
   getters: {
     getGrid: state => {
@@ -85,6 +87,8 @@ export const useCreatorStore = defineStore('creator', {
       this.answers = []
       this.widthInput = 15
       this.heightInput = 15
+      this.wordListCasing = 'maintainCasing'
+      this.spacesAllowed = false
     },
   },
 })

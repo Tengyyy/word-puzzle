@@ -1,5 +1,5 @@
 <script setup>
-import GameSettings from '@/components/GameSettings.vue';
+import BoardSettings from '@/components/BoardSettings.vue';
 import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
 import { useCreatorStore } from '@/stores/creatorStore';
@@ -35,6 +35,7 @@ const generateWords = () => {
       inputLanguage: creatorStore.inputLanguage,
       outputLanguage: creatorStore.outputLanguage,
       mode: creatorStore.mode,
+      spacesAllowed: creatorStore.spacesAllowed,
     })
   })
     .then((response) => response.json())
@@ -68,7 +69,7 @@ const generate = () => {
       backwardsEnabled: creatorStore.backwardsEnabled,
       diagonalsEnabled: creatorStore.diagonalsEnabled,
       casing: creatorStore.casing,
-      words: creatorStore.getWords.map((word) => word.word)
+      words: creatorStore.getWords.map((word) => word.word),
     })
   })
     .then((response) => response.json())
@@ -106,6 +107,7 @@ const share = () => {
       words: creatorStore.getWords,
       title: creatorStore.title,
       answers: creatorStore.answers,
+      wordListCasing: creatorStore.wordListCasing,
     })
   })
     .then((response) => response.json())
@@ -151,6 +153,7 @@ const print = () => {
         words: creatorStore.getWords,
         title: creatorStore.title,
         answers: creatorStore.answers,
+        wordListCasing: creatorStore.wordListCasing,
       })
     })
       .then((response) => response.json())
@@ -170,7 +173,7 @@ const print = () => {
 
 <template>
   <main>
-    <GameSettings />
+    <BoardSettings />
     <label for="title-input">Pealkiri:</label><br>
     <input type="text" id="title-input" name="title-input" v-model="creatorStore.title" /><br><br>
     <GameBoard mode="create" ref="boardRef" />

@@ -19,7 +19,15 @@ class WordNetService {
     this.worker.postMessage({ type: "load" });
   }
 
-  async getWords(topic, inputLanguage, outputLanguage, mode) {
+  async getWords(
+    topic,
+    inputLanguage,
+    outputLanguage,
+    mode,
+    width,
+    height,
+    spacesAllowed
+  ) {
     if (!this.ready) {
       throw new Error("WordNet not loaded yet");
     }
@@ -57,6 +65,9 @@ class WordNetService {
         inputLanguage: inputLanguage,
         outputLanguage: outputLanguage,
         mode: mode,
+        width: width,
+        height: height,
+        spacesAllowed: spacesAllowed,
       });
     });
   }

@@ -47,6 +47,7 @@ const showHints = computed(() => {
 const languages = ref([
   { text: "Eesti keel", value: "et" },
   { text: "Inglise keel", value: "en" },
+  { text: "Saksa keel", value: "de" },
 ]);
 
 const modes = ref([
@@ -108,7 +109,19 @@ const generateWords = () => {
     </select><br><br>
     <button @click="generateWords">Genereeri sõnade list</button><br><br>
     <input type="checkbox" id="alphabetize-checkbox" v-model="store.alphabetize" />
-    <label for="alphabetize-checkbox">Kuva sõnad tähestikulises järjekorras</label>
+    <label for="alphabetize-checkbox">Kuva sõnad tähestikulises järjekorras</label><br><br>
+
+    <label>Tähtede suurus:</label><br>
+    <input type="radio" id="maintain-casing-radio" value="maintainCasing" v-model="store.wordListCasing" />
+    <label for="lowercase-radio">Säilita sisestatud sõnade kirjapilt</label><br>
+    <input type="radio" id="uppercase-radio" value="uppercase" v-model="store.wordListCasing" />
+    <label for="uppercase-radio">Suurtähed</label><br>
+    <input type="radio" id="lowercase-radio" value="lowercase" v-model="store.wordListCasing" />
+    <label for="lowercase-radio">Väiketähed</label><br><br>
+
+    <input type="checkbox" id="spaces-allowed-checkbox" v-model="store.spacesAllowed" />
+    <label for="spaces-allowed-checkbox">Luba tühikud sõnedes</label><br>
+
   </template>
   <div class="word-list">
     <ul>

@@ -104,9 +104,18 @@ async function loadWordNet(lang, filePath) {
 async function loadAllWordNets() {
   await loadWordNet("et", path.join(__dirname, "../data/et-wn.xml"));
   await loadWordNet("en", path.join(__dirname, "../data/en-wn.xml"));
+  await loadWordNet("de", path.join(__dirname, "../data/de-wn.xml"));
 }
 
-function getWords(topic, inputLanguage, outputLanguage, mode) {
+function getWords(
+  topic,
+  inputLanguage,
+  outputLanguage,
+  mode,
+  width,
+  height,
+  spacesAllowed
+) {
   const inputWordNet = wordNets.get(inputLanguage);
   const outputWordNet = wordNets.get(outputLanguage);
 
@@ -125,10 +134,17 @@ function getWords(topic, inputLanguage, outputLanguage, mode) {
   const synsets = lemmaToSynsets.get(topic);
   if (!synsets || synsets.length === 0) return { inputs: [], outputs: [] };
 
+  const maxWordLength = Math.max(width, height);
+
+  // used as threshold for when to stop searhing for related words
+  // assume no overlap (width * height is the number of characters on the grid. In case of perfect fit, all characters are used and every cell in the grid is filled with words. Multiply by 0.8 to leave room for imperfect word placements. )
+  const maxCharacters = width * height * 0.8;
+
   let collectedSynsets = new Set();
   let availableSynsets = synsets.slice();
   let inputs = [];
   let outputs = [];
+  let totalCharacters = 0;
 
   while (inputs.length < 10 && availableSynsets.length > 0) {
     const selectedSynset = getRandomElement(availableSynsets);
@@ -143,18 +159,12 @@ function getWords(topic, inputLanguage, outputLanguage, mode) {
   }
 
   function diff() {
-    let diff = [];
-    for (let i = 0; i < availableSynsets.length; i++) {
-      const el = availableSynsets[i];
-      if (!collectedSynsets.has(el)) {
-        diff.push(el);
-      }
-    }
-
-    return diff;
+    return availableSynsets.filter((el) => !collectedSynsets.has(el));
   }
 
   function collectWords(synsetID) {
+    if (totalCharacters >= maxCharacters) return;
+
     const relations = synsetRelations.get(synsetID);
     if (!relations) return;
 
@@ -162,55 +172,64 @@ function getWords(topic, inputLanguage, outputLanguage, mode) {
       relations[relation].forEach((relatedSynset) => {
         if (!collectedSynsets.has(relatedSynset)) {
           collectedSynsets.add(relatedSynset);
-          if (mode === "hints" && !synsetDefinitions.get(relatedSynset)) {
-            return;
-          }
 
           let input, output;
           if (mode === "hints") {
+            if (!synsetDefinitions.get(relatedSynset)) return;
             input = synsetDefinitions.get(relatedSynset);
           }
+
           if (mode === "words" || inputLanguage === outputLanguage) {
             const lemmas = synsetToLemmas.get(relatedSynset);
             if (!lemmas || lemmas.length === 0) return;
 
-            const randElement = getRandomElement(lemmas);
+            let word;
+            for (const lemma of lemmas) {
+              if (!spacesAllowed && /\s/.test(lemma)) continue; // Skip multi-word phrases if spaces are not allowed
+              if (lemma.length > maxWordLength) continue;
+              if (inputs.includes(lemma)) continue;
+
+              word = lemma;
+              break;
+            }
+
+            if (!word) return;
             if (mode === "words") {
-              input = randElement;
+              input = word;
             }
             if (inputLanguage === outputLanguage) {
-              output = randElement;
+              output = word;
             }
           }
 
           if (outputLanguage !== inputLanguage) {
             const ili = synsetToIli.get(relatedSynset);
-            if (!ili) {
-              return;
-            }
+            if (!ili) return;
 
             const outputSynset = iliToSynsets.get(ili)[outputLanguage];
-
-            if (!outputSynset) {
-              // No ili-mapping available to output language, have to skip this synset
-              return;
-            }
+            if (!outputSynset) return; // No ili-mapping available to output language, have to skip this synset
 
             const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
+            if (!outputLemmas || outputLemmas.length === 0) return;
 
-            if (!outputLemmas || outputLemmas.length === 0) {
-              return;
+            for (const lemma of outputLemmas) {
+              if (!spacesAllowed && /\s/.test(lemma)) continue;
+              if (lemma.length > maxWordLength) continue;
+              if (outputs.includes(lemma)) continue;
+
+              output = lemma;
+              break;
             }
-
-            output = getRandomElement(outputLemmas);
+            if (!output) return;
           }
 
-          if (inputs.includes(input) || outputs.includes(output)) {
-            return;
-          }
+          if (!input || !output) return;
+
+          if (totalCharacters + output.length > maxCharacters) return;
 
           inputs.push(input);
           outputs.push(output);
+          totalCharacters += output.length;
         }
       });
     });
@@ -231,7 +250,10 @@ parentPort.on("message", async (msg) => {
       msg.topic,
       msg.inputLanguage,
       msg.outputLanguage,
-      msg.mode
+      msg.mode,
+      msg.width,
+      msg.height,
+      msg.spacesAllowed
     );
     parentPort.postMessage({ type: "result", result });
   }
