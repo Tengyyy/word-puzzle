@@ -474,6 +474,8 @@ module.exports = {
 
       console.log(inputs);
       console.log(outputs);
+
+      options.language = outputLanguage;
       const { grid, answers } = await GridGeneratorService.generateGrid(
         outputs,
         options
@@ -606,6 +608,7 @@ module.exports = {
       );
       const casing = validateCasing(data.casing, true);
       const words = validateWords(data.words, width, height);
+      const language = validateLanguage(data.language);
 
       const options = {
         rows: height,
@@ -614,6 +617,7 @@ module.exports = {
         backward: backwardsEnabled,
         overlap: overlap,
         uppercase: casing === CASING.UPPERCASE,
+        language: language,
       };
 
       const result = await GridGeneratorService.generateGrid(words, options);

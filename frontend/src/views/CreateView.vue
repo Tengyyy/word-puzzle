@@ -69,6 +69,7 @@ const generate = () => {
       backwardsEnabled: creatorStore.backwardsEnabled,
       diagonalsEnabled: creatorStore.diagonalsEnabled,
       casing: creatorStore.casing,
+      language: creatorStore.outputLanguage,
       words: creatorStore.getWords.map((word) => word.word),
     })
   })
