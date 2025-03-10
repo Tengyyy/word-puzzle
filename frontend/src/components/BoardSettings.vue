@@ -6,7 +6,7 @@ const creatorStore = useCreatorStore();
 
 <template>
   <main>
-    <h4>Mängu sätted</h4>
+    <h4>Mängulaua sätted</h4>
     <label for="width-input">Laius:</label><br>
     <input type="number" id="width-input" name="width-input" v-model="creatorStore.widthInput" /><br><br>
     <label for="height-input">Kõrgus:</label><br>

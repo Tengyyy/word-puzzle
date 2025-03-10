@@ -3,6 +3,7 @@ import { useCreatorStore } from '@/stores/creatorStore';
 import { useGameStore } from '@/stores/gameStore';
 import { usePrintStore } from '@/stores/printStore';
 import { ref, computed } from 'vue';
+import AlertMessage from './AlertMessage.vue';
 
 const MODE = Object.freeze({
   GAME: 'game',
@@ -40,23 +41,14 @@ const store = props.printView
 const wordInput = ref(null);
 const hintInput = ref(null);
 
-const showHints = computed(() => {
-  return editable.value || (props.answerList && store.getWords.some(word => word.word !== word.hint));
+const showAnswers = computed(() => {
+  return editable.value || props.answerList;
 });
 
-const languages = ref([
-  { text: "Eesti keel", value: "et" },
-  { text: "Inglise keel", value: "en" },
-  { text: "Saksa keel", value: "de" },
-]);
-
-const modes = ref([
-  { text: "Otsitavad sõnad", value: "words" },
-  { text: "Vihjed ja definitsioonid", value: "hints" }
-]);
-
-const emit = defineEmits({
-  generateWords: null,
+const alert = ref({
+  visible: false,
+  type: "error",
+  message: "",
 });
 
 const addWord = () => {
@@ -64,70 +56,38 @@ const addWord = () => {
     return;
   }
 
-  if (!wordInput.value) {
-    return;
+  const result = store.addWord({ word: wordInput.value, hint: hintInput.value }, true);
+  if (!result.success) {
+    alert.value = { visible: true, type: "error", message: result.message };
   }
-
-  const success = store.addWord({ word: wordInput.value, hint: hintInput.value });
-  if (!success) {
-    console.log('Duplicate word or hint');
-  } else {
-    wordInput.value = null;
-  }
+  wordInput.value = null;
 };
 
-const generateWords = () => {
-  if (!store.topic) {
-    console.warn("Topic is empty");
+const removeAllWords = () => {
+  if (!editable.value) {
     return;
   }
-  emit('generateWords');
+
+  store.removeAllWords();
+};
+
+const isFound = (word) =>
+  props.mode === MODE.GAME &&
+  !props.printView &&
+  store.foundWords.some(foundWord => foundWord.word === word.word && foundWord.hint === word.hint);
+
+const shouldShowAnswer = (word, wordFound) => {
+  return (showAnswers.value || wordFound) && word.word.toUpperCase() !== word.hint.toUpperCase();
 };
 </script>
 
 <template>
-  <template v-if="editable">
-    <br><label for="topic-input">Teema:</label><br>
-    <input type="text" name="topic-input" id="topic-input" v-model="store.topic" /><br>
-    <label for="input-language-select">Vali sisendkeel:</label><br>
-    <select name="input-language-select" id="input-language-select" v-model="store.inputLanguage">
-      <option v-for="lang in languages" :key="lang.value" :value="lang.value">
-        {{ lang.text }}
-      </option>
-    </select><br>
-    <label for="output-language-select">Vali väljundkeel:</label><br>
-    <select name="output-language-select" id="output-language-select" v-model="store.outputLanguage">
-      <option v-for="lang in languages" :key="lang.value" :value="lang.value">
-        {{ lang.text }}
-      </option>
-    </select><br>
-    <label for="mode-select">Kuva sõnarägastiku kõrval:</label><br>
-    <select name="mode-select" id="mode-select" v-model="store.mode">
-      <option v-for="mode in modes" :key="mode.value" :value="mode.value">
-        {{ mode.text }}
-      </option>
-    </select><br><br>
-    <button @click="generateWords">Genereeri sõnade list</button><br><br>
-    <input type="checkbox" id="alphabetize-checkbox" v-model="store.alphabetize" />
-    <label for="alphabetize-checkbox">Kuva sõnad tähestikulises järjekorras</label><br><br>
-
-    <label>Tähtede suurus:</label><br>
-    <input type="radio" id="maintain-casing-radio" value="maintainCasing" v-model="store.wordListCasing" />
-    <label for="lowercase-radio">Säilita sisestatud sõnade kirjapilt</label><br>
-    <input type="radio" id="uppercase-radio" value="uppercase" v-model="store.wordListCasing" />
-    <label for="uppercase-radio">Suurtähed</label><br>
-    <input type="radio" id="lowercase-radio" value="lowercase" v-model="store.wordListCasing" />
-    <label for="lowercase-radio">Väiketähed</label><br><br>
-
-    <input type="checkbox" id="spaces-allowed-checkbox" v-model="store.spacesAllowed" />
-    <label for="spaces-allowed-checkbox">Luba tühikud sõnedes</label><br>
-
-  </template>
   <div class="word-list">
     <ul>
-      <li v-for="(word, index) in store.getWords" :key="index"
-        :class="{ found: props.mode === MODE.GAME && !props.printView && store.foundWords.some(foundWord => foundWord.word === word.word && foundWord.hint === word.hint) }">
-        {{ showHints ? word.hint + " (" + word.word + ")" : word.hint }}
+      <li v-for="(word, index) in store.getWords" :key="index" v-bind:class="{ found: (wordFound = isFound(word)) }">
+
+        {{ shouldShowAnswer(word, wordFound) ? word.hint + " (" + word.word + ")" : word.hint }}
+
         <button v-if="editable" @click="store.removeWord(word)">
           Remove
         </button>
@@ -135,12 +95,15 @@ const generateWords = () => {
     </ul>
   </div>
   <template v-if="editable">
-    <label for="word-input">Lisa sõna:</label><br>
-    <input type="text" name="word-input" id="word-input" v-model="wordInput" @keyup.enter="addWord" /><br>
+    <button @click="removeAllWords">Eemalda kõik sõnad</button><br>
     <label for="word-input">Vihje:</label><br>
-    <input type="text" name="hint-input" id="hint-input" v-model="hintInput" @keyup.enter="addWord" /><br><br>
+    <input type="text" name="hint-input" id="hint-input" v-model="hintInput" @keyup.enter="addWord" /><br>
+    <label for="word-input">Sõna:</label><br>
+    <input type="text" name="word-input" id="word-input" v-model="wordInput" @keyup.enter="addWord" /><br><br>
     <button @click="addWord">Lisa</button>
   </template>
+
+  <AlertMessage :visible="alert.visible" :message="alert.message" :type="alert.type" @close="alert.visible = false" />
 </template>
 
 <style scoped>

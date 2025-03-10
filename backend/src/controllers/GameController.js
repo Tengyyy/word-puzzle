@@ -26,7 +26,7 @@ const DIFFICULTY = Object.freeze({
 const CASING = Object.freeze({
   UPPERCASE: "uppercase",
   LOWERCASE: "lowercase",
-  MAINTAIN_CASING: "maintainCasing",
+  MAINTAIN_CASING: "maintain-casing",
 });
 
 const LANGUAGE = Object.freeze({
@@ -624,7 +624,9 @@ module.exports = {
       res.json(result).end();
     } catch (err) {
       console.error(err);
-      res.status(err.status || 500).send(err.message || "Server error");
+      res
+        .status(err.status || 500)
+        .json({ message: err.message || "Server error" });
     }
   },
 

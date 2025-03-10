@@ -1,10 +1,12 @@
 <script setup>
 import BoardSettings from '@/components/BoardSettings.vue';
+import WordSettings from '@/components/WordSettings.vue';
 import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
 import { useCreatorStore } from '@/stores/creatorStore';
 import { ref, computed } from 'vue';
 import { useLoadingStore } from '@/stores/loadingStore';
+import AlertMessage from '@/components/AlertMessage.vue';
 
 const creatorStore = useCreatorStore();
 const loadingStore = useLoadingStore();
@@ -19,6 +21,21 @@ const link = computed(() => {
 const linkCopied = ref(false);
 const gameSaved = ref(false);
 const generated = ref(false);
+
+const userIsTyping = ref(false);
+const titleSetByUser = ref(false);
+const handleInput = () => {
+  if (userIsTyping.value) {
+    titleSetByUser.value = true;
+  }
+}
+
+const alert = ref({
+  visible: false,
+  type: "error",
+  message: "",
+});
+
 
 const generateWords = () => {
   console.log('generating words for topic ' + creatorStore.topic);
@@ -43,8 +60,12 @@ const generateWords = () => {
       console.log(response);
       if (response) {
         response.forEach(word => {
-          creatorStore.addWord(word);
+          creatorStore.addWord(word, false);
         });
+      }
+
+      if (!creatorStore.title || !titleSetByUser.value) {
+        creatorStore.title = creatorStore.topic;
       }
 
       loadingStore.stopLoading();
@@ -73,8 +94,16 @@ const generate = () => {
       words: creatorStore.getWords.map((word) => word.word),
     })
   })
-    .then((response) => response.json())
     .then((response) => {
+      if (!response.ok) {
+        return response.json().then((error) => {
+          alert.value = { message: error.message || "Unexpected error", type: "error", visible: true }
+          loadingStore.stopLoading();
+        });
+      }
+    })
+    .then((response) => {
+
       const highlightsToggled = creatorStore.highlight;
       if (highlightsToggled) {
         creatorStore.highlight = false;
@@ -169,16 +198,19 @@ const print = () => {
       })
   }
 };
+
 </script>
 
 
 <template>
   <main>
     <BoardSettings />
+    <WordSettings @generate-words="generateWords" />
     <label for="title-input">Pealkiri:</label><br>
-    <input type="text" id="title-input" name="title-input" v-model="creatorStore.title" /><br><br>
+    <input type="text" id="title-input" name="title-input" v-model="creatorStore.title" @input="handleInput"
+      @focus="userIsTyping = true" @blur="userIsTyping = false" ref="titleInput" /><br><br>
     <GameBoard mode="create" ref="boardRef" />
-    <WordList mode="create" @generate-words="generateWords" /><br><br>
+    <WordList mode="create" /><br><br>
     <input type="checkbox" name="highlight-checkbox" id="highlight-checkbox" v-model="creatorStore.highlight"
       @change="boardRef.toggleHighlights()" />
     <label for="highlight-checkbox">Kuva peidetud sõnad</label>
@@ -189,6 +221,9 @@ const print = () => {
       <button @click="copyLink">{{ linkCopied ? "Kopeeritud" : "Kopeeri" }}</button>
     </template>
     <button @click="print" :disabled="!generated">Prindi mäng</button>
+
+    <AlertMessage :visible="alert.visible" :message="alert.message" :type="alert.type" @close="alert.visible = false" />
+
   </main>
 </template>
 
