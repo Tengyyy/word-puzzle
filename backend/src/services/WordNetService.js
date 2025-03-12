@@ -1,12 +1,12 @@
-const { Worker } = require("worker_threads");
-const path = require("path");
+import { Worker } from "worker_threads";
+import { join } from "path";
+import { ServerException, TimeoutException } from "../controller/Exceptions";
 
 class WordNetService {
   constructor() {
-    this.worker = new Worker(
-      path.join(__dirname, "../workers/wordNetWorker.js"),
-      { execArgv: ["--inspect"] }
-    );
+    this.worker = new Worker(join(__dirname, "../workers/wordNetWorker.js"), {
+      execArgv: ["--inspect"],
+    });
     this.ready = false;
 
     this.worker.on("message", (msg) => {
@@ -29,12 +29,16 @@ class WordNetService {
     spacesAllowed
   ) {
     if (!this.ready) {
-      throw new Error("WordNet not loaded yet");
+      throw new ServerException("WordNet pole veel laetud");
     }
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error("Wordlist generation timed out after 5 seconds"));
+        reject(
+          new TimeoutException(
+            "Sõnade nimekirja loomine aegus peale 5 sekundit"
+          )
+        );
       }, 5000); // 5 seconds timeout
 
       const onMessage = (msg) => {
@@ -52,8 +56,8 @@ class WordNetService {
             resolve(msg.result);
           else
             reject(
-              new Error(
-                "Failed to generate a list of related words for topic " + topic
+              new ServerException(
+                `Sõnade nimekirja loomine sisendsõna ${topic} põhjal ebaõnnestus`
               )
             );
         }
@@ -73,4 +77,4 @@ class WordNetService {
   }
 }
 
-module.exports = new WordNetService();
+export default new WordNetService();

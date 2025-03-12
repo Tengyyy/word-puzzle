@@ -4,48 +4,35 @@ import WordSettings from '@/components/WordSettings.vue';
 import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
 import { useCreatorStore } from '@/stores/creatorStore';
-import { ref, computed } from 'vue';
 import { useLoadingStore } from '@/stores/loadingStore';
-import AlertMessage from '@/components/AlertMessage.vue';
+import { useAlertStore } from '@/stores/alertStore';
+import { ref, computed } from 'vue';
+import { apiCall } from '@/api';
 
 const creatorStore = useCreatorStore();
 const loadingStore = useLoadingStore();
+const alertStore = useAlertStore();
 
 const boardRef = ref(null);
-
 const id = ref(null);
-const link = computed(() => {
-  return "http://localhost:5173/game/" + id.value;
-});
-
 const linkCopied = ref(false);
 const gameSaved = ref(false);
 const generated = ref(false);
 
+const link = computed(() => `http://localhost:5173/game/${id.value}`);
 const userIsTyping = ref(false);
 const titleSetByUser = ref(false);
+
 const handleInput = () => {
   if (userIsTyping.value) {
     titleSetByUser.value = true;
   }
 }
 
-const alert = ref({
-  visible: false,
-  type: "error",
-  message: "",
-});
-
-
-const generateWords = () => {
-  console.log('generating words for topic ' + creatorStore.topic);
-  loadingStore.startLoading();
-  fetch("http://127.0.0.1:8081/api/create-word-list", {
-    method: "POST",
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
+const generateWords = async () => {
+  try {
+    loadingStore.startLoading();
+    const words = await apiCall("http://127.0.0.1:8081/api/create-word-list", "POST", {
       width: creatorStore.widthInput,
       height: creatorStore.heightInput,
       topic: creatorStore.topic,
@@ -53,27 +40,15 @@ const generateWords = () => {
       outputLanguage: creatorStore.outputLanguage,
       mode: creatorStore.mode,
       spacesAllowed: creatorStore.spacesAllowed,
-    })
-  })
-    .then((response) => response.json())
-    .then((response) => {
-      console.log(response);
-      if (response) {
-        response.forEach(word => {
-          creatorStore.addWord(word, false);
-        });
-      }
-
-      if (!creatorStore.title || !titleSetByUser.value) {
-        creatorStore.title = creatorStore.topic;
-      }
-
-      loadingStore.stopLoading();
-    })
-    .catch((e) => {
-      console.log(e);
-      loadingStore.stopLoading();
     });
+
+    words.forEach(word => creatorStore.addWord(word, false));
+    if (!creatorStore.title || !titleSetByUser.value) creatorStore.title = creatorStore.topic;
+  } catch (error) {
+    alertStore.showAlert(error.message);
+  } finally {
+    loadingStore.stopLoading();
+  }
 };
 
 const generate = () => {

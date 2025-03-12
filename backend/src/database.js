@@ -1,4 +1,4 @@
-const Pool = require("pg").Pool;
+import { Pool } from "pg";
 const pool = new Pool({
   user: "postgres",
   password: "password",
@@ -37,4 +37,4 @@ execute(createTablesQuery).then((result) => {
   }
 });
 
-module.exports = pool;
+export default pool;

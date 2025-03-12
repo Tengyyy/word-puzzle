@@ -1,15 +1,15 @@
-const { parentPort } = require("worker_threads");
-const fs = require("fs");
-const path = require("path");
-const xml2js = require("xml2js");
+import { parentPort } from "worker_threads";
+import { readFileSync } from "fs";
+import { join } from "path";
+import { Parser } from "xml2js";
 
 const wordNets = new Map(); // language -> { lemmaToSynsets, synsetToLemmas, synsetRelations }
 const iliToSynsets = new Map(); // ili ID -> { lang: synsetID, ... }
 
 // Function to load and process a WordNet for a specific language
 async function loadWordNet(lang, filePath) {
-  const xmlData = fs.readFileSync(filePath, "utf8");
-  const parser = new xml2js.Parser();
+  const xmlData = readFileSync(filePath, "utf8");
+  const parser = new Parser();
   const result = await parser.parseStringPromise(xmlData);
 
   const lexicalEntries = result.LexicalResource.Lexicon[0].LexicalEntry || [];
@@ -102,9 +102,9 @@ async function loadWordNet(lang, filePath) {
 }
 
 async function loadAllWordNets() {
-  await loadWordNet("et", path.join(__dirname, "../data/et-wn.xml"));
-  await loadWordNet("en", path.join(__dirname, "../data/en-wn.xml"));
-  await loadWordNet("de", path.join(__dirname, "../data/de-wn.xml"));
+  await loadWordNet("et", join(__dirname, "../data/et-wn.xml"));
+  await loadWordNet("en", join(__dirname, "../data/en-wn.xml"));
+  await loadWordNet("de", join(__dirname, "../data/de-wn.xml"));
 }
 
 function getWords(

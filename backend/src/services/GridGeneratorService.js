@@ -1,15 +1,15 @@
-const { Worker } = require("worker_threads");
-const path = require("path");
+import { ServerException, TimeoutException } from "../controller/Exceptions";
+import { Worker } from "worker_threads";
+import { resolve as _resolve } from "path";
 
-class GridGeneratorService {
+export class GridGeneratorService {
   static worker = null;
 
   static init() {
-    this.worker = new Worker(
-      path.resolve(__dirname, "../workers/gridWorker.js")
-    );
+    this.worker = new Worker(_resolve(__dirname, "../workers/gridWorker.js"));
     this.worker.on("error", (err) => {
       console.error("GridGeneratorWorker Error:", err);
+      throw new ServerException("Rägastiku genereerimine ebaõnnestus");
     });
   }
 
@@ -18,7 +18,11 @@ class GridGeneratorService {
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new Error("Grid generation timed out after 5 seconds"));
+        reject(
+          new TimeoutException(
+            "Sõnarägastiku genereerimine aegus peale 5 sekundit"
+          )
+        );
       }, 5000); // 5 seconds timeout
 
       this.worker.once("message", (msg) => {
@@ -27,7 +31,11 @@ class GridGeneratorService {
         if (msg.status === "success") {
           resolve(msg.data);
         } else {
-          reject(new Error(msg.message || "Grid generation failed"));
+          reject(
+            new ServerException(
+              "Sõnarägastiku genereerimine ebaõnnestus: " + msg.message
+            )
+          );
         }
       });
 
@@ -38,5 +46,3 @@ class GridGeneratorService {
 
 // Initialize worker when the module is loaded
 GridGeneratorService.init();
-
-module.exports = GridGeneratorService;

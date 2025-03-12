@@ -3,8 +3,11 @@ import { RouterLink, RouterView } from 'vue-router'
 
 import { useLoadingStore } from '@/stores/loadingStore';
 import { computed } from 'vue';
+import { useAlertStore } from './stores/alertStore';
+import AlertMessage from './components/AlertMessage.vue';
 
 const loadingStore = useLoadingStore();
+const alertStore = useAlertStore();
 const isLoading = computed(() => loadingStore.isLoading);
 </script>
 
@@ -15,13 +18,15 @@ const isLoading = computed(() => loadingStore.isLoading);
       <nav>
         <RouterLink to="/create">Loo oma sõnarägastik</RouterLink>
         <a href="https://github.com/Tengyyy/word-puzzle">Github</a>
-        <button>Settings</button>
       </nav>
     </div>
   </header>
   <main>
     <RouterView />
   </main>
+  <AlertMessage :visible="alertStore.visible" :message="alertStore.message" :type="alertStore.type"
+    @close="alertStore.hideAlert" />
+
   <div v-if="isLoading" class="spinner-overlay">
     <div class="spinner"></div>
   </div>

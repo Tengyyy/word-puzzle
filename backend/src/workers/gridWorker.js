@@ -1,149 +1,111 @@
-const { parentPort } = require("worker_threads");
+import { parentPort } from "worker_threads";
+import * as Constants from "../../../shared/Constants.js";
 
-const OVERLAP = Object.freeze({
-  NO_OVERLAP: "no-overlap",
-  POSSIBLE_OVERLAP: "possible-overlap",
-  FORCE_OVERLAP: "force-overlap",
-});
-
-const LANGUAGE = Object.freeze({
-  ESTONIAN: "et",
-  ENGLISH: "en",
-  GERMAN: "de",
-});
-
-// EKI korpus märkide statistika: https://en.eki.ee/corpus
-// A  8100857
-// E  7028435
-// I  6542963
-// S  5776376
-// T  4851121
-// L  4121993
-// U  3741561
-// N  3374496
-// K  3046708
-// O  2608481
-// D  2527407
-// M  2434348
-// R  2322550
-// V  1588836
-// P  1251495
-// G  1224764
-// J  1102623
-// H  1098427
-// Ä  852155
-// Õ  721423
-// B  615187
-// Ü  494098
-// Ö  198498
-// F  136160
-// C  106239
-// Y  40591
-// W  35353
-// Z  29078
-// X  9960
-// Š  6212
-// Q  3780
-// Ž  3391
-// Kokku 65995566
-const estonianLetterFrequencies = {
-  A: 12.27,
-  E: 10.65,
-  I: 9.91,
-  S: 8.75,
-  T: 7.35,
-  L: 6.25,
-  U: 5.67,
-  N: 5.11,
-  K: 4.62,
-  O: 3.95,
-  D: 3.83,
-  M: 3.69,
-  R: 3.52,
-  V: 2.41,
-  P: 1.9,
-  G: 1.86,
-  J: 1.67,
-  H: 1.66,
-  Ä: 1.29,
-  Õ: 1.1,
-  B: 0.93,
-  Ü: 0.75,
-  Ö: 0.3,
-  F: 0.2,
-  C: 0.2,
-  Y: 0.06,
-  W: 0.05,
-  Z: 0.04,
-  X: 0.02,
-  Š: 0.01,
-  Q: 0.01,
-  Ž: 0.01,
-};
-
-// https://pi.math.cornell.edu/~mec/2003-2004/cryptography/subs/frequencies.html
-const englishLetterFrequencies = {
-  E: 12.02,
-  T: 9.1,
-  A: 8.12,
-  O: 7.68,
-  I: 7.31,
-  N: 6.95,
-  S: 6.28,
-  R: 6.02,
-  H: 5.92,
-  D: 4.32,
-  L: 3.98,
-  U: 2.88,
-  C: 2.71,
-  M: 2.61,
-  F: 2.3,
-  Y: 2.11,
-  W: 2.09,
-  G: 2.03,
-  P: 1.82,
-  B: 1.49,
-  V: 1.11,
-  K: 0.69,
-  X: 0.17,
-  Q: 0.11,
-  J: 0.1,
-  Z: 0.07,
-};
-
-// https://www.sttmedia.com/characterfrequency-german
-const germanLetterFrequencies = {
-  E: 16.93,
-  N: 10.53,
-  I: 8.02,
-  R: 6.89,
-  S: 6.42,
-  T: 5.79,
-  A: 5.58,
-  D: 4.98,
-  H: 4.98,
-  U: 3.83,
-  L: 3.6,
-  C: 3.16,
-  G: 3.02,
-  M: 2.55,
-  O: 2.24,
-  B: 1.96,
-  W: 1.78,
-  F: 1.49,
-  K: 1.32,
-  Z: 1.21,
-  V: 0.84,
-  P: 0.67,
-  Ü: 0.65,
-  Ä: 0.54,
-  ß: 0.37,
-  Ö: 0.3,
-  J: 0.24,
-  X: 0.05,
-  Y: 0.05,
-  Q: 0.02,
-};
+const letterDistribution = new Map([
+  [
+    Constants.LANGUAGE.ESTONIAN,
+    {
+      A: 12.27,
+      E: 10.65,
+      I: 9.91,
+      S: 8.75,
+      T: 7.35,
+      L: 6.25,
+      U: 5.67,
+      N: 5.11,
+      K: 4.62,
+      O: 3.95,
+      D: 3.83,
+      M: 3.69,
+      R: 3.52,
+      V: 2.41,
+      P: 1.9,
+      G: 1.86,
+      J: 1.67,
+      H: 1.66,
+      Ä: 1.29,
+      Õ: 1.1,
+      B: 0.93,
+      Ü: 0.75,
+      Ö: 0.3,
+      F: 0.2,
+      C: 0.2,
+      Y: 0.06,
+      W: 0.05,
+      Z: 0.04,
+      X: 0.02,
+      Š: 0.01,
+      Q: 0.01,
+      Ž: 0.01,
+    },
+  ],
+  [
+    Constants.LANGUAGE.ENGLISH,
+    {
+      E: 12.02,
+      T: 9.1,
+      A: 8.12,
+      O: 7.68,
+      I: 7.31,
+      N: 6.95,
+      S: 6.28,
+      R: 6.02,
+      H: 5.92,
+      D: 4.32,
+      L: 3.98,
+      U: 2.88,
+      C: 2.71,
+      M: 2.61,
+      F: 2.3,
+      Y: 2.11,
+      W: 2.09,
+      G: 2.03,
+      P: 1.82,
+      B: 1.49,
+      V: 1.11,
+      K: 0.69,
+      X: 0.17,
+      Q: 0.11,
+      J: 0.1,
+      Z: 0.07,
+    },
+  ],
+  [
+    Constants.LANGUAGE.GERMAN,
+    {
+      E: 16.93,
+      N: 10.53,
+      I: 8.02,
+      R: 6.89,
+      S: 6.42,
+      T: 5.79,
+      A: 5.58,
+      D: 4.98,
+      H: 4.98,
+      U: 3.83,
+      L: 3.6,
+      C: 3.16,
+      G: 3.02,
+      M: 2.55,
+      O: 2.24,
+      B: 1.96,
+      W: 1.78,
+      F: 1.49,
+      K: 1.32,
+      Z: 1.21,
+      V: 0.84,
+      P: 0.67,
+      Ü: 0.65,
+      Ä: 0.54,
+      ß: 0.37,
+      Ö: 0.3,
+      J: 0.24,
+      X: 0.05,
+      Y: 0.05,
+      Q: 0.02,
+    },
+  ],
+]);
 
 class Grid {
   constructor(rows, columns, grid = null) {
@@ -179,7 +141,7 @@ class Grid {
     } else if (args.length === 2) {
       [column, value] = args;
     } else {
-      throw new Error("expected 2..3 arguments");
+      throw new Error("Vale arv argumente");
     }
 
     this.grid[this.index(rowOrPos, column)] = value;
@@ -189,7 +151,11 @@ class Grid {
     return new Grid(this.rows, this.columns, [...this.grid]);
   }
 
-  fill(message = null, uppercase = true, language = LANGUAGE.ESTONIAN) {
+  fill(
+    message = null,
+    uppercase = true,
+    language = Constants.LANGUAGE.ESTONIAN
+  ) {
     const processedMessage = (message || "")
       [uppercase ? "toUpperCase" : "toLowerCase"]()
       .replace(uppercase ? /[^A-ZÕÜÖÄŠŽß]/g : /[^a-zõüöäšžẞ]/g, "")
@@ -197,17 +163,9 @@ class Grid {
 
     const unused = this.grid.filter((n) => n === undefined).length;
 
-    let letters, weights;
-    if (language === LANGUAGE.ENGLISH) {
-      letters = Object.keys(englishLetterFrequencies);
-      weights = Object.values(englishLetterFrequencies);
-    } else if (language === LANGUAGE.GERMAN) {
-      letters = Object.keys(germanLetterFrequencies);
-      weights = Object.values(germanLetterFrequencies);
-    } else {
-      letters = Object.keys(estonianLetterFrequencies);
-      weights = Object.values(estonianLetterFrequencies);
-    }
+    const distribution = letterDistribution.get(language);
+    const letters = Object.keys(distribution);
+    const weights = Object.keys(distribution);
 
     if (!uppercase) {
       letters = letters.map((c) => c.toLowerCase());
@@ -253,9 +211,9 @@ class Puzzle {
       columns = 15,
       diagonal = false,
       backward = false,
-      overlap = OVERLAP.NO_OVERLAP,
+      overlap = Constants.OVERLAP.NO_OVERLAP,
       uppercase = true,
-      language = LANGUAGE.ESTONIAN,
+      language = Constants.LANGUAGE.ESTONIAN,
       message = null,
       seed = Date.now(),
     } = {}
@@ -307,11 +265,11 @@ class Puzzle {
 
       for (
         let attempt = 0;
-        attempt < (this.overlap === OVERLAP.FORCE_OVERLAP ? 2 : 1);
+        attempt < (this.overlap === Constants.OVERLAP.FORCE_OVERLAP ? 2 : 1);
         attempt++
       ) {
         const forceOverlap =
-          attempt === 0 && this.overlap === OVERLAP.FORCE_OVERLAP; // First attempt: enforce overlap, second: relax it
+          attempt === 0 && this.overlap === Constants.OVERLAP.FORCE_OVERLAP; // First attempt: enforce overlap, second: relax it
         const shuffledPositions = this._shuffle([...positions]);
         const shuffledDirections = this._shuffle([...directions]);
 
@@ -331,7 +289,7 @@ class Puzzle {
       }
 
       if (!placed) {
-        throw new Error(`Could not place word: ${word}`);
+        throw new Error(`Ei suutnud paigutada sõna ${word} rägastikku.`);
       }
     }
 
@@ -394,7 +352,7 @@ class Puzzle {
     }
 
     if (letters.length === 0) {
-      if (this.overlap === OVERLAP.NO_OVERLAP && hasOverlap) {
+      if (this.overlap === Constants.OVERLAP.NO_OVERLAP && hasOverlap) {
         return null;
       }
 

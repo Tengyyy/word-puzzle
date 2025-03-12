@@ -1,13 +1,20 @@
-const GameController = require("./controllers/GameController");
+import {
+  createGame,
+  loadGame,
+  createWordList,
+  createCustomGame,
+  persistGame,
+  saveGame,
+} from "./controller/Controller";
 
-module.exports = (app) => {
+export default (app) => {
   //GET
-  app.get("/api/game", GameController.createGame);
-  app.get("/api/game/:gameId", GameController.loadGame);
+  app.get("/api/game", createGame);
+  app.get("/api/game/:gameId", loadGame);
 
   //POST
-  app.post("/api/create-word-list", GameController.createWordList);
-  app.post("/api/create-custom-game", GameController.createCustomGame);
-  app.post("/api/persist-game", GameController.persistGame);
-  app.post("/api/save-game", GameController.saveGame);
+  app.post("/api/create-word-list", createWordList);
+  app.post("/api/create-custom-game", createCustomGame);
+  app.post("/api/persist-game", persistGame);
+  app.post("/api/save-game", saveGame);
 };
