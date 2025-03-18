@@ -1,9 +1,10 @@
 <script setup>
-import { useCreatorStore } from '@/stores/creatorStore';
-import { useGameStore } from '@/stores/gameStore';
-import { usePrintStore } from '@/stores/printStore';
+import { useAlertStore } from '@/stores/alertStore.js';
+import { useCreatorStore } from '@/stores/creatorStore.js';
+import { useGameStore } from '@/stores/gameStore.js';
+import { useLoadingStore } from '@/stores/loadingStore.js';
+import { usePrintStore } from '@/stores/printStore.js';
 import { ref, computed } from 'vue';
-import AlertMessage from './AlertMessage.vue';
 
 const MODE = Object.freeze({
   GAME: 'game',
@@ -38,17 +39,14 @@ const store = props.printView
     ? useGameStore()
     : useCreatorStore();
 
+const alertStore = useAlertStore();
+const loadingStore = useLoadingStore();
+
 const wordInput = ref(null);
 const hintInput = ref(null);
 
 const showAnswers = computed(() => {
   return editable.value || props.answerList;
-});
-
-const alert = ref({
-  visible: false,
-  type: "error",
-  message: "",
 });
 
 const addWord = () => {
@@ -58,9 +56,11 @@ const addWord = () => {
 
   const result = store.addWord({ word: wordInput.value, hint: hintInput.value }, true);
   if (!result.success) {
-    alert.value = { visible: true, type: "error", message: result.message };
+    alertStore.showAlert(result.message);
+  } else {
+    wordInput.value = null;
+    hintInput.value = null;
   }
-  wordInput.value = null;
 };
 
 const removeAllWords = () => {
@@ -95,15 +95,15 @@ const shouldShowAnswer = (word, wordFound) => {
     </ul>
   </div>
   <template v-if="editable">
-    <button @click="removeAllWords">Eemalda kõik sõnad</button><br>
+    <button @click="removeAllWords" :disabled="loadingStore.isLoading">Eemalda kõik sõnad</button><br>
     <label for="word-input">Vihje:</label><br>
-    <input type="text" name="hint-input" id="hint-input" v-model="hintInput" @keyup.enter="addWord" /><br>
+    <input type="text" name="hint-input" id="hint-input" v-model="hintInput" @keyup.enter="addWord"
+      :disabled="loadingStore.isLoading" /><br>
     <label for="word-input">Sõna:</label><br>
-    <input type="text" name="word-input" id="word-input" v-model="wordInput" @keyup.enter="addWord" /><br><br>
+    <input type="text" name="word-input" id="word-input" v-model="wordInput" @keyup.enter="addWord"
+      :disabled="loadingStore.isLoading" /><br><br>
     <button @click="addWord">Lisa</button>
   </template>
-
-  <AlertMessage :visible="alert.visible" :message="alert.message" :type="alert.type" @close="alert.visible = false" />
 </template>
 
 <style scoped>

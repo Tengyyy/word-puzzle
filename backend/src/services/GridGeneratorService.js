@@ -1,20 +1,26 @@
-import { ServerException, TimeoutException } from "../controller/Exceptions";
+import { ServerException, TimeoutException } from "../controller/Exceptions.js";
 import { Worker } from "worker_threads";
 import { resolve as _resolve } from "path";
+import path from "path";
+import { fileURLToPath } from "url";
 
-export class GridGeneratorService {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default class GridGeneratorService {
   static worker = null;
 
   static init() {
     this.worker = new Worker(_resolve(__dirname, "../workers/gridWorker.js"));
     this.worker.on("error", (err) => {
       console.error("GridGeneratorWorker Error:", err);
-      throw new ServerException("Rägastiku genereerimine ebaõnnestus");
+      throw new ServerException("Sõnarägastiku genereerimine ebaõnnestus");
     });
   }
 
   static async generateGrid(words, options) {
-    if (!this.worker) throw new Error("GridGeneratorWorker not initialized");
+    if (!this.worker)
+      throw new Error("Sõnarägastike generaator pole veel initsialiseeritud");
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {

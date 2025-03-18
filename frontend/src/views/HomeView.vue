@@ -1,65 +1,47 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useGameStore } from '@/stores/gameStore';
-import { useLoadingStore } from '@/stores/loadingStore';
+import { useGameStore } from '@/stores/gameStore.js';
+import { Constants } from '../../../shared/Constants.js';
+import { useAlertStore } from '@/stores/alertStore.js';
+import { apiRequest } from '@/api.js';
+import { ENDPOINTS } from '../../../shared/ApiEndpoints.js';
+import { useLoadingStore } from '@/stores/loadingStore.js';
+
+
 
 const topic = ref(null);
 
-const difficultyOptions = ref([
-  { text: "Lihtne", value: "easy" },
-  { text: "Keskmine", value: "medium" },
-  { text: "Raske", value: "hard" },
-]);
+const difficulty = ref(Constants.DIFFICULTY.MEDIUM.value);
 
-const difficulty = ref('medium');
+const inputLanguage = ref(Constants.LANGUAGE.ESTONIAN.value);
+const outputLanguage = ref(Constants.LANGUAGE.ESTONIAN.value);
 
-const languages = ref([
-  { text: "Eesti keel", value: "et" },
-  { text: "Inglise keel", value: "en" },
-  { text: "Saksa keel", value: "de" },
-]);
-
-const inputLanguage = ref('et');
-const outputLanguage = ref('et');
-
-const modes = ref([
-  { text: "Otsitavad sõnad", value: "words" },
-  { text: "Vihjed ja definitsioonid", value: "hints" }
-]);
-
-const mode = ref("words")
+const mode = ref(Constants.MODE.WORDS.value)
 
 const router = useRouter();
 const gameStore = useGameStore();
+const alertStore = useAlertStore();
+
 const loadingStore = useLoadingStore();
 
-const startGame = () => {
+const startGame = async () => {
   if (!topic.value) {
-    console.log('Topic is empty!')
+    alertStore.showAlert('Palun sisesta sõnarägastiku teema', 'error')
     return;
   }
 
-  loadingStore.startLoading();
-  fetch("http://127.0.0.1:8081/api/game?" + new URLSearchParams({
+  const response = await apiRequest(ENDPOINTS.getGame.full + '?' + new URLSearchParams({
     topic: topic.value,
     difficulty: difficulty.value,
     inputLanguage: inputLanguage.value,
     outputLanguage: outputLanguage.value,
     mode: mode.value,
-  }), { method: "GET" })
-    .then((response) => response.json())
-    .then((response) => {
-      gameStore.setGameData(response);
-      loadingStore.stopLoading();
-      router.push({ path: `/game/${response.id}` });
-    })
-    .catch((e) => {
-      console.log(e);
-      loadingStore.stopLoading();
-    });
-}
+  }));
 
+  gameStore.setGameData(response);
+  router.push({ path: `/game/${response.id}` });
+}
 </script>
 
 <template>
@@ -67,29 +49,25 @@ const startGame = () => {
     <label for="topic-field">Sisesta sõnarägastiku teema:</label><br>
     <input type="text" id="topic-field" name="topic-field" v-model="topic"><br><br>
     <label for="difficulty-select">Vali raskusaste:</label><br>
-    <select name="difficulty-select" id="difficulty-select" v-model="difficulty">
-      <option v-for="option in difficultyOptions" :key="option.value" :value="option.value">
+    <select name="difficulty-select" id="difficulty-select" v-model="difficulty" :disabled="loadingStore.isLoading">
+      <option v-for="(option, key) in Constants.DIFFICULTY" :key="key" :value="option.value">
         {{ option.text }}
       </option>
     </select><br>
     <label for="input-language-select">Vali sisendkeel:</label><br>
-    <select name="input-language-select" id="input-language-select" v-model="inputLanguage">
-      <option v-for="lang in languages" :key="lang.value" :value="lang.value">
+    <select name="input-language-select" id="input-language-select" v-model="inputLanguage"
+      :disabled="loadingStore.isLoading">
+      <option v-for="(lang, key) in Constants.LANGUAGE" :key="key" :value="lang.value">
         {{ lang.text }}
       </option>
     </select><br>
     <label for="output-language-select">Vali väljundkeel:</label><br>
-    <select name="output-language-select" id="output-language-select" v-model="outputLanguage">
-      <option v-for="lang in languages" :key="lang.value" :value="lang.value">
+    <select name="output-language-select" id="output-language-select" v-model="outputLanguage"
+      :disabled="loadingStore.isLoading">
+      <option v-for="(lang, key) in Constants.LANGUAGE" :key="key" :value="lang.value">
         {{ lang.text }}
       </option>
-    </select><br>
-    <label for="mode-select">Kuva sõnarägastiku kõrval:</label><br>
-    <select name="mode-select" id="mode-select" v-model="mode">
-      <option v-for="mode in modes" :key="mode.value" :value="mode.value">
-        {{ mode.text }}
-      </option>
     </select><br><br>
-    <button @click="startGame">Mängi</button>
+    <button @click="startGame" :disabled="loadingStore.isLoading">Mängi</button>
   </main>
 </template>

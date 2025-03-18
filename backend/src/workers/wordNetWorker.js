@@ -2,6 +2,12 @@ import { parentPort } from "worker_threads";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { Parser } from "xml2js";
+import { Constants } from "../../../shared/Constants.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const wordNets = new Map(); // language -> { lemmaToSynsets, synsetToLemmas, synsetRelations }
 const iliToSynsets = new Map(); // ili ID -> { lang: synsetID, ... }
@@ -102,9 +108,18 @@ async function loadWordNet(lang, filePath) {
 }
 
 async function loadAllWordNets() {
-  await loadWordNet("et", join(__dirname, "../data/et-wn.xml"));
-  await loadWordNet("en", join(__dirname, "../data/en-wn.xml"));
-  await loadWordNet("de", join(__dirname, "../data/de-wn.xml"));
+  await loadWordNet(
+    Constants.LANGUAGE.ESTONIAN.value,
+    join(__dirname, "../data/et-wn.xml")
+  );
+  await loadWordNet(
+    Constants.LANGUAGE.ENGLISH.value,
+    join(__dirname, "../data/en-wn.xml")
+  );
+  await loadWordNet(
+    Constants.LANGUAGE.GERMAN.value,
+    join(__dirname, "../data/de-wn.xml")
+  );
 }
 
 function getWords(
@@ -174,12 +189,15 @@ function getWords(
           collectedSynsets.add(relatedSynset);
 
           let input, output;
-          if (mode === "hints") {
+          if (mode === Constants.MODE.HINTS.value) {
             if (!synsetDefinitions.get(relatedSynset)) return;
             input = synsetDefinitions.get(relatedSynset);
           }
 
-          if (mode === "words" || inputLanguage === outputLanguage) {
+          if (
+            mode === Constants.MODE.WORDS.value ||
+            inputLanguage === outputLanguage
+          ) {
             const lemmas = synsetToLemmas.get(relatedSynset);
             if (!lemmas || lemmas.length === 0) return;
 
@@ -194,7 +212,7 @@ function getWords(
             }
 
             if (!word) return;
-            if (mode === "words") {
+            if (mode === Constants.MODE.WORDS.value) {
               input = word;
             }
             if (inputLanguage === outputLanguage) {

@@ -6,14 +6,10 @@ export const useAlertStore = defineStore('alert', () => {
   const message = ref('')
   const type = ref('error')
 
-  function showAlert(msg, alertType = 'error', duration = 3000) {
+  function showAlert(msg, alertType = 'error') {
     message.value = msg
     type.value = alertType
     visible.value = true
-
-    setTimeout(() => {
-      visible.value = false
-    }, duration)
   }
 
   function hideAlert() {

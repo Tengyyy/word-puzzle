@@ -1,46 +1,33 @@
 <script setup>
-import { useCreatorStore } from '@/stores/creatorStore';
-import { ref } from 'vue';
-import ConfirmationDialog from './ConfirmationDialog.vue';
+import { useCreatorStore } from '@/stores/creatorStore.js';
+import { useAlertStore } from '@/stores/alertStore.js';
+import { useDialogStore } from '@/stores/dialogStore.js';
+import { Constants } from '../../../shared/Constants.js';
+import { useLoadingStore } from '@/stores/loadingStore.js';
 
 const creatorStore = useCreatorStore();
+const alertStore = useAlertStore();
+const dialogStore = useDialogStore();
+const loadingStore = useLoadingStore();
 
 const emit = defineEmits({
     generateWords: null,
 });
 
-const languages = ref([
-    { text: "Eesti keel", value: "et" },
-    { text: "Inglise keel", value: "en" },
-    { text: "Saksa keel", value: "de" },
-]);
-
-const modes = ref([
-    { text: "Otsitavad sõnad", value: "words" },
-    { text: "Vihjed ja definitsioonid", value: "hints" }
-]);
-
-const showDialog = ref(false);
-
-const generateWords = () => {
+const generateWords = async () => {
     if (!creatorStore.topic) {
-        console.warn("Topic is empty");
+        alertStore.showAlert('Palun sisesta sõnarägastiku teema', 'error');
         return;
     }
     if (creatorStore.words.length > 0) {
-        // Show warning that current word-list will be cleared
-        showDialog.value = true;
-        return;
+        const userConfirmed = await dialogStore.showDialog("Kas soovid jätkata?", "Uue sõnade listi genereerimisel olemasolevad sõnad eemaldatakse.");
+        if (userConfirmed) {
+            creatorStore.removeAllWords();
+            emit('generateWords');
+        }
     }
-    emit('generateWords');
 };
 
-const handleProceed = () => {
-    showDialog.value = false;
-
-    creatorStore.removeAllWords();
-    emit('generateWords');
-};
 </script>
 
 <template>
@@ -48,42 +35,42 @@ const handleProceed = () => {
         <br>
         <h4>Sõnade sätted</h4>
         <label for="topic-input">Teema:</label><br>
-        <input type="text" name="topic-input" id="topic-input" v-model="creatorStore.topic" /><br>
+        <input type="text" name="topic-input" id="topic-input" v-model="creatorStore.topic"
+            :disabled="loadingStore.isLoading" /><br>
         <label for="input-language-select">Vali sisendkeel:</label><br>
-        <select name="input-language-select" id="input-language-select" v-model="creatorStore.inputLanguage">
-            <option v-for="lang in languages" :key="lang.value" :value="lang.value">
+        <select name="input-language-select" id="input-language-select" v-model="creatorStore.inputLanguage"
+            :disabled="loadingStore.isLoading">
+            <option v-for="(lang, key) in Constants.LANGUAGE" :key="key" :value="lang.value">
                 {{ lang.text }}
             </option>
         </select><br>
         <label for="output-language-select">Vali väljundkeel:</label><br>
-        <select name="output-language-select" id="output-language-select" v-model="creatorStore.outputLanguage">
-            <option v-for="lang in languages" :key="lang.value" :value="lang.value">
+        <select name="output-language-select" id="output-language-select" v-model="creatorStore.outputLanguage"
+            :disabled="loadingStore.isLoading">
+            <option v-for="(lang, key) in Constants.LANGUAGE" :key="key" :value="lang.value">
                 {{ lang.text }}
             </option>
         </select><br>
         <label for="mode-select">Kuva sõnarägastiku kõrval:</label><br>
-        <select name="mode-select" id="mode-select" v-model="creatorStore.mode">
-            <option v-for="mode in modes" :key="mode.value" :value="mode.value">
+        <select name="mode-select" id="mode-select" v-model="creatorStore.mode" :disabled="loadingStore.isLoading">
+            <option v-for="(mode, key) in Constants.MODE" :key="key" :value="mode.value">
                 {{ mode.text }}
             </option>
         </select><br><br>
-        <button @click="generateWords">Genereeri sõnade list</button><br><br>
-        <input type="checkbox" id="alphabetize-checkbox" v-model="creatorStore.alphabetize" />
+        <button @click="generateWords" :disabled="loadingStore.isLoading">Genereeri sõnade list</button><br><br>
+        <input type="checkbox" id="alphabetize-checkbox" v-model="creatorStore.alphabetize"
+            :disabled="loadingStore.isLoading" />
         <label for="alphabetize-checkbox">Kuva sõnad tähestikulises järjekorras</label><br><br>
 
         <label>Tähtede suurus:</label><br>
-        <input type="radio" id="maintain-casing-radio" value="maintain-casing" v-model="creatorStore.wordListCasing" />
-        <label for="lowercase-radio">Säilita sisestatud sõnade kirjapilt</label><br>
-        <input type="radio" id="uppercase-radio" value="uppercase" v-model="creatorStore.wordListCasing" />
-        <label for="uppercase-radio">Suurtähed</label><br>
-        <input type="radio" id="lowercase-radio" value="lowercase" v-model="creatorStore.wordListCasing" />
-        <label for="lowercase-radio">Väiketähed</label><br><br>
+        <div v-for="(option, key) in Constants.CASING" :key="key">
+            <input type="radio" :id="`${option.value}-radio`" :value="option.value" v-model="creatorStore.wordListCasing"
+                :disabled="loadingStore.isLoading" />
+            <label :for="`${option.value}-radio`">{{ option.text }}</label><br>
+        </div>
 
-        <input type="checkbox" id="spaces-allowed-checkbox" v-model="creatorStore.spacesAllowed" />
+        <input type="checkbox" id="spaces-allowed-checkbox" v-model="creatorStore.spacesAllowed"
+            :disabled="loadingStore.isLoading" />
         <label for="spaces-allowed-checkbox">Luba tühikud sõnedes</label><br>
-
-        <ConfirmationDialog :visible="showDialog"
-            message="Uue sõnade listi genereerimisel olemasolevad sõnad eemaldatakse. Kas soovid jätkata?"
-            @confirm="handleProceed" @cancel="showDialog = false" />
     </main>
 </template>

@@ -1,17 +1,17 @@
-import { useLoadingStore } from '@/stores/loadingStore'
-import { useAlertStore } from '@/stores/alertStore'
-
-const loadingStore = useLoadingStore()
-const alertStore = useAlertStore()
+import { useLoadingStore } from '@/stores/loadingStore.js'
+import { useAlertStore } from '@/stores/alertStore.js'
 
 /**
  * Makes an API request with loading state and error handling.
- * @param {string} url - API endpoint
+ * @param {string} endpoint - API endpoint
  * @param {string} method - HTTP method (GET, POST, etc.)
  * @param {Object} body - Request body (optional)
  * @returns {Promise<any>} - Response JSON or error
  */
 export async function apiRequest(endpoint, method = 'GET', body = null) {
+  const loadingStore = useLoadingStore()
+  const alertStore = useAlertStore()
+
   loadingStore.startLoading()
   try {
     const response = await fetch(endpoint, {

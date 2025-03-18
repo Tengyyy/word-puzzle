@@ -1,9 +1,9 @@
 import { parentPort } from "worker_threads";
-import * as Constants from "../../../shared/Constants.js";
+import { Constants } from "../../../shared/Constants.js";
 
 const letterDistribution = new Map([
   [
-    Constants.LANGUAGE.ESTONIAN,
+    Constants.LANGUAGE.ESTONIAN.value,
     {
       A: 12.27,
       E: 10.65,
@@ -40,7 +40,7 @@ const letterDistribution = new Map([
     },
   ],
   [
-    Constants.LANGUAGE.ENGLISH,
+    Constants.LANGUAGE.ENGLISH.value,
     {
       E: 12.02,
       T: 9.1,
@@ -71,7 +71,7 @@ const letterDistribution = new Map([
     },
   ],
   [
-    Constants.LANGUAGE.GERMAN,
+    Constants.LANGUAGE.GERMAN.value,
     {
       E: 16.93,
       N: 10.53,
@@ -154,7 +154,7 @@ class Grid {
   fill(
     message = null,
     uppercase = true,
-    language = Constants.LANGUAGE.ESTONIAN
+    language = Constants.LANGUAGE.ESTONIAN.value
   ) {
     const processedMessage = (message || "")
       [uppercase ? "toUpperCase" : "toLowerCase"]()
@@ -164,8 +164,8 @@ class Grid {
     const unused = this.grid.filter((n) => n === undefined).length;
 
     const distribution = letterDistribution.get(language);
-    const letters = Object.keys(distribution);
-    const weights = Object.keys(distribution);
+    let letters = Object.keys(distribution);
+    const weights = Object.values(distribution);
 
     if (!uppercase) {
       letters = letters.map((c) => c.toLowerCase());
@@ -211,9 +211,9 @@ class Puzzle {
       columns = 15,
       diagonal = false,
       backward = false,
-      overlap = Constants.OVERLAP.NO_OVERLAP,
+      overlap = Constants.OVERLAP.NO_OVERLAP.value,
       uppercase = true,
-      language = Constants.LANGUAGE.ESTONIAN,
+      language = Constants.LANGUAGE.ESTONIAN.value,
       message = null,
       seed = Date.now(),
     } = {}
@@ -265,11 +265,11 @@ class Puzzle {
 
       for (
         let attempt = 0;
-        attempt < (this.overlap === Constants.OVERLAP.FORCE_OVERLAP ? 2 : 1);
+        attempt < (this.overlap === Constants.OVERLAP.FORCE_OVERLAP.value ? 2 : 1);
         attempt++
       ) {
         const forceOverlap =
-          attempt === 0 && this.overlap === Constants.OVERLAP.FORCE_OVERLAP; // First attempt: enforce overlap, second: relax it
+          attempt === 0 && this.overlap === Constants.OVERLAP.FORCE_OVERLAP.value; // First attempt: enforce overlap, second: relax it
         const shuffledPositions = this._shuffle([...positions]);
         const shuffledDirections = this._shuffle([...directions]);
 
@@ -352,7 +352,7 @@ class Puzzle {
     }
 
     if (letters.length === 0) {
-      if (this.overlap === Constants.OVERLAP.NO_OVERLAP && hasOverlap) {
+      if (this.overlap === Constants.OVERLAP.NO_OVERLAP.value && hasOverlap) {
         return null;
       }
 

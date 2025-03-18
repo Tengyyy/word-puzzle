@@ -1,9 +1,13 @@
-import * as Constants from "../../../shared/Constants.js";
+import { Constants } from "../../../shared/Constants.js";
 import { ValidationException } from "./Exceptions.js";
+
+function getValues(constants) {
+  return Object.values(constants).map((constant) => constant.value);
+}
 
 export function validateLanguage(val) {
   if (!val) {
-    return Constants.LANGUAGE.ESTONIAN;
+    return Constants.LANGUAGE.ESTONIAN.value;
   }
 
   if (typeof val !== "string") {
@@ -11,9 +15,9 @@ export function validateLanguage(val) {
   }
 
   const formatted = val.toLowerCase().trim();
-  if (!Object.values(Constants.LANGUAGE).includes(formatted)) {
+  if (!getValues(Constants.LANGUAGE).includes(formatted)) {
     throw new ValidationException(
-      `Keel peab olema üks järgnevatest väärtustest: ${Object.values(
+      `Keel peab olema üks järgnevatest väärtustest: ${getValues(
         Constants.LANGUAGE
       )}`
     );
@@ -24,7 +28,7 @@ export function validateLanguage(val) {
 
 export function validateMode(val) {
   if (!val) {
-    return Constants.MODE.WORDS;
+    return Constants.MODE.WORDS.value;
   }
 
   if (typeof val !== "string") {
@@ -32,9 +36,9 @@ export function validateMode(val) {
   }
 
   const formatted = val.toLowerCase().trim();
-  if (!Object.values(Constants.MODE).includes(formatted)) {
+  if (!getValues(Constants.MODE).includes(formatted)) {
     throw new ValidationException(
-      `Mängurežiim peab olema üks järgnevatest väärtustest: ${Object.values(
+      `Mängurežiim peab olema üks järgnevatest väärtustest: ${getValues(
         Constants.MODE
       )}`
     );
@@ -66,8 +70,8 @@ export function validateDimension(val) {
 export function validateCasing(val, isGrid) {
   if (!val) {
     return isGrid
-      ? Constants.CASING.UPPERCASE
-      : Constants.CASING.MAINTAIN_CASING;
+      ? Constants.CASING.UPPERCASE.value
+      : Constants.CASING.MAINTAIN_CASING.value;
   }
 
   if (typeof val !== "string") {
@@ -75,9 +79,9 @@ export function validateCasing(val, isGrid) {
   }
 
   const formatted = val.toLowerCase().trim();
-  if (!Object.values(Constants.CASING).includes(formatted)) {
+  if (!getValues(Constants.CASING).includes(formatted)) {
     throw new ValidationException(
-      `Tähtede suurus peab olema üks järgnevatest väärtustest: ${Object.values(
+      `Tähtede suurus peab olema üks järgnevatest väärtustest: ${getValues(
         Constants.CASING
       )}`
     );
@@ -88,7 +92,7 @@ export function validateCasing(val, isGrid) {
 
 export function validateOverlap(val) {
   if (!val) {
-    return Constants.OVERLAP.NO_OVERLAP;
+    return Constants.OVERLAP.NO_OVERLAP.value;
   }
 
   if (typeof val !== "string") {
@@ -96,9 +100,9 @@ export function validateOverlap(val) {
   }
 
   const formatted = val.toLowerCase().trim();
-  if (!Object.values(Constants.OVERLAP).includes(formatted)) {
+  if (!getValues(Constants.OVERLAP).includes(formatted)) {
     throw new ValidationException(
-      `Ülekattumine peab olema üks järgnevatest väärtustest: ${Object.values(
+      `Ülekattumine peab olema üks järgnevatest väärtustest: ${getValues(
         Constants.OVERLAP
       )}`
     );
@@ -109,7 +113,7 @@ export function validateOverlap(val) {
 
 export function validateDifficulty(val) {
   if (!val) {
-    return Constants.DIFFICULTY.MEDIUM;
+    return Constants.DIFFICULTY.MEDIUM.value;
   }
 
   if (typeof val !== "string") {
@@ -117,9 +121,9 @@ export function validateDifficulty(val) {
   }
 
   const formatted = val.toLowerCase().trim();
-  if (!Object.values(Constants.DIFFICULTY).includes(formatted)) {
+  if (!getValues(Constants.DIFFICULTY).includes(formatted)) {
     throw new ValidationException(
-      `Raskusaste peab olema üks järgnevatest väärtustest: ${Object.values(
+      `Raskusaste peab olema üks järgnevatest väärtustest: ${getValues(
         Constants.DIFFICULTY
       )}`
     );

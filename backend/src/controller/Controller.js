@@ -1,24 +1,24 @@
-import * as Constants from "../../../shared/Constants.js";
+import { Constants } from "../../../shared/Constants.js";
 import * as Validation from "./Validation.js";
-import * as Utils from "./Utils.js";
-import { ValidationException, ServerException } from "./Exceptions.js";
-import { query } from "../database.js";
+import * as Utils from "../../../shared/Utils.js";
+import { ValidationException } from "./Exceptions.js";
+import pool from "../database.js";
 import { randomUUID } from "crypto";
-import { generateGrid } from "../services/GridGeneratorService.js";
-import { getWords } from "../services/WordNetService.js";
+import GridGeneratorService from "../services/GridGeneratorService.js";
+import WordNetService from "../services/WordNetService.js";
 
 function applyCasing(wordHints, wordListCasing) {
   return wordHints.map((hintObj) => {
     let { hint } = hintObj;
 
     switch (wordListCasing) {
-      case Constants.CASING.UPPERCASE:
+      case Constants.CASING.UPPERCASE.value:
         hint = hint.toUpperCase();
         break;
-      case Constants.CASING.LOWERCASE:
+      case Constants.CASING.LOWERCASE.value:
         hint = hint.toLowerCase();
         break;
-      case Constants.CASING.MAINTAIN_CASING:
+      case Constants.CASING.MAINTAIN_CASING.value:
         // Do nothing, keep the original casing
         break;
       default:
@@ -33,22 +33,26 @@ function applyCasing(wordHints, wordListCasing) {
 
 function optionsFromDifficulty(diff) {
   const size =
-    diff === Constants.DIFFICULTY.EASY
+    diff === Constants.DIFFICULTY.EASY.value
       ? 10
-      : diff === Constants.DIFFICULTY.MEDIUM
+      : diff === Constants.DIFFICULTY.MEDIUM.value
       ? 15
       : 20;
 
   return {
     rows: size,
     columns: size,
-    diagonal: diff === Constants.DIFFICULTY.HARD,
-    backward: diff !== Constants.DIFFICULTY.EASY,
+    diagonal: diff === Constants.DIFFICULTY.HARD.value,
+    backward: diff !== Constants.DIFFICULTY.EASY.value,
     overlap:
-      diff == Constants.DIFFICULTY.EASY
-        ? Constants.OVERLAP.NO_OVERLAP
-        : Constants.OVERLAP.POSSIBLE_OVERLAP,
+      diff === Constants.DIFFICULTY.EASY.value
+        ? Constants.OVERLAP.NO_OVERLAP.value
+        : Constants.OVERLAP.POSSIBLE_OVERLAP.value,
     uppercase: true,
+    mode:
+      diff === Constants.DIFFICULTY.HARD.value
+        ? Constants.MODE.HINTS.value
+        : Constants.MODE.WORDS.value,
   };
 }
 
@@ -88,14 +92,14 @@ export async function createGame(req, res) {
     const outputLanguage = Validation.validateLanguage(
       req.query.outputLanguage
     );
-    const mode = Validation.validateMode(req.query.mode);
-    const options = optionsFromDifficulty(diff);
 
-    const { inputs, outputs } = await getWords(
+    let options = optionsFromDifficulty(diff);
+
+    const { inputs, outputs } = await WordNetService.getWords(
       topic,
       inputLanguage,
       outputLanguage,
-      mode,
+      options.mode,
       options.columns,
       options.rows,
       false
@@ -105,12 +109,18 @@ export async function createGame(req, res) {
     console.log(outputs);
 
     options.language = outputLanguage;
-    const { grid, answers } = await generateGrid(outputs, options);
+
+    const { mode, ...gridOptions } = options;
+
+    const { grid, answers } = await GridGeneratorService.generateGrid(
+      outputs,
+      gridOptions
+    );
     const words = inputs.map((hint, index) => ({
       hint: hint,
       word: outputs[index],
     }));
-    const game = await query(
+    const game = await pool.query(
       "INSERT INTO games (topic, title, grid, words, answers, metadata) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
       [
         topic,
@@ -160,7 +170,7 @@ export async function loadGame(req, res) {
 
     if (!data) {
       // Game not found in the in-memory dataStore
-      const result = await query(
+      const result = await pool.query(
         "SELECT id, title, grid, words, answers FROM games WHERE id = $1",
         [id]
       );
@@ -204,7 +214,7 @@ export async function createWordList(req, res) {
       "tühikud lubatud",
       false
     );
-    const { inputs, outputs } = await getWords(
+    const { inputs, outputs } = await WordNetService.getWords(
       topic,
       inputLanguage,
       outputLanguage,
@@ -251,11 +261,11 @@ export async function createCustomGame(req, res) {
       diagonal: diagonalsEnabled,
       backward: backwardsEnabled,
       overlap: overlap,
-      uppercase: casing === Constants.CASING.UPPERCASE,
+      uppercase: casing === Constants.CASING.UPPERCASE.value,
       language: language,
     };
 
-    const result = await generateGrid(words, options);
+    const result = await GridGeneratorServicegenerateGrid(words, options);
     res.json(result).end();
   } catch (err) {
     console.error(err);
@@ -283,7 +293,7 @@ export async function persistGame(req, res) {
     const answers = Validation.validateAnswers(data.answers, grid, words);
     const title = Validation.validateTitle(data.title);
 
-    const game = await query(
+    const game = await pool.query(
       "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
       [
         "custom",

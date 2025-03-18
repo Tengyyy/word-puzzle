@@ -3,25 +3,26 @@ import HomeView from '@/views/HomeView.vue'
 import GameView from '@/views/GameView.vue'
 import CreateView from '@/views/CreateView.vue'
 import NotFound from '@/views/NotFound.vue'
-import { useLoadingStore } from '@/stores/loadingStore'
-import { useGameStore } from '@/stores/gameStore'
+import { useGameStore } from '@/stores/gameStore.js'
 import PrintView from '@/views/PrintView.vue'
-import { usePrintStore } from '@/stores/printStore'
+import { usePrintStore } from '@/stores/printStore.js'
+import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
+import { apiRequest } from '@/api.js'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: '/',
+      path: ENDPOINTS.home.relative,
       name: 'home',
       component: HomeView,
     },
     {
       path: '/home',
-      redirect: '/',
+      redirect: ENDPOINTS.home.relative,
     },
     {
-      path: '/game/:id',
+      path: ENDPOINTS.game.relative + '/:id',
       name: 'game',
       component: GameView,
       beforeEnter: async (to, from, next) => {
@@ -29,21 +30,15 @@ const router = createRouter({
         const gameId = to.params.id
 
         if (!gameStore.id || gameStore.id !== gameId) {
-          const loadingStore = useLoadingStore()
-          loadingStore.startLoading()
-
           try {
-            const response = await fetch(
-              `http://127.0.0.1:8081/api/game/${gameId}`,
+            const response = await apiRequest(
+              `${ENDPOINTS.getGame.full}/${gameId}`,
             )
-            const data = await response.json()
-            gameStore.setGameData(data)
+            gameStore.setGameData(response)
             next()
-          } catch (error) {
-            console.error('Failed to fetch game data', error)
-            next(false) // Redirect to an error page or handle it appropriately
-          } finally {
-            loadingStore.stopLoading()
+            // eslint-disable-next-line no-unused-vars
+          } catch (err) {
+            next({ name: 'NotFound' })
           }
         } else {
           next() // data is already in store, proceed to GameView
@@ -51,12 +46,12 @@ const router = createRouter({
       },
     },
     {
-      path: '/create',
+      path: ENDPOINTS.creator.relative,
       name: 'creator',
       component: CreateView,
     },
     {
-      path: '/print/:id',
+      path: `${ENDPOINTS.printer.relative}/:id`,
       name: 'printer',
       component: PrintView,
       beforeEnter: async (to, from, next) => {
@@ -65,21 +60,15 @@ const router = createRouter({
         const showAnswers = to.query.showAnswers
 
         if (!printStore.id || printStore.id !== gameId) {
-          const loadingStore = useLoadingStore()
-          loadingStore.startLoading()
-
           try {
-            const response = await fetch(
-              `http://127.0.0.1:8081/api/game/${to.params.id}${showAnswers === '1' || showAnswers === 'true' ? '?showAnswers=1' : ''}`,
+            const response = await apiRequest(
+              `${ENDPOINTS.getGame}/${to.params.id}${showAnswers === '1' || showAnswers === 'true' ? '?showAnswers=1' : ''}`,
             )
-            const data = await response.json()
-            printStore.setGameData(data)
+            printStore.setGameData(response)
             next()
-          } catch (error) {
-            console.error('Failed to fetch game data', error)
-            next(false) // Redirect to an error page or handle it appropriately
-          } finally {
-            loadingStore.stopLoading()
+            // eslint-disable-next-line no-unused-vars
+          } catch (err) {
+            next({ name: 'NotFound' })
           }
         } else {
           next() // data is already in store, proceed to PrintView

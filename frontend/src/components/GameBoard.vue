@@ -1,11 +1,9 @@
 <script setup>
 import { ref, computed } from 'vue';
 import GridCell from './GridCell.vue';
-import correct_sound from '../assets/sounds/correct.wav'
-import wrong_sound from '../assets/sounds/wrong.wav'
-import { useCreatorStore } from '@/stores/creatorStore';
-import { useGameStore } from '@/stores/gameStore';
-import { usePrintStore } from '@/stores/printStore';
+import { useCreatorStore } from '@/stores/creatorStore.js';
+import { useGameStore } from '@/stores/gameStore.js';
+import { usePrintStore } from '@/stores/printStore.js';
 
 const MODE = Object.freeze({
   GAME: 'game',
@@ -72,8 +70,8 @@ const emit = defineEmits({
   }
 });
 
-const correct_audio = new Audio(correct_sound);
-const wrong_audio = new Audio(wrong_sound);
+const correct_audio = new Audio(new URL("@/assets/sounds/correct.wav", import.meta.url).href);
+const wrong_audio = new Audio(new URL("@/assets/sounds/wrong.wav", import.meta.url).href);
 
 const highlights = ref([]); // Highlighted words
 
@@ -151,7 +149,9 @@ const resetSelection = (success) => {
     });
     outlineColor.value = getRandomColor(); // Set a new random color
 
-    correct_audio.play();
+    if (!store.gameEnded) {
+      correct_audio.play();
+    }
   } else {
     wrong_audio.play();
   }

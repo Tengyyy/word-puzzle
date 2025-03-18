@@ -1,12 +1,18 @@
 import { Worker } from "worker_threads";
 import { join } from "path";
-import { ServerException, TimeoutException } from "../controller/Exceptions";
+import path from "path";
+import { ServerException, TimeoutException } from "../controller/Exceptions.js";
+import { fileURLToPath } from "url";
 
-class WordNetService {
-  constructor() {
-    this.worker = new Worker(join(__dirname, "../workers/wordNetWorker.js"), {
-      execArgv: ["--inspect"],
-    });
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default class WordNetService {
+  static worker = null;
+  static ready = false;
+
+  static init() {
+    this.worker = new Worker(join(__dirname, "../workers/wordNetWorker.js"));
     this.ready = false;
 
     this.worker.on("message", (msg) => {
@@ -19,7 +25,7 @@ class WordNetService {
     this.worker.postMessage({ type: "load" });
   }
 
-  async getWords(
+  static async getWords(
     topic,
     inputLanguage,
     outputLanguage,
@@ -77,4 +83,5 @@ class WordNetService {
   }
 }
 
-export default new WordNetService();
+// Initialize worker when the module is loaded
+WordNetService.init();

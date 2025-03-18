@@ -1,28 +1,39 @@
-export const OVERLAP = Object.freeze({
-  NO_OVERLAP: "no-overlap",
-  POSSIBLE_OVERLAP: "possible-overlap",
-  FORCE_OVERLAP: "force-overlap",
-});
+export const Constants = Object.freeze({
+  OVERLAP: {
+    NO_OVERLAP: { text: "Sõnad ei kattu", value: "no-overlap" },
+    POSSIBLE_OVERLAP: {
+      text: "Sõnad võivad kattuda",
+      value: "possible-overlap",
+    },
+    FORCE_OVERLAP: {
+      text: "Sõnad kattuvad võimalikult palju",
+      value: "force-overlap",
+    },
+  },
 
-export const DIFFICULTY = Object.freeze({
-  EASY: "easy",
-  MEDIUM: "medium",
-  HARD: "hard",
-});
+  DIFFICULTY: {
+    EASY: { text: "Lihtne", value: "easy" },
+    MEDIUM: { text: "Keskmine", value: "medium" },
+    HARD: { text: "Raske", value: "hard" },
+  },
 
-export const CASING = Object.freeze({
-  UPPERCASE: "uppercase",
-  LOWERCASE: "lowercase",
-  MAINTAIN_CASING: "maintain-casing",
-});
+  CASING: {
+    UPPERCASE: { text: "Suurtähed", value: "uppercase" },
+    LOWERCASE: { text: "Väiketähed", value: "lowercase" },
+    MAINTAIN_CASING: {
+      text: "Säilita sisestatud sõnade kirjapilt",
+      value: "maintain-casing",
+    },
+  },
 
-export const LANGUAGE = Object.freeze({
-  ESTONIAN: "et",
-  ENGLISH: "en",
-  GERMAN: "de",
-});
+  LANGUAGE: {
+    ESTONIAN: { text: "Eesti keel", value: "et" },
+    ENGLISH: { text: "Inglise keel", value: "en" },
+    GERMAN: { text: "Saksa keel", value: "de" },
+  },
 
-export const MODE = Object.freeze({
-  WORDS: "words",
-  HINTS: "hints",
+  MODE: {
+    WORDS: { text: "Otsitavad sõnad", value: "words" },
+    HINTS: { text: "Vihjed ja definitsioonid", value: "hints" },
+  },
 });

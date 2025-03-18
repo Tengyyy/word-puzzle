@@ -5,16 +5,18 @@ import {
   createCustomGame,
   persistGame,
   saveGame,
-} from "./controller/Controller";
+} from "./controller/Controller.js";
+
+import { ENDPOINTS } from "../../shared/ApiEndpoints.js";
 
 export default (app) => {
   //GET
-  app.get("/api/game", createGame);
-  app.get("/api/game/:gameId", loadGame);
+  app.get(ENDPOINTS.getGame.relative, createGame);
+  app.get(`${ENDPOINTS.getGame.relative}/:gameId`, loadGame);
 
   //POST
-  app.post("/api/create-word-list", createWordList);
-  app.post("/api/create-custom-game", createCustomGame);
-  app.post("/api/persist-game", persistGame);
-  app.post("/api/save-game", saveGame);
+  app.post(ENDPOINTS.createWordList.relative, createWordList);
+  app.post(ENDPOINTS.createCustomGame.relative, createCustomGame);
+  app.post(ENDPOINTS.persistGame.relative, persistGame);
+  app.post(ENDPOINTS.saveGame.relative, saveGame);
 };

@@ -1,22 +1,22 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 
-import { useLoadingStore } from '@/stores/loadingStore';
+import { useLoadingStore } from '@/stores/loadingStore.js';
 import { computed } from 'vue';
-import { useAlertStore } from './stores/alertStore';
 import AlertMessage from './components/AlertMessage.vue';
+import ConfirmationDialog from './components/ConfirmationDialog.vue';
+import {ENDPOINTS} from "../../shared/ApiEndpoints.js";
 
 const loadingStore = useLoadingStore();
-const alertStore = useAlertStore();
 const isLoading = computed(() => loadingStore.isLoading);
 </script>
 
 <template>
   <header>
     <div class="wrapper">
-      <RouterLink to="/">Sõnarägastikud</RouterLink>
+      <RouterLink :to="ENDPOINTS.home.relative">Sõnarägastikud</RouterLink>
       <nav>
-        <RouterLink to="/create">Loo oma sõnarägastik</RouterLink>
+        <RouterLink :to="ENDPOINTS.creator.relative">Loo oma sõnarägastik</RouterLink>
         <a href="https://github.com/Tengyyy/word-puzzle">Github</a>
       </nav>
     </div>
@@ -24,8 +24,9 @@ const isLoading = computed(() => loadingStore.isLoading);
   <main>
     <RouterView />
   </main>
-  <AlertMessage :visible="alertStore.visible" :message="alertStore.message" :type="alertStore.type"
-    @close="alertStore.hideAlert" />
+
+  <AlertMessage />
+  <ConfirmationDialog />
 
   <div v-if="isLoading" class="spinner-overlay">
     <div class="spinner"></div>

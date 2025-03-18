@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue';
 import GameBoard from '@/components/GameBoard.vue';
 import WordList from '@/components/WordList.vue';
-import { usePrintStore } from '@/stores/printStore';
+import { usePrintStore } from '@/stores/printStore.js';
 
 const MODE = Object.freeze({
   GAME: 'game',

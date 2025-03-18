@@ -1,18 +1,19 @@
 import { defineStore } from 'pinia'
+import { Constants } from '../../../shared/Constants.js'
 
 export const useCreatorStore = defineStore('creator', {
   state: () => ({
     width: 15,
     height: 15,
-    overlap: 'no-overlap',
+    overlap: Constants.OVERLAP.NO_OVERLAP.value,
     backwardsEnabled: false,
     diagonalsEnabled: false,
-    casing: 'uppercase',
+    casing: Constants.CASING.UPPERCASE.value,
     grid: [],
     topic: '',
-    inputLanguage: 'et',
-    outputLanguage: 'et',
-    mode: 'words',
+    inputLanguage: Constants.LANGUAGE.ESTONIAN.value,
+    outputLanguage: Constants.LANGUAGE.ESTONIAN.value,
+    mode: Constants.MODE.WORDS.value,
     words: [],
     alphabetize: false,
     highlight: false,
@@ -20,7 +21,7 @@ export const useCreatorStore = defineStore('creator', {
     answers: [],
     widthInput: 15,
     heightInput: 15,
-    wordListCasing: 'maintain-casing',
+    wordListCasing: Constants.CASING.MAINTAIN_CASING.value,
     spacesAllowed: false,
   }),
   getters: {
@@ -36,14 +37,14 @@ export const useCreatorStore = defineStore('creator', {
     getWords: state => {
       let formattedWords
 
-      if (state.wordListCasing === 'maintain-casing') {
+      if (state.wordListCasing === Constants.CASING.MAINTAIN_CASING.value) {
         formattedWords = state.words
-      } else if (state.wordListCasing === 'uppercase') {
+      } else if (state.wordListCasing === Constants.CASING.UPPERCASE.value) {
         formattedWords = state.words.map(obj => ({
           ...obj,
           hint: obj.hint.toUpperCase(),
         }))
-      } else if (state.wordListCasing === 'lowercase') {
+      } else if (state.wordListCasing === Constants.CASING.LOWERCASE.value) {
         formattedWords = state.words.map(obj => ({
           ...obj,
           hint: obj.hint.toLowerCase(),
@@ -77,15 +78,18 @@ export const useCreatorStore = defineStore('creator', {
             word.hint.toUpperCase() === input.hint.toUpperCase(),
         )
       ) {
-        return false
+        return { success: false, message: 'See sõna juba on nimekirjas' }
       }
 
       if (validate && !this.spacesAllowed && /\s/.test(input.word)) {
-        return false
+        return {
+          success: false,
+          message: 'Tühikuid sisaldavad sõned pole lubatud',
+        }
       }
 
       if (validate && input.word.length > Math.max(this.width, this.height)) {
-        return false
+        return { success: false, message: 'Sõna ei mahu rägastikku' }
       }
 
       const maxCharacters = Math.max(0, this.width * this.height * 0.8)
@@ -93,11 +97,15 @@ export const useCreatorStore = defineStore('creator', {
         this.words.reduce((sum, obj) => sum + obj.word.length, 0) +
         input.word.length
       if (validate && totalCharacters > maxCharacters) {
-        return false
+        return {
+          success: false,
+          message:
+            'Nimekirjas on liiga palju sõnu. Suurenda rägastiku laiust või kõrgust',
+        }
       }
 
       this.words.push(input)
-      return true
+      return { success: true }
     },
     removeWord(word) {
       this.words = this.words.filter(
@@ -118,15 +126,15 @@ export const useCreatorStore = defineStore('creator', {
     clearData() {
       this.width = 15
       this.height = 15
-      this.overlap = 'no-overlap'
+      this.overlap = Constants.OVERLAP.NO_OVERLAP.value
       this.backwardsEnabled = false
       this.diagonalsEnabled = false
-      this.casing = 'uppercase'
+      this.casing = Constants.CASING.UPPERCASE.value
       this.grid = []
       this.topic = ''
-      this.inputLanguage = 'et'
-      this.outputLanguage = 'et'
-      this.mode = 'words'
+      this.inputLanguage = Constants.LANGUAGE.ESTONIAN.value
+      this.outputLanguage = Constants.LANGUAGE.ESTONIAN.value
+      this.mode = Constants.MODE.WORDS.value
       this.words = []
       this.alphabetize = false
       this.highlight = false
@@ -134,7 +142,7 @@ export const useCreatorStore = defineStore('creator', {
       this.answers = []
       this.widthInput = 15
       this.heightInput = 15
-      this.wordListCasing = 'maintain-casing'
+      this.wordListCasing = Constants.CASING.MAINTAIN_CASING.value
       this.spacesAllowed = false
     },
   },
