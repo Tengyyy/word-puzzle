@@ -1,24 +1,24 @@
 <script setup>
-import { computed } from 'vue';
+import { computed } from 'vue'
 
 defineProps({
   char: {
     type: String,
-    required: true
+    required: true,
   },
   row: {
     type: Number,
-    required: true
+    required: true,
   },
   col: {
     type: Number,
-    required: true
+    required: true,
   },
   isSelected: {
     type: Boolean,
-    required: true
-  }
-});
+    required: true,
+  },
+})
 
 const cellStyle = computed(() => {
   return {
@@ -29,9 +29,9 @@ const cellStyle = computed(() => {
     fontWeight: 'bold',
     transition: 'background-color 0.2s ease',
     position: 'relative',
-    zIndex: 2
-  };
-});
+    zIndex: 2,
+  }
+})
 </script>
 
 <template>

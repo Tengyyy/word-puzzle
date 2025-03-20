@@ -1,4 +1,5 @@
 import pkg from "pg";
+
 const { Pool } = pkg;
 const pool = new Pool({
   user: "postgres",
@@ -20,8 +21,16 @@ const execute = async (query) => {
 };
 
 const createTablesQuery = `
-    CREATE TABLE IF NOT EXISTS "games" (
-        id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    CREATE TABLE IF NOT EXISTS "games"
+    (
+        id
+        uuid
+        PRIMARY
+        KEY
+        DEFAULT
+        gen_random_uuid
+    (
+    ),
         topic TEXT NOT NULL,
         title TEXT NOT NULL,
         grid TEXT[][] NOT NULL,
@@ -29,7 +38,7 @@ const createTablesQuery = `
         answers JSON NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         metadata JSON
-    );
+        );
 `;
 
 execute(createTablesQuery).then((result) => {

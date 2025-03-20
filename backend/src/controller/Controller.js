@@ -1,9 +1,9 @@
-import { Constants } from "../../../shared/Constants.js";
+import {Constants} from "../../../shared/Constants.js";
 import * as Validation from "./Validation.js";
 import * as Utils from "../../../shared/Utils.js";
-import { ValidationException } from "./Exceptions.js";
+import {ValidationException} from "./Exceptions.js";
 import pool from "../database.js";
-import { randomUUID } from "crypto";
+import {randomUUID} from "crypto";
 import GridGeneratorService from "../services/GridGeneratorService.js";
 import WordNetService from "../services/WordNetService.js";
 
@@ -36,13 +36,13 @@ function optionsFromDifficulty(diff) {
     diff === Constants.DIFFICULTY.EASY.value
       ? 10
       : diff === Constants.DIFFICULTY.MEDIUM.value
-      ? 15
-      : 20;
+        ? 15
+        : 20;
 
   return {
     rows: size,
     columns: size,
-    diagonal: diff === Constants.DIFFICULTY.HARD.value,
+    diagonal: diff !== Constants.DIFFICULTY.EASY.value,
     backward: diff !== Constants.DIFFICULTY.EASY.value,
     overlap:
       diff === Constants.DIFFICULTY.EASY.value
@@ -156,6 +156,7 @@ export async function createGame(req, res) {
       .json({ message: err.message || "Midagi läks valesti" });
   }
 }
+
 export async function loadGame(req, res) {
   const id = req.params.gameId;
   const showAnswers =
@@ -200,6 +201,7 @@ export async function loadGame(req, res) {
       .json({ message: err.message || "Midagi läks valesti" });
   }
 }
+
 export async function createWordList(req, res) {
   const data = req.body;
   try {
@@ -235,6 +237,7 @@ export async function createWordList(req, res) {
       .json({ message: err.message || "Midagi läks valesti" });
   }
 }
+
 export async function createCustomGame(req, res) {
   const data = req.body;
   try {
@@ -274,6 +277,7 @@ export async function createCustomGame(req, res) {
       .json({ message: err.message || "Midagi läks valesti" });
   }
 }
+
 export async function persistGame(req, res) {
   const data = req.body;
 
@@ -323,6 +327,7 @@ export async function persistGame(req, res) {
       .json({ message: err.message || "Midagi läks valesti" });
   }
 }
+
 export async function saveGame(req, res) {
   const data = req.body;
 

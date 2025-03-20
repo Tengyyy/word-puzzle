@@ -15,15 +15,15 @@
 </template>
 
 <script setup>
-import { useDialogStore } from "@/stores/dialogStore.js";
+import { useDialogStore } from '@/stores/dialogStore.js'
 
-const dialogStore = useDialogStore();
+const dialogStore = useDialogStore()
 
 const confirm = () => {
-  dialogStore.confirm();
-};
+  dialogStore.confirm()
+}
 
 const close = () => {
-  dialogStore.close();
-};
+  dialogStore.close()
+}
 </script>

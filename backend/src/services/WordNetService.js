@@ -1,8 +1,8 @@
-import { Worker } from "worker_threads";
-import { join } from "path";
+import {Worker} from "worker_threads";
+import {join} from "path";
 import path from "path";
-import { ServerException, TimeoutException } from "../controller/Exceptions.js";
-import { fileURLToPath } from "url";
+import {ServerException, TimeoutException} from "../controller/Exceptions.js";
+import {fileURLToPath} from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

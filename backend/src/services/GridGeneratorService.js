@@ -1,8 +1,8 @@
-import { ServerException, TimeoutException } from "../controller/Exceptions.js";
-import { Worker } from "worker_threads";
-import { resolve as _resolve } from "path";
+import {ServerException, TimeoutException} from "../controller/Exceptions.js";
+import {Worker} from "worker_threads";
+import {resolve as _resolve} from "path";
 import path from "path";
-import { fileURLToPath } from "url";
+import {fileURLToPath} from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

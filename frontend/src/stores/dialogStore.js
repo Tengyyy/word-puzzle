@@ -9,7 +9,12 @@ export const useDialogStore = defineStore('dialog', {
     onClose: null,
   }),
   actions: {
-    showDialog(msg, title = 'Hoiatus', onConfirmCallback = null, onCloseCallback = null) {
+    showDialog(
+      msg,
+      title = 'Hoiatus',
+      onConfirmCallback = null,
+      onCloseCallback = null,
+    ) {
       this.message = msg
       this.title = title
       this.onConfirm = onConfirmCallback
@@ -17,7 +22,7 @@ export const useDialogStore = defineStore('dialog', {
       this.visible = true
     },
     confirm() {
-      const callback = this.onConfirm;
+      const callback = this.state.onConfirm
       this.hide()
 
       if (callback) callback()
@@ -34,6 +39,6 @@ export const useDialogStore = defineStore('dialog', {
       this.title = ''
       this.onConfirm = null
       this.onClose = null
-    }
-  }
+    },
+  },
 })

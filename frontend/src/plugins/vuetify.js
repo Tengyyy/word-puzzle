@@ -9,17 +9,16 @@ import {
   VBtn,
   VIcon,
   VOverlay,
-  VSnackbar
+  VSnackbar,
 } from 'vuetify/lib/components/index.mjs'
 import 'vuetify/styles'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
-
 
 const vuetify = createVuetify({
   icons: {
     defaultSet: 'mdi', // Set MDI (Material Design Icons) as the default icon set
     aliases,
-    sets: { mdi }
+    sets: { mdi },
   },
   components: {
     VCard,
@@ -31,7 +30,7 @@ const vuetify = createVuetify({
     VAlert,
     VIcon,
     VOverlay,
-    VSnackbar
+    VSnackbar,
   },
 })
 export default vuetify

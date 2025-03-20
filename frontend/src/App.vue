@@ -1,14 +1,14 @@
 <script setup>
 import { RouterLink, RouterView } from 'vue-router'
 
-import { useLoadingStore } from '@/stores/loadingStore.js';
-import { computed } from 'vue';
-import AlertMessage from './components/AlertMessage.vue';
-import ConfirmationDialog from './components/ConfirmationDialog.vue';
-import {ENDPOINTS} from "../../shared/ApiEndpoints.js";
+import { useLoadingStore } from '@/stores/loadingStore.js'
+import { computed } from 'vue'
+import AlertMessage from './components/AlertMessage.vue'
+import ConfirmationDialog from './components/ConfirmationDialog.vue'
+import { ENDPOINTS } from '../../shared/ApiEndpoints.js'
 
-const loadingStore = useLoadingStore();
-const isLoading = computed(() => loadingStore.isLoading);
+const loadingStore = useLoadingStore()
+const isLoading = computed(() => loadingStore.isLoading)
 </script>
 
 <template>
@@ -16,7 +16,9 @@ const isLoading = computed(() => loadingStore.isLoading);
     <div class="wrapper">
       <RouterLink :to="ENDPOINTS.home.relative">Sõnarägastikud</RouterLink>
       <nav>
-        <RouterLink :to="ENDPOINTS.creator.relative">Loo oma sõnarägastik</RouterLink>
+        <RouterLink :to="ENDPOINTS.creator.relative"
+          >Loo oma sõnarägastik</RouterLink
+        >
         <a href="https://github.com/Tengyyy/word-puzzle">Github</a>
       </nav>
     </div>

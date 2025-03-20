@@ -1,5 +1,5 @@
 <script setup>
-import {ref, onMounted} from 'vue'
+import { ref, onMounted } from 'vue'
 import GameBoard from '@/components/GameBoard.vue'
 import WordList from '@/components/WordList.vue'
 import { useGameStore } from '@/stores/gameStore.js'
@@ -25,7 +25,6 @@ onMounted(() => {
 })
 
 const goHome = () => {
-  console.log('Routing home')
   router.push({ path: ENDPOINTS.home.relative })
 }
 
@@ -44,16 +43,15 @@ const handleSelect = async selectedWord => {
       'Sõnarägastik lahendatud',
       () => goHome(),
       () => {},
-    );
+    )
   }
 }
-
 </script>
 
 <template>
   <main>
     <h1>{{ gameStore.title }}</h1>
-    <GameBoard mode="game" @select="handleSelect" ref="boardRef" />
+    <GameBoard mode="game" @select="handleSelect()" ref="boardRef" />
     <WordList mode="game" />
     <br />
     <button @click="print" :disabled="loadingStore.isLoading">

@@ -1,10 +1,10 @@
-import express, { json, urlencoded } from "express";
+import express, {json, urlencoded} from "express";
 import cors from "cors";
 import morgan from "morgan";
-import { port, host } from "./config/config.js";
+import {port, host} from "./config/config.js";
 import WordNetService from "./services/WordNetService.js";
 import path from "path";
-import { fileURLToPath } from "url";
+import {fileURLToPath} from "url";
 import routes from "./routes.js";
 
 const __filename = fileURLToPath(import.meta.url);

@@ -25,33 +25,39 @@ export const useCreatorStore = defineStore('creator', {
     spacesAllowed: false,
   }),
   getters: {
-    getGrid: state => {
-      if (state.grid && state.grid.length > 0) {
-        return state.grid
+    getGrid: () => {
+      if (this.state.grid && this.state.grid.length > 0) {
+        return this.state.grid
       }
 
-      return Array.from({ length: state.height }, () =>
-        Array.from({ length: state.width }, () => '?'),
+      return Array.from({ length: this.state.height }, () =>
+        Array.from({ length: this.state.width }, () => '?'),
       )
     },
-    getWords: state => {
+    getWords: () => {
       let formattedWords
 
-      if (state.wordListCasing === Constants.CASING.MAINTAIN_CASING.value) {
-        formattedWords = state.words
-      } else if (state.wordListCasing === Constants.CASING.UPPERCASE.value) {
-        formattedWords = state.words.map(obj => ({
+      if (
+        this.state.wordListCasing === Constants.CASING.MAINTAIN_CASING.value
+      ) {
+        formattedWords = this.state.words
+      } else if (
+        this.state.wordListCasing === Constants.CASING.UPPERCASE.value
+      ) {
+        formattedWords = this.state.words.map(obj => ({
           ...obj,
           hint: obj.hint.toUpperCase(),
         }))
-      } else if (state.wordListCasing === Constants.CASING.LOWERCASE.value) {
-        formattedWords = state.words.map(obj => ({
+      } else if (
+        this.state.wordListCasing === Constants.CASING.LOWERCASE.value
+      ) {
+        formattedWords = this.state.words.map(obj => ({
           ...obj,
           hint: obj.hint.toLowerCase(),
         }))
       }
 
-      if (!state.alphabetize) {
+      if (!this.state.alphabetize) {
         return formattedWords
       }
 
@@ -81,7 +87,7 @@ export const useCreatorStore = defineStore('creator', {
         return { success: false, message: 'See sõna juba on nimekirjas' }
       }
 
-      if (validate && !this.spacesAllowed && /\s/.test(input.word)) {
+      if (validate && !this.state.spacesAllowed && /\s/.test(input.word)) {
         return {
           success: false,
           message: 'Tühikuid sisaldavad sõned pole lubatud',
@@ -118,8 +124,8 @@ export const useCreatorStore = defineStore('creator', {
       this.words = []
     },
     generateGrid(data) {
-      this.width = this.widthInput
-      this.height = this.heightInput
+      this.state.width = this.state.widthInput
+      this.height = this.state.heightInput
       this.grid = data.grid
       this.answers = data.answers
     },

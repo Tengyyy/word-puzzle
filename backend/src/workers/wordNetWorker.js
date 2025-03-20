@@ -1,10 +1,10 @@
-import { parentPort } from "worker_threads";
-import { readFileSync } from "fs";
-import { join } from "path";
-import { Parser } from "xml2js";
-import { Constants } from "../../../shared/Constants.js";
+import {parentPort} from "worker_threads";
+import {readFileSync} from "fs";
+import {join} from "path";
+import {Parser} from "xml2js";
+import {Constants} from "../../../shared/Constants.js";
 import path from "path";
-import { fileURLToPath } from "url";
+import {fileURLToPath} from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,18 +54,33 @@ async function loadWordNet(lang, filePath) {
 
     if (!synsetID) return; // Invalid entry
 
-    const relations = { hypernyms: [], hyponyms: [], similar: [] };
+    const relations = {
+      hypernyms: [],
+      hyponyms: [],
+      similar: [],
+      is_subevent_of: [],
+      subevent: [],
+      mero_part: [],
+      mero_member: [],
+      mero_location: [],
+      mero_portion: [],
+      holo_part: [],
+      holo_member: [],
+      causes: [],
+      is_caused_by: [],
+      state_of: [],
+      role: [],
+      involved: [],
+      involved_agent: [],
+      involved_instrument: [],
+    };
 
     (synset.SynsetRelation || []).forEach((relation) => {
       const relType = relation.$.relType;
       const targetSynset = relation.$.target;
 
-      if (relType === "hypernym") {
-        relations.hypernyms.push(targetSynset);
-      } else if (relType === "hyponym") {
-        relations.hyponyms.push(targetSynset);
-      } else if (relType === "similar") {
-        relations.similar.push(targetSynset);
+      if (relations.hasOwnProperty(relType)) {
+        relations[relType].push(targetSynset);
       }
     });
 
@@ -134,9 +149,7 @@ function getWords(
   const inputWordNet = wordNets.get(inputLanguage);
   const outputWordNet = wordNets.get(outputLanguage);
 
-  if (!inputWordNet || !outputWordNet) {
-    return { inputs: [], outputs: [] };
-  }
+  if (!inputWordNet || !outputWordNet) return { inputs: [], outputs: [] };
 
   const {
     lemmaToSynsets,
@@ -156,107 +169,103 @@ function getWords(
   const maxCharacters = width * height * 0.8;
 
   let collectedSynsets = new Set();
-  let availableSynsets = synsets.slice();
+  let inputSet = new Set();
+  let outputSet = new Set();
   let inputs = [];
   let outputs = [];
   let totalCharacters = 0;
 
-  while (inputs.length < 10 && availableSynsets.length > 0) {
-    const selectedSynset = getRandomElement(availableSynsets);
-    collectedSynsets.add(selectedSynset);
-    collectWords(selectedSynset);
-    availableSynsets = diff();
-  }
+  let availableSynsets = [...synsets];
 
-  function getRandomElement(arr) {
-    const randomIndex = Math.floor(Math.random() * arr.length);
-    return arr[randomIndex];
-  }
+  function collectWords(synsetID, depth = 0) {
+    if (totalCharacters >= (maxCharacters - 5) || depth > 3) return; // maxCharacters - 5. character count does not need to be exactly equal to maxCharacters, this allows for faster short-circuiting
+    if (collectedSynsets.has(synsetID)) return;
 
-  function diff() {
-    return availableSynsets.filter((el) => !collectedSynsets.has(el));
-  }
+    collectedSynsets.add(synsetID);
 
-  function collectWords(synsetID) {
-    if (totalCharacters >= maxCharacters) return;
+    let input = null;
+    let output = null;
 
-    const relations = synsetRelations.get(synsetID);
-    if (!relations) return;
+    if (mode === Constants.MODE.HINTS.value) {
+      input = synsetDefinitions.get(synsetID);
+      if (!input || inputSet.has(input)) return;
+    }
 
-    ["hypernyms", "hyponyms", "similar"].forEach((relation) => {
-      relations[relation].forEach((relatedSynset) => {
-        if (!collectedSynsets.has(relatedSynset)) {
-          collectedSynsets.add(relatedSynset);
+    if (mode === Constants.MODE.WORDS.value || inputLanguage === outputLanguage) {
+      const lemmas = synsetToLemmas.get(synsetID);
+      if (lemmas) {
+        for (const lemma of lemmas) {
+          if (!spacesAllowed && /\s/.test(lemma)) continue;
+          if (lemma.length > maxWordLength) continue;
+          if (inputSet.has(lemma)) continue;
 
-          let input, output;
-          if (mode === Constants.MODE.HINTS.value) {
-            if (!synsetDefinitions.get(relatedSynset)) return;
-            input = synsetDefinitions.get(relatedSynset);
-          }
+          input = lemma;
+          output = lemma;
+          break;
+        }
+      }
+    }
 
-          if (
-            mode === Constants.MODE.WORDS.value ||
-            inputLanguage === outputLanguage
-          ) {
-            const lemmas = synsetToLemmas.get(relatedSynset);
-            if (!lemmas || lemmas.length === 0) return;
-
-            let word;
-            for (const lemma of lemmas) {
-              if (!spacesAllowed && /\s/.test(lemma)) continue; // Skip multi-word phrases if spaces are not allowed
-              if (lemma.length > maxWordLength) continue;
-              if (inputs.includes(lemma)) continue;
-
-              word = lemma;
-              break;
-            }
-
-            if (!word) return;
-            if (mode === Constants.MODE.WORDS.value) {
-              input = word;
-            }
-            if (inputLanguage === outputLanguage) {
-              output = word;
-            }
-          }
-
-          if (outputLanguage !== inputLanguage) {
-            const ili = synsetToIli.get(relatedSynset);
-            if (!ili) return;
-
-            const outputSynset = iliToSynsets.get(ili)[outputLanguage];
-            if (!outputSynset) return; // No ili-mapping available to output language, have to skip this synset
-
-            const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
-            if (!outputLemmas || outputLemmas.length === 0) return;
-
+    if (outputLanguage !== inputLanguage) {
+      const ili = synsetToIli.get(synsetID);
+      if (ili) {
+        const outputSynset = outputWordNet.iliToSynsets.get(ili);
+        if (outputSynset) {
+          const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
+          if (outputLemmas) {
             for (const lemma of outputLemmas) {
               if (!spacesAllowed && /\s/.test(lemma)) continue;
               if (lemma.length > maxWordLength) continue;
-              if (outputs.includes(lemma)) continue;
+              if (outputSet.has(lemma)) continue;
 
               output = lemma;
               break;
             }
-            if (!output) return;
           }
-
-          if (!input || !output) return;
-
-          if (totalCharacters + output.length > maxCharacters) return;
-
-          inputs.push(input);
-          outputs.push(output);
-          totalCharacters += output.length;
         }
-      });
-    });
+      }
+    }
+
+    if (input && output && totalCharacters + output.length <= maxCharacters) {
+      inputs.push(input);
+      outputs.push(output);
+      inputSet.add(input);
+      outputSet.add(output);
+      totalCharacters += output.length;
+    }
+
+    if (totalCharacters >= maxCharacters - 5) return;
+
+    // Explore related synsets dynamically based on depth
+    const priorityRelations = depth < 2 ?
+      ["hyponyms", "subevent", "mero_part", "mero_member", "mero_location"] :
+      ["hypernyms", "holo_part", "holo_member", "causes", "is_caused_by", "role", "involved", "involved_agent"];
+
+    const relations = synsetRelations.get(synsetID);
+    if (relations) {
+      for (const relation of priorityRelations) {
+        if (relations[relation]) {
+          for (const relatedSynset of relations[relation]) {
+            collectWords(relatedSynset, depth + 1);
+            if (totalCharacters >= maxCharacters - 5) return;
+          }
+        }
+      }
+    }
   }
 
-  return {
-    inputs: inputs,
-    outputs: outputs,
-  };
+  //extend to different definitions of input word if we still can't reach the threshold
+  while (totalCharacters < (maxCharacters - 5) && availableSynsets.length > 0) {
+    const selectedSynset = getRandomElement(availableSynsets);
+    collectWords(selectedSynset);
+    availableSynsets = availableSynsets.filter((s) => !collectedSynsets.has(s));
+  }
+
+  function getRandomElement(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  return { inputs, outputs };
 }
 
 parentPort.on("message", async (msg) => {

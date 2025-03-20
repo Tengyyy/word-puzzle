@@ -7,7 +7,7 @@ import {
   saveGame,
 } from "./controller/Controller.js";
 
-import { ENDPOINTS } from "../../shared/ApiEndpoints.js";
+import {ENDPOINTS} from "../../shared/ApiEndpoints.js";
 
 export default (app) => {
   //GET

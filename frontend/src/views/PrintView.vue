@@ -1,32 +1,32 @@
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
-import GameBoard from '@/components/GameBoard.vue';
-import WordList from '@/components/WordList.vue';
-import { usePrintStore } from '@/stores/printStore.js';
+import { ref, computed, onMounted, nextTick } from 'vue'
+import GameBoard from '@/components/GameBoard.vue'
+import WordList from '@/components/WordList.vue'
+import { usePrintStore } from '@/stores/printStore.js'
 
 const MODE = Object.freeze({
   GAME: 'game',
   CREATE: 'create',
-});
+})
 
-const answerBoard = ref(null);
+const answerBoard = ref(null)
 
-const printStore = usePrintStore();
+const printStore = usePrintStore()
 const mode = computed(() => {
-  return printStore.isCreateView ? MODE.CREATE : MODE.GAME;
-});
+  return printStore.isCreateView ? MODE.CREATE : MODE.GAME
+})
 
 onMounted(() => {
   if (printStore.isCreateView) {
-    answerBoard.value.toggleHighlights();
+    answerBoard.value.toggleHighlights()
   }
   nextTick(() => {
-    showPrintModal();
-  });
+    showPrintModal()
+  })
 })
 
 const showPrintModal = () => {
-  window.print();
+  window.print()
 }
 </script>
 

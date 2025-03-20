@@ -13,8 +13,8 @@ export const useGameStore = defineStore('game', {
     gameInProgress: false,
   }),
   getters: {
-    getGrid: state => state.grid,
-    getWords: state => state.words,
+    getGrid: this.state.grid,
+    getWords: this.state.words,
   },
   actions: {
     setGameData(data) {
@@ -35,7 +35,14 @@ export const useGameStore = defineStore('game', {
       this.wordsToFind = []
       this.foundWords = []
     },
+    resetGame() {
+      this.wordsToFind = [...this.words]
+      this.foundWords = []
+      this.gameEnded = false
+      this.gameInProgress = false
+    },
     startGame() {
+      this.resetGame()
       this.gameInProgress = true
       this.gameEnded = false
     },
@@ -47,19 +54,19 @@ export const useGameStore = defineStore('game', {
       const forwards = selection.toUpperCase()
       const backwards = selection.split('').reverse().join('').toUpperCase()
       let success = false
-      for (let i = 0; i < this.wordsToFind.length; i++) {
+      for (let i = 0; i < this.state.wordsToFind.length; i++) {
         // Check if selected word matches any in the word list, either forwards or backwards
-        const word = this.wordsToFind[i]
+        const word = this.state.wordsToFind[i]
         const upper = word.word.toUpperCase()
         if (upper === forwards || upper === backwards) {
-          this.wordsToFind.splice(i, 1)
-          this.foundWords.push(word)
+          this.state.wordsToFind.splice(i, 1)
+          this.state.foundWords.push(word)
           success = true
           break
         }
       }
 
-      if (this.wordsToFind.length === 0) {
+      if (this.state.wordsToFind.length === 0) {
         this.endGame()
       }
 

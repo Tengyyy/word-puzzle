@@ -1,5 +1,5 @@
-import { Constants } from "../../../shared/Constants.js";
-import { ValidationException } from "./Exceptions.js";
+import {Constants} from "../../../shared/Constants.js";
+import {ValidationException} from "./Exceptions.js";
 
 function getValues(constants) {
   return Object.values(constants).map((constant) => constant.value);

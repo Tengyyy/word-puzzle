@@ -9,9 +9,9 @@ export const usePrintStore = defineStore('print', {
     answers: [],
   }),
   getters: {
-    getGrid: state => state.grid,
-    getWords: state => state.words,
-    isCreateView: state => state.answers && state.answers.length > 0,
+    getGrid: () => this.state.grid,
+    getWords: () => this.state.words,
+    isCreateView: () => this.state.answers && this.state.answers.length > 0,
   },
   actions: {
     setGameData(data) {

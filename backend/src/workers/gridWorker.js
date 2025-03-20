@@ -1,5 +1,5 @@
-import { parentPort } from "worker_threads";
-import { Constants } from "../../../shared/Constants.js";
+import {parentPort} from "worker_threads";
+import {Constants} from "../../../shared/Constants.js";
 
 const letterDistribution = new Map([
   [
@@ -328,7 +328,7 @@ class Puzzle {
       row < copy.rows &&
       column >= 0 &&
       column < copy.columns
-    ) {
+      ) {
       const letter = letters.shift();
       if (!letter) break;
 
