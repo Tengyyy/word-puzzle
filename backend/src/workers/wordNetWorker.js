@@ -55,8 +55,8 @@ async function loadWordNet(lang, filePath) {
     if (!synsetID) return; // Invalid entry
 
     const relations = {
-      hypernyms: [],
-      hyponyms: [],
+      hypernym: [],
+      hyponym: [],
       similar: [],
       is_subevent_of: [],
       subevent: [],
@@ -79,7 +79,7 @@ async function loadWordNet(lang, filePath) {
       const relType = relation.$.relType;
       const targetSynset = relation.$.target;
 
-      if (relations.hasOwnProperty(relType)) {
+      if (Object.keys(relations).includes(relType)) {
         relations[relType].push(targetSynset);
       }
     });
@@ -188,7 +188,6 @@ function getWords(
 
     if (mode === Constants.MODE.HINTS.value) {
       input = synsetDefinitions.get(synsetID);
-      if (!input || inputSet.has(input)) return;
     }
 
     if (mode === Constants.MODE.WORDS.value || inputLanguage === outputLanguage) {
@@ -199,17 +198,24 @@ function getWords(
           if (lemma.length > maxWordLength) continue;
           if (inputSet.has(lemma)) continue;
 
-          input = lemma;
-          output = lemma;
+          if (mode === Constants.MODE.WORDS.value) {
+            input = lemma;
+          }
+
+          if (inputLanguage === outputLanguage) {
+            output = lemma;
+          }
+
           break;
         }
       }
     }
 
     if (outputLanguage !== inputLanguage) {
+      output = null;
       const ili = synsetToIli.get(synsetID);
       if (ili) {
-        const outputSynset = outputWordNet.iliToSynsets.get(ili);
+        const outputSynset = iliToSynsets.get(ili)[outputLanguage];
         if (outputSynset) {
           const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
           if (outputLemmas) {
@@ -226,7 +232,7 @@ function getWords(
       }
     }
 
-    if (input && output && totalCharacters + output.length <= maxCharacters) {
+    if (input && output && totalCharacters + output.length <= maxCharacters && !inputSet.has(input)) {
       inputs.push(input);
       outputs.push(output);
       inputSet.add(input);
@@ -238,8 +244,8 @@ function getWords(
 
     // Explore related synsets dynamically based on depth
     const priorityRelations = depth < 2 ?
-      ["hyponyms", "subevent", "mero_part", "mero_member", "mero_location"] :
-      ["hypernyms", "holo_part", "holo_member", "causes", "is_caused_by", "role", "involved", "involved_agent"];
+      ["hyponym", "subevent", "mero_part", "mero_member", "mero_location", "mero_portion", "similar"] :
+      ["hypernym", "holo_part", "holo_member", "causes", "is_caused_by", "role", "involved", "involved_agent", "involved_instrument", "is_subevent_of", "state_of"];
 
     const relations = synsetRelations.get(synsetID);
     if (relations) {

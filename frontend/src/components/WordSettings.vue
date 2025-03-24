@@ -19,7 +19,7 @@ const generateWords = async () => {
     alertStore.showAlert('Palun sisesta sõnarägastiku teema', 'error')
     return
   }
-  if (creatorStore.words.length > 0) {
+  if (creatorStore.getWords.length > 0) {
     dialogStore.showDialog(
       'Kas soovid jätkata?',
       'Uue sõnade listi genereerimisel olemasolevad sõnad eemaldatakse.',
@@ -29,100 +29,71 @@ const generateWords = async () => {
       },
       () => {},
     )
+    return
   }
+
+  emit('generateWords')
 }
 </script>
 
 <template>
-  <main>
-    <br />
-    <h4>Sõnade sätted</h4>
-    <label for="topic-input">Teema:</label><br />
-    <input
-      type="text"
-      name="topic-input"
-      id="topic-input"
-      v-model="creatorStore.topic"
-      :disabled="loadingStore.isLoading"
-    /><br />
-    <label for="input-language-select">Vali sisendkeel:</label><br />
-    <select
-      name="input-language-select"
-      id="input-language-select"
-      v-model="creatorStore.inputLanguage"
-      :disabled="loadingStore.isLoading"
-    >
-      <option
-        v-for="(lang, key) in Constants.LANGUAGE"
-        :key="key"
-        :value="lang.value"
-      >
-        {{ lang.text }}
-      </option></select
-    ><br />
-    <label for="output-language-select">Vali väljundkeel:</label><br />
-    <select
-      name="output-language-select"
-      id="output-language-select"
-      v-model="creatorStore.outputLanguage"
-      :disabled="loadingStore.isLoading"
-    >
-      <option
-        v-for="(lang, key) in Constants.LANGUAGE"
-        :key="key"
-        :value="lang.value"
-      >
-        {{ lang.text }}
-      </option></select
-    ><br />
-    <label for="mode-select">Kuva sõnarägastiku kõrval:</label><br />
-    <select
-      name="mode-select"
-      id="mode-select"
-      v-model="creatorStore.mode"
-      :disabled="loadingStore.isLoading"
-    >
-      <option
-        v-for="(mode, key) in Constants.MODE"
-        :key="key"
-        :value="mode.value"
-      >
-        {{ mode.text }}
-      </option></select
-    ><br /><br />
-    <button @click="generateWords" :disabled="loadingStore.isLoading">
-      Genereeri sõnade list
-    </button>
-    <br /><br />
-    <input
-      type="checkbox"
-      id="alphabetize-checkbox"
-      v-model="creatorStore.alphabetize"
-      :disabled="loadingStore.isLoading"
-    />
-    <label for="alphabetize-checkbox"
-      >Kuva sõnad tähestikulises järjekorras</label
-    ><br /><br />
+  <v-text-field
+    label="Teema"
+    v-model="creatorStore.topic"
+    :disabled="loadingStore.isLoading"
+  />
 
-    <label>Tähtede suurus:</label><br />
-    <div v-for="(option, key) in Constants.CASING" :key="key">
-      <input
-        type="radio"
-        :id="`${option.value}-radio`"
-        :value="option.value"
-        v-model="creatorStore.wordListCasing"
+  <v-select
+    label="Sisendkeel"
+    v-model="creatorStore.inputLanguage"
+    :disabled="loadingStore.isLoading"
+    :items="Object.values(Constants.LANGUAGE)"
+    item-title="text"
+    item-value="value"
+  />
+
+  <v-select
+    label="Väljundkeel"
+    v-model="creatorStore.outputLanguage"
+    :disabled="loadingStore.isLoading"
+    :items="Object.values(Constants.LANGUAGE)"
+    item-title="text"
+    item-value="value"
+  />
+
+  <v-radio-group label="Kuva sõnarägastiku kõrval" v-model="creatorStore.mode">
+    <template v-for="mode in Constants.MODE" :key="mode.value">
+      <v-radio
+        :value="mode.value"
+        :label="mode.text"
         :disabled="loadingStore.isLoading"
       />
-      <label :for="`${option.value}-radio`">{{ option.text }}</label
-      ><br />
-    </div>
+    </template>
+  </v-radio-group>
 
-    <input
-      type="checkbox"
-      id="spaces-allowed-checkbox"
-      v-model="creatorStore.spacesAllowed"
-      :disabled="loadingStore.isLoading"
-    />
-    <label for="spaces-allowed-checkbox">Luba tühikud sõnedes</label><br />
-  </main>
+  <v-radio-group label="Tähtede suurus" v-model="creatorStore.wordListCasing">
+    <template v-for="mode in Constants.CASING" :key="mode.value">
+      <v-radio
+        :value="mode.value"
+        :label="mode.text"
+        :disabled="loadingStore.isLoading"
+      />
+    </template>
+  </v-radio-group>
+
+  <v-checkbox
+    label="Luba tühikud sõnedes"
+    v-model="creatorStore.spacesAllowed"
+    :disabled="loadingStore.isLoading"
+  />
+
+  <v-switch
+    label="Kuva sõnad tähestikulises järjekorras"
+    v-model="creatorStore.alphabetize"
+    :disabled="loadingStore.isLoading"
+  />
+
+  <v-btn @click="generateWords" :disabled="loadingStore.isLoading">
+    Genereeri sõnade list
+  </v-btn>
 </template>

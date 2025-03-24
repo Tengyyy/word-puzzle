@@ -1,44 +1,56 @@
 import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
-export const useDialogStore = defineStore('dialog', {
-  state: () => ({
-    visible: false,
-    message: '',
-    title: '',
-    onConfirm: null,
-    onClose: null,
-  }),
-  actions: {
-    showDialog(
-      msg,
-      title = 'Hoiatus',
-      onConfirmCallback = null,
-      onCloseCallback = null,
-    ) {
-      this.message = msg
-      this.title = title
-      this.onConfirm = onConfirmCallback
-      this.onClose = onCloseCallback
-      this.visible = true
-    },
-    confirm() {
-      const callback = this.state.onConfirm
-      this.hide()
+export const useDialogStore = defineStore('dialog', () => {
+  const visible = ref(false)
+  const message = ref('')
+  const title = ref('')
+  const onConfirm = ref(null)
+  const onClose = ref(null)
 
-      if (callback) callback()
-    },
-    close() {
-      const callback = this.onClose
-      this.hide()
+  function showDialog(
+    msg,
+    dialogTitle = 'Hoiatus',
+    onConfirmCallback = null,
+    onCloseCallback = null,
+  ) {
+    message.value = msg
+    title.value = dialogTitle
+    onConfirm.value = onConfirmCallback
+    onClose.value = onCloseCallback
+    visible.value = true
+  }
 
-      if (callback) callback()
-    },
-    hide() {
-      this.visible = false
-      this.message = ''
-      this.title = ''
-      this.onConfirm = null
-      this.onClose = null
-    },
-  },
+  function confirm() {
+    const callback = onConfirm.value
+    hide()
+
+    if (callback) callback()
+  }
+
+  function close() {
+    const callback = onClose.value
+    hide()
+
+    if (callback) callback()
+  }
+
+  function hide() {
+    visible.value = false
+    message.value = ''
+    title.value = ''
+    onConfirm.value = null
+    onClose.value = null
+  }
+
+  return {
+    visible,
+    message,
+    title,
+    onConfirm,
+    onClose,
+    showDialog,
+    confirm,
+    close,
+  }
 })

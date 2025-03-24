@@ -1,6 +1,5 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router'
-
+import { RouterView } from 'vue-router'
 import { useLoadingStore } from '@/stores/loadingStore.js'
 import { computed } from 'vue'
 import AlertMessage from './components/AlertMessage.vue'
@@ -12,121 +11,51 @@ const isLoading = computed(() => loadingStore.isLoading)
 </script>
 
 <template>
-  <header>
-    <div class="wrapper">
-      <RouterLink :to="ENDPOINTS.home.relative">Sõnarägastikud</RouterLink>
-      <nav>
-        <RouterLink :to="ENDPOINTS.creator.relative"
-          >Loo oma sõnarägastik</RouterLink
-        >
-        <a href="https://github.com/Tengyyy/word-puzzle">Github</a>
-      </nav>
-    </div>
-  </header>
-  <main>
-    <RouterView />
-  </main>
+  <v-app>
+    <v-app-bar app color="primary" dense>
+      <v-container class="d-flex align-center">
+        <v-btn :to="ENDPOINTS.home.relative" variant="text" class="text-h6 text-white">
+          Sõnarägastikud
+        </v-btn>
+        <v-spacer></v-spacer>
+        <v-btn :to="ENDPOINTS.creator.relative" variant="text" class="text-white">
+          Loo oma sõnarägastik
+        </v-btn>
+        <v-btn href="https://github.com/Tengyyy/word-puzzle" target="_blank" variant="text" class="text-white">
+          Github
+        </v-btn>
+      </v-container>
+    </v-app-bar>
 
-  <AlertMessage />
-  <ConfirmationDialog />
+    <v-main class="main-container">
+      <v-container fluid>
+        <RouterView />
+      </v-container>
+    </v-main>
 
-  <div v-if="isLoading" class="spinner-overlay">
-    <div class="spinner"></div>
-  </div>
+    <AlertMessage />
+    <ConfirmationDialog />
+
+    <v-overlay v-if="isLoading" persistent>
+      <v-progress-circular indeterminate size="64" color="primary"></v-progress-circular>
+    </v-overlay>
+  </v-app>
 </template>
 
+
+
 <style scoped>
-.spinner-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 255, 255, 0.7);
+
+/* Additional styles for home view page centering */
+.main-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+  flex-direction: column;
+  justify-content: center; /* Center vertically */
+  align-items: center; /* Center horizontally */
+  min-height: 100vh; /* Ensure it takes at least the full viewport height */
+  padding: 20px; /* Add padding if needed */
+  box-sizing: border-box;
+  overflow: hidden; /* Prevent horizontal scroll if content fits */
 }
 
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border-left-color: #09f;
-  animation: spin 1s ease infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
 </style>

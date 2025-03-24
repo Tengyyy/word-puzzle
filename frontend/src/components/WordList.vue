@@ -61,15 +61,13 @@ const addWord = () => {
   if (!result.success) {
     alertStore.showAlert(result.message)
   } else {
-    wordInput.value = null
-    hintInput.value = null
+    wordInput.value = ''
+    hintInput.value = ''
   }
 }
 
 const removeAllWords = () => {
-  if (!editable.value) {
-    return
-  }
+  if (!editable.value) return
 
   store.removeAllWords()
 }
@@ -90,62 +88,47 @@ const shouldShowAnswer = (word, wordFound) => {
 </script>
 
 <template>
-  <div class="word-list">
-    <ul>
-      <li
+  <v-container>
+    <v-list>
+      <v-list-item
         v-for="(word, index) in store.getWords"
         :key="index"
-        v-bind:class="{ found: (wordFound = isFound(word)) }"
+        :class="{ 'text-decoration-line-through': isFound(word) }"
       >
-        {{
-          shouldShowAnswer(word, wordFound)
-            ? word.hint + ' (' + word.word + ')'
-            : word.hint
-        }}
+        <v-list-item-title>
+          {{ shouldShowAnswer(word, isFound(word)) ? `${word.hint} (${word.word})` : word.hint }}
+        </v-list-item-title>
+        <template v-slot:append v-if="editable">
+          <v-btn icon="mdi-delete" color="red" @click="store.removeWord(word)"></v-btn>
+        </template>
+      </v-list-item>
+    </v-list>
 
-        <button v-if="editable" @click="store.removeWord(word)">Remove</button>
-      </li>
-    </ul>
-  </div>
-  <template v-if="editable">
-    <button @click="removeAllWords" :disabled="loadingStore.isLoading">
-      Eemalda kõik sõnad
-    </button>
-    <br />
-    <label for="word-input">Vihje:</label><br />
-    <input
-      type="text"
-      name="hint-input"
-      id="hint-input"
-      v-model="hintInput"
-      @keyup.enter="addWord"
-      :disabled="loadingStore.isLoading"
-    /><br />
-    <label for="word-input">Sõna:</label><br />
-    <input
-      type="text"
-      name="word-input"
-      id="word-input"
-      v-model="wordInput"
-      @keyup.enter="addWord"
-      :disabled="loadingStore.isLoading"
-    /><br /><br />
-    <button @click="addWord">Lisa</button>
-  </template>
+    <template v-if="editable">
+      <v-btn @click="removeAllWords" :disabled="loadingStore.isLoading" color="red" class="mb-4">
+        Eemalda kõik sõnad
+      </v-btn>
+
+      <v-text-field
+          label="Vihje"
+          v-model="hintInput"
+          @keyup.enter="addWord"
+          :disabled="loadingStore.isLoading"
+      />
+      <v-text-field
+          label="Sõna"
+          v-model="wordInput"
+          @keyup.enter="addWord"
+          :disabled="loadingStore.isLoading"
+      />
+      <v-btn @click="addWord" color="blue" class="mt-2">Lisa</v-btn>
+    </template>
+
+  </v-container>
 </template>
 
 <style scoped>
-.word-list ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-.word-list li {
-  font-size: 1rem;
-  margin-bottom: 5px;
-}
-
-.word-list .found {
+.text-decoration-line-through {
   text-decoration: line-through;
 }
 </style>

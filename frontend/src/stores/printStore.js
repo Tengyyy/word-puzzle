@@ -1,32 +1,49 @@
 import { defineStore } from 'pinia'
+import { computed, ref } from 'vue'
 
-export const usePrintStore = defineStore('print', {
-  state: () => ({
-    id: null,
-    grid: null,
-    words: null,
-    title: null,
-    answers: [],
-  }),
-  getters: {
-    getGrid: () => this.state.grid,
-    getWords: () => this.state.words,
-    isCreateView: () => this.state.answers && this.state.answers.length > 0,
-  },
-  actions: {
-    setGameData(data) {
-      this.grid = data.grid
-      this.words = data.words
-      this.id = data.id
-      this.title = data.title
-      this.answers = data.answers || []
-    },
-    clearGameData() {
-      this.id = null
-      this.grid = null
-      this.words = null
-      this.title = null
-      this.answers = []
-    },
-  },
+export const usePrintStore = defineStore('print', () => {
+  const id = ref(null)
+  const grid = ref(null)
+  const words = ref(null)
+  const title = ref(null)
+  const answers = ref([])
+
+  const getGrid = computed(() => {
+    return grid.value
+  })
+
+  const getWords = computed(() => {
+    return words.value
+  })
+
+  const isCreateView = computed(() => {
+    return answers.value && answers.value.length > 0
+  })
+
+  function setGameData(data) {
+    grid.value = data.grid
+    words.value = data.words
+    id.value = data.id
+    title.value = data.title
+    answers.value = data.answers ? [...data.answers] : []
+  }
+
+  function clearGameData() {
+    id.value = null
+    grid.value = null
+    words.value = null
+    title.value = null
+    answers.value = []
+  }
+
+  return {
+    id,
+    title,
+    answers,
+    getGrid,
+    getWords,
+    isCreateView,
+    setGameData,
+    clearGameData,
+  }
 })

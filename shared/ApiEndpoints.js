@@ -39,4 +39,8 @@ export const ENDPOINTS = Object.freeze({
     full: `${FRONTEND_URL}/create`,
     relative: "/create",
   },
+  notFound: {
+    full: `${FRONTEND_URL}/not-found`,
+    relative: "/not-found",
+  }
 });

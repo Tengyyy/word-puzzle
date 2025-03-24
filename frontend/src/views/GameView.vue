@@ -49,21 +49,42 @@ const handleSelect = async selectedWord => {
 </script>
 
 <template>
-  <main>
+  <v-main>
     <h1>{{ gameStore.title }}</h1>
-    <GameBoard mode="game" @select="handleSelect()" ref="boardRef" />
-    <WordList mode="game" />
-    <br />
-    <button @click="print" :disabled="loadingStore.isLoading">
-      Prindi mäng
-    </button>
-  </main>
+    <v-container>
+      <v-row>
+        <!-- Game Grid on Left -->
+        <v-col cols="12" md="6">
+          <GameBoard mode="game" @select="handleSelect" ref="boardRef" />
+        </v-col>
+        <!-- Word List on Right (initially, can move to bottom on smaller screens) -->
+        <v-col cols="12" md="6">
+          <WordList mode="game" />
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
+          <v-btn @click="print" :disabled="loadingStore.isLoading">
+            Prindi mäng
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
+  </v-main>
 </template>
 
 <style scoped>
-main {
-  display: flex;
-  justify-content: space-between;
-  padding: 20px;
+.v-row {
+  transition: flex-direction 0.3s ease;
+}
+
+/* Adjust layout for smaller screens */
+@media (max-width: 960px) {
+  .v-row {
+    flex-direction: column;
+  }
+  .v-col {
+    margin-bottom: 20px;
+  }
 }
 </style>

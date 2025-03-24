@@ -47,8 +47,9 @@ const generateWords = async () => {
     })
 
     words.forEach(word => creatorStore.addWord(word, false))
-    if (!creatorStore.title || !titleSetByUser.value)
-      creatorStore.title = creatorStore.topic
+    if (!creatorStore.title || !titleSetByUser.value) {
+      creatorStore.setTitle(creatorStore.topic)
+    }
     // eslint-disable-next-line no-unused-vars
   } catch (err) {
     /* empty */
@@ -150,60 +151,67 @@ const print = async () => {
 </script>
 
 <template>
-  <main>
-    <BoardSettings />
-    <WordSettings @generate-words="generateWords" />
-    <label for="title-input">Pealkiri:</label><br />
-    <input
-      type="text"
-      id="title-input"
-      name="title-input"
+  <v-main>
+    <v-expansion-panels>
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          Sõnarägastiku sätted
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <BoardSettings />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+      <v-expansion-panel>
+        <v-expansion-panel-title>
+          Sõnade sätted
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <WordSettings @generate-words="generateWords" />
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+    </v-expansion-panels>
+
+    <v-text-field
+      label="Pealkiri"
       v-model="creatorStore.title"
       @input="handleInput"
       @focus="userIsTyping = true"
       @blur="userIsTyping = false"
       ref="titleInput"
       :disabled="loadingStore.isLoading"
-    /><br /><br />
+    />
+
     <GameBoard mode="create" ref="boardRef" />
     <WordList mode="create" />
-    <br /><br />
-    <input
-      type="checkbox"
-      name="highlight-checkbox"
-      id="highlight-checkbox"
+    <v-switch
+      label="Kuva peidetud sõnad"
       v-model="creatorStore.highlight"
       @change="boardRef.toggleHighlights()"
       :disabled="loadingStore.isLoading"
     />
-    <label for="highlight-checkbox">Kuva peidetud sõnad</label>
-    <button @click="generate" :disabled="loadingStore.isLoading">
+
+    <v-btn @click="generate" :disabled="loadingStore.isLoading">
       Genereeri
-    </button>
-    <button
+    </v-btn>
+    <v-btn
       @click="share"
       :disabled="!generated || gameSaved || loadingStore.isLoading"
     >
       Jaga mängu
-    </button>
+    </v-btn>
     <template v-if="gameSaved">
-      <input
-        type="text"
-        id="link-field"
-        name="link-field"
+      <v-text-field
         readonly
         :value="link"
-        ref="linkFieldRef"
-        :disabled="loadingStore.isLoading"
       />
-      <button @click="copyLink" :disabled="loadingStore.isLoading">
+      <v-btn @click="copyLink">
         {{ linkCopied ? 'Kopeeritud' : 'Kopeeri' }}
-      </button>
+      </v-btn>
     </template>
-    <button @click="print" :disabled="!generated || loadingStore.isLoading">
+    <v-btn @click="print" :disabled="!generated || loadingStore.isLoading">
       Prindi mäng
-    </button>
-  </main>
+    </v-btn>
+  </v-main>
 </template>
 
 <style scoped></style>

@@ -8,75 +8,58 @@ const loadingStore = useLoadingStore()
 </script>
 
 <template>
-  <main>
-    <h4>Mängulaua sätted</h4>
-    <label for="width-input">Laius:</label><br />
-    <input
-      type="number"
-      id="width-input"
-      name="width-input"
-      v-model="creatorStore.widthInput"
-      :disabled="loadingStore.isLoading"
-    /><br /><br />
+  <v-number-input
+    label="Laius"
+    id="width-input"
+    v-model="creatorStore.widthInput"
+    :disabled="loadingStore.isLoading"
+    :min="5"
+    :max="30"
+  />
 
-    <label for="height-input">Kõrgus:</label><br />
-    <input
-      type="number"
-      id="height-input"
-      name="height-input"
-      v-model="creatorStore.heightInput"
-      :disabled="loadingStore.isLoading"
-    /><br /><br />
+  <v-number-input
+    label="Kõrgus"
+    id="height-input"
+    v-model="creatorStore.heightInput"
+    :disabled="loadingStore.isLoading"
+    :min="5"
+    :max="30"
+  />
 
-    <label>Sõnade kattumine:</label><br />
-    <div v-for="(option, key) in Constants.OVERLAP" :key="key">
-      <input
-        type="radio"
-        :id="`${option.value}-radio`"
+  <v-radio-group label="Sõnade kattumine" v-model="creatorStore.overlap">
+    <template v-for="option in Constants.OVERLAP" :key="option.value">
+      <v-radio
         :value="option.value"
-        v-model="creatorStore.overlap"
+        :label="option.text"
         :disabled="loadingStore.isLoading"
       />
-      <label :for="`${option.value}-radio`">{{ option.text }}</label
-      ><br />
-    </div>
+    </template>
+  </v-radio-group>
 
-    <br />
-    <input
-      type="checkbox"
-      id="backwards-enabled-checkbox"
-      v-model="creatorStore.backwardsEnabled"
-      :disabled="loadingStore.isLoading"
-    />
-    <label for="backwards-enabled-checkbox"
-      >Sõnad võivad esineda vastupidises suunas</label
-    ><br />
-    <input
-      type="checkbox"
-      id="diagonals-enabled-checkbox"
-      v-model="creatorStore.diagonalsEnabled"
-      :disabled="loadingStore.isLoading"
-    />
-    <label for="diagonals-enabled-checkbox"
-      >Sõnad võivad esineda diagonaalis</label
-    ><br /><br />
+  <v-checkbox
+    label="Sõnad võivad esineda vastupidises suuna"
+    v-model="creatorStore.backwardsEnabled"
+    :disabled="loadingStore.isLoading"
+  />
 
-    <label>Tähtede suurus:</label><br />
-    <div
+  <v-checkbox
+    label="Sõnad võivad esineda diagonaalis"
+    v-model="creatorStore.diagonalsEnabled"
+    :disabled="loadingStore.isLoading"
+  />
+
+  <v-radio-group label="Tähtede suurus" v-model="creatorStore.casing">
+    <template
       v-for="option in Object.values(Constants.CASING).filter(
         opt => opt.value !== 'maintain-casing',
       )"
       :key="option.value"
     >
-      <input
-        type="radio"
-        :id="`${option.value}-radio`"
+      <v-radio
         :value="option.value"
-        v-model="creatorStore.casing"
+        :label="option.text"
         :disabled="loadingStore.isLoading"
       />
-      <label :for="`${option.value}-radio`">{{ option.text }}</label
-      ><br />
-    </div>
-  </main>
+    </template>
+  </v-radio-group>
 </template>

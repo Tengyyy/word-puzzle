@@ -10,7 +10,13 @@ const MODE = Object.freeze({
   CREATE: 'create',
 })
 
-const GRID_CELL_SIZE = 40
+const computedCellSize = computed(() => {
+  const baseSize = 40; // or any default size you want
+  const screenWidth = window.innerWidth; // Or use any logic for size scaling
+
+  // Adjust the size based on screen size or other factors
+  return screenWidth < 768 ? baseSize / 1.5 : baseSize; // Example scaling based on screen width
+});
 
 const DIRECTION = Object.freeze({
   EAST: 0,
@@ -23,16 +29,16 @@ const DIRECTION = Object.freeze({
   NORTH_EAST: 315,
 })
 
-const OFFSETS = Object.freeze({
+const OFFSETS = computed(() => ({
   E: { x: 0, y: 0 },
-  SE: { x: GRID_CELL_SIZE / 2, y: -GRID_CELL_SIZE / 5 },
-  S: { x: GRID_CELL_SIZE, y: 0 },
-  SW: { x: GRID_CELL_SIZE + GRID_CELL_SIZE / 5, y: GRID_CELL_SIZE / 2 },
-  W: { x: GRID_CELL_SIZE, y: GRID_CELL_SIZE },
-  NW: { x: GRID_CELL_SIZE / 2, y: GRID_CELL_SIZE + GRID_CELL_SIZE / 5 },
-  N: { x: 0, y: GRID_CELL_SIZE },
-  NE: { x: -GRID_CELL_SIZE / 5, y: GRID_CELL_SIZE / 2 },
-})
+  SE: { x: computedCellSize.value / 2, y: -computedCellSize.value / 5 },
+  S: { x: computedCellSize.value, y: 0 },
+  SW: { x: computedCellSize.value + computedCellSize.value / 5, y: computedCellSize.value / 2 },
+  W: { x: computedCellSize.value, y: computedCellSize.value },
+  NW: { x: computedCellSize.value / 2, y: computedCellSize.value + computedCellSize.value / 5 },
+  N: { x: 0, y: computedCellSize.value },
+  NE: { x: -computedCellSize.value / 5, y: computedCellSize.value / 2 },
+}));
 
 let lastAngle = null
 
@@ -224,11 +230,11 @@ const gridDimensions = computed(() => {
 })
 
 const gridWidth = computed(() => {
-  return gridDimensions.value.cols * GRID_CELL_SIZE
+  return gridDimensions.value.cols * computedCellSize.value
 })
 
 const gridHeight = computed(() => {
-  return gridDimensions.value.rows * GRID_CELL_SIZE
+  return gridDimensions.value.rows * computedCellSize.value
 })
 
 // Calculate the cells to highlight based on the direction
@@ -293,70 +299,70 @@ const calculateOutline = (highlightedCells, direction) => {
   const endCell = highlightedCells[highlightedCells.length - 1]
 
   // Base starting position
-  let startX = startCell.col * GRID_CELL_SIZE
-  let startY = startCell.row * GRID_CELL_SIZE
+  let startX = startCell.col * computedCellSize.value
+  let startY = startCell.row * computedCellSize.value
 
   let width = 0
-  let height = GRID_CELL_SIZE
+  let height = computedCellSize.value
 
   const transitionDuration = getTransitionDuration(direction)
   lastAngle = calculateAngle(direction)
 
   switch (direction) {
     case DIRECTION.EAST:
-      width = highlightedCells.length * GRID_CELL_SIZE
-      startX += OFFSETS.E.x
-      startY += OFFSETS.E.y
+      width = highlightedCells.length * computedCellSize.value
+      startX += OFFSETS.value.E.x
+      startY += OFFSETS.value.E.y
       break
     case DIRECTION.WEST:
-      width = highlightedCells.length * GRID_CELL_SIZE
-      startX += OFFSETS.W.x
-      startY += OFFSETS.W.y
+      width = highlightedCells.length * computedCellSize.value
+      startX += OFFSETS.value.W.x
+      startY += OFFSETS.value.W.y
       break
     case DIRECTION.NORTH:
-      width = highlightedCells.length * GRID_CELL_SIZE
-      startX += OFFSETS.N.x
-      startY += OFFSETS.N.y
+      width = highlightedCells.length * computedCellSize.value
+      startX += OFFSETS.value.N.x
+      startY += OFFSETS.value.N.y
       break
     case DIRECTION.SOUTH:
-      width = highlightedCells.length * GRID_CELL_SIZE
-      startX += OFFSETS.S.x
-      startY += OFFSETS.S.y
+      width = highlightedCells.length * computedCellSize.value
+      startX += OFFSETS.value.S.x
+      startY += OFFSETS.value.S.y
       break
     case DIRECTION.SOUTH_EAST: {
       const dx = endCell.col - startCell.col
       const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * GRID_CELL_SIZE
-      width = distance + GRID_CELL_SIZE
-      startX += OFFSETS.SE.x
-      startY += OFFSETS.SE.y
+      const distance = Math.sqrt(dx * dx + dy * dy) * computedCellSize.value
+      width = distance + computedCellSize.value
+      startX += OFFSETS.value.SE.x
+      startY += OFFSETS.value.SE.y
       break
     }
     case DIRECTION.SOUTH_WEST: {
       const dx = endCell.col - startCell.col
       const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * GRID_CELL_SIZE
-      width = distance + GRID_CELL_SIZE
-      startX += OFFSETS.SW.x
-      startY += OFFSETS.SW.y
+      const distance = Math.sqrt(dx * dx + dy * dy) * computedCellSize.value
+      width = distance + computedCellSize.value
+      startX += OFFSETS.value.SW.x
+      startY += OFFSETS.value.SW.y
       break
     }
     case DIRECTION.NORTH_WEST: {
       const dx = endCell.col - startCell.col
       const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * GRID_CELL_SIZE
-      width = distance + GRID_CELL_SIZE
-      startX += OFFSETS.NW.x
-      startY += OFFSETS.NW.y
+      const distance = Math.sqrt(dx * dx + dy * dy) * computedCellSize.value
+      width = distance + computedCellSize.value
+      startX += OFFSETS.value.NW.x
+      startY += OFFSETS.value.NW.y
       break
     }
     case DIRECTION.NORTH_EAST: {
       const dx = endCell.col - startCell.col
       const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * GRID_CELL_SIZE
-      width = distance + GRID_CELL_SIZE
-      startX += OFFSETS.NE.x
-      startY += OFFSETS.NE.y
+      const distance = Math.sqrt(dx * dx + dy * dy) * computedCellSize.value
+      width = distance + computedCellSize.value
+      startX += OFFSETS.value.NE.x
+      startY += OFFSETS.value.NE.y
       break
     }
   }
@@ -500,7 +506,10 @@ const handleSelection = () => {
     class="grid-container"
     @mouseup="handleMouseUp"
     @mouseleave="handleMouseUp"
-    :style="{ width: gridWidth + 'px', height: gridHeight + 'px' }"
+    :style="{
+      backgroundSize: `${computedCellSize}px ${computedCellSize}px`,
+      width: gridWidth + 'px', height: gridHeight + 'px'
+    }"
   >
     <!--Highlighted/found words-->
     <div
@@ -521,12 +530,13 @@ const handleSelection = () => {
     <div
       class="grid"
       :style="{
-        gridTemplateRows: `repeat(${store.getGrid ? store.getGrid.length : 0}, ${GRID_CELL_SIZE}px)`,
-        gridTemplateColumns: `repeat(${store.getGrid && store.getGrid[0] ? store.getGrid[0].length : 0}, ${GRID_CELL_SIZE}px)`,
+        gridTemplateRows: `repeat(${store.getGrid ? store.getGrid.length : 0}, ${computedCellSize}px)`,
+        gridTemplateColumns: `repeat(${store.getGrid && store.getGrid[0] ? store.getGrid[0].length : 0}, ${computedCellSize}px)`,
       }"
     >
       <template v-for="(row, rowIndex) in store.getGrid">
         <GridCell
+          class="grid-cell"
           v-for="(char, colIndex) in row"
           :key="`cell-${rowIndex}-${colIndex}`"
           :char="char"
@@ -537,6 +547,7 @@ const handleSelection = () => {
               cell => cell.row === rowIndex && cell.col === colIndex,
             )
           "
+          :selectable="playable"
           @mousedown="() => handleMouseDown(rowIndex, colIndex)"
           @mousemove="() => handleMouseMove(rowIndex, colIndex)"
         />
@@ -551,15 +562,15 @@ const handleSelection = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-image: linear-gradient(to right, #ccc 1px, transparent 1px),
-    linear-gradient(to bottom, #ccc 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-image: linear-gradient(to right, #000 1px, transparent 1px),
+    linear-gradient(to bottom, #000000 1px, transparent 1px) !important;
+  background-repeat: repeat;
   /* Match grid cell size exactly */
   background-position: 0 0;
   /* Start at top-left corner */
   z-index: 0;
   /* Ensure grid lines are beneath everything */
-  border: solid #ccc;
+  border: solid #000000;
   border-width: 0 1px 1px 0;
 }
 

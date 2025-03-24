@@ -8,6 +8,7 @@ import PrintView from '@/views/PrintView.vue'
 import { usePrintStore } from '@/stores/printStore.js'
 import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { apiRequest } from '@/api.js'
+import {useErrorStore} from "@/stores/errorStore.js";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,7 @@ const router = createRouter({
       beforeEnter: async (to, from, next) => {
         const gameStore = useGameStore()
         const gameId = to.params.id
+        const errorStore = useErrorStore()
 
         if (!gameStore.id || gameStore.id !== gameId) {
           try {
@@ -38,6 +40,7 @@ const router = createRouter({
             next()
             // eslint-disable-next-line no-unused-vars
           } catch (err) {
+            errorStore.setError("Antud ID-ga sõnarägastikku ei leitud andmebaasist")
             next({ name: 'NotFound' })
           }
         } else {
@@ -58,16 +61,18 @@ const router = createRouter({
         const printStore = usePrintStore()
         const gameId = to.params.id
         const showAnswers = to.query.showAnswers
+        const errorStore = useErrorStore()
 
         if (!printStore.id || printStore.id !== gameId) {
           try {
             const response = await apiRequest(
-              `${ENDPOINTS.getGame}/${to.params.id}${showAnswers === '1' || showAnswers === 'true' ? '?showAnswers=1' : ''}`,
+              `${ENDPOINTS.getGame.full}/${to.params.id}${showAnswers === '1' || showAnswers === 'true' ? '?showAnswers=1' : ''}`,
             )
             printStore.setGameData(response)
             next()
             // eslint-disable-next-line no-unused-vars
           } catch (err) {
+            errorStore.setError("Antud ID-ga sõnarägastikku ei leitud andmebaasist")
             next({ name: 'NotFound' })
           }
         } else {
@@ -76,7 +81,11 @@ const router = createRouter({
       },
     },
     {
-      path: '/:pathMatch(.*)',
+      path: '/:pathMatch(.*)*',
+      redirect: ENDPOINTS.notFound.relative
+    },
+    {
+      path: '/not-found',
       name: 'NotFound',
       component: NotFound,
     },

@@ -268,7 +268,7 @@ export async function createCustomGame(req, res) {
       language: language,
     };
 
-    const result = await GridGeneratorServicegenerateGrid(words, options);
+    const result = await GridGeneratorService.generateGrid(words, options);
     res.json(result).end();
   } catch (err) {
     console.error(err);

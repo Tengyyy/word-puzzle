@@ -31,9 +31,9 @@ const showPrintModal = () => {
 </script>
 
 <template>
-  <main>
+  <v-main>
     <h1>{{ printStore.title }}</h1>
-    <button @click="showPrintModal" class="no-print">Prindi</button>
+    <v-btn @click="showPrintModal" class="no-print">Prindi</v-btn>
     <GameBoard :mode="mode" :printView="true" />
     <WordList :mode="mode" :printView="true" />
     <template v-if="printStore.isCreateView">
@@ -41,7 +41,7 @@ const showPrintModal = () => {
       <GameBoard :mode="mode" :printView="true" ref="answerBoard" />
       <WordList :mode="mode" :printView="true" :answerList="true" />
     </template>
-  </main>
+  </v-main>
 </template>
 
 <style scoped>

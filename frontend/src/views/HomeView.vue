@@ -7,6 +7,8 @@ import { useAlertStore } from '@/stores/alertStore.js'
 import { apiRequest } from '@/api.js'
 import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { useLoadingStore } from '@/stores/loadingStore.js'
+import logo from '@/assets/logo.svg'
+
 
 const topic = ref(null)
 
@@ -49,62 +51,78 @@ const startGame = async () => {
     /* empty */
   }
 }
-</script>
 
+const getButtonColor = (value) => {
+  switch (value) {
+    case Constants.DIFFICULTY.EASY.value:
+      return 'green';
+    case Constants.DIFFICULTY.MEDIUM.value:
+      return 'yellow';
+    case Constants.DIFFICULTY.HARD.value:
+      return 'red';
+    default:
+      return 'gray';
+  }
+};
+
+</script>
 <template>
-  <main>
-    <label for="topic-field">Sisesta sõnarägastiku teema:</label><br />
-    <input
-      type="text"
-      id="topic-field"
-      name="topic-field"
-      v-model="topic"
-    /><br /><br />
-    <label for="difficulty-select">Vali raskusaste:</label><br />
-    <select
-      name="difficulty-select"
-      id="difficulty-select"
-      v-model="difficulty"
-      :disabled="loadingStore.isLoading"
-    >
-      <option
-        v-for="(option, key) in Constants.DIFFICULTY"
-        :key="key"
-        :value="option.value"
-      >
-        {{ option.text }}
-      </option></select
-    ><br />
-    <label for="input-language-select">Vali sisendkeel:</label><br />
-    <select
-      name="input-language-select"
-      id="input-language-select"
-      v-model="inputLanguage"
-      :disabled="loadingStore.isLoading"
-    >
-      <option
-        v-for="(lang, key) in Constants.LANGUAGE"
-        :key="key"
-        :value="lang.value"
-      >
-        {{ lang.text }}
-      </option></select
-    ><br />
-    <label for="output-language-select">Vali väljundkeel:</label><br />
-    <select
-      name="output-language-select"
-      id="output-language-select"
-      v-model="outputLanguage"
-      :disabled="loadingStore.isLoading"
-    >
-      <option
-        v-for="(lang, key) in Constants.LANGUAGE"
-        :key="key"
-        :value="lang.value"
-      >
-        {{ lang.text }}
-      </option></select
-    ><br /><br />
-    <button @click="startGame" :disabled="loadingStore.isLoading">Mängi</button>
-  </main>
+  <v-main class="d-flex align-center justify-center">
+    <v-container class="d-flex align-center justify-center" style="flex: 1;">
+      <v-row class="w-100 d-flex align-center justify-center">
+        <!-- Logo: Visible only on larger screens -->
+        <v-col cols="12" md="6" class="d-none d-md-flex justify-center">
+          <v-img :src="logo" max-width="500" contain />
+        </v-col>
+
+        <!-- Controls -->
+        <v-col cols="12" md="6" class="d-flex flex-column align-center">
+          <v-text-field
+              label="Sõnarägastiku teema"
+              v-model="topic"
+              :disabled="loadingStore.isLoading"
+              class="w-75"
+              @keyup.enter="startGame"
+          />
+
+          <v-select
+              label="Sisendkeel"
+              v-model="inputLanguage"
+              :disabled="loadingStore.isLoading"
+              :items="Object.values(Constants.LANGUAGE)"
+              item-title="text"
+              item-value="value"
+              class="w-75"
+          />
+
+          <v-select
+              label="Väljundkeel"
+              v-model="outputLanguage"
+              :disabled="loadingStore.isLoading"
+              :items="Object.values(Constants.LANGUAGE)"
+              item-title="text"
+              item-value="value"
+              class="w-75"
+          />
+
+          <!-- Difficulty Toggle -->
+          <v-btn-toggle v-model="difficulty" divided rounded="xl" mandatory class="my-4">
+            <v-btn
+                v-for="mode in Object.values(Constants.DIFFICULTY)"
+                :key="mode.value"
+                :value="mode.value"
+                :color="getButtonColor(mode.value)"
+            >
+              {{ mode.text }}
+            </v-btn>
+          </v-btn-toggle>
+
+          <!-- Start Button -->
+          <v-btn @click="startGame" :disabled="loadingStore.isLoading" class="w-50">
+            Mängi
+          </v-btn>
+        </v-col>
+      </v-row>
+    </v-container>
+  </v-main>
 </template>
