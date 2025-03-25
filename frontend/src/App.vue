@@ -1,28 +1,45 @@
 <script setup>
-import { RouterView } from 'vue-router'
+import {RouterView, useRouter} from 'vue-router'
 import { useLoadingStore } from '@/stores/loadingStore.js'
 import { computed } from 'vue'
 import AlertMessage from './components/AlertMessage.vue'
 import ConfirmationDialog from './components/ConfirmationDialog.vue'
 import { ENDPOINTS } from '../../shared/ApiEndpoints.js'
 
+
 const loadingStore = useLoadingStore()
 const isLoading = computed(() => loadingStore.isLoading)
+
+const router = useRouter()
+
+const navigateHome = () => {
+  router.push(ENDPOINTS.home.relative)
+}
 </script>
 
 <template>
   <v-app>
     <v-app-bar app color="primary" dense>
       <v-container class="d-flex align-center">
-        <v-btn :to="ENDPOINTS.home.relative" variant="text" class="text-h6 text-white">
-          Sõnarägastikud
-        </v-btn>
+        <img
+            src="@/assets/logo_medium.svg"
+            alt="Logo"
+            @click="navigateHome"
+            style="max-width: 180px; cursor: pointer;"
+        />
         <v-spacer></v-spacer>
         <v-btn :to="ENDPOINTS.creator.relative" variant="text" class="text-white">
+          <v-icon left>mdi-pencil</v-icon>
           Loo oma sõnarägastik
         </v-btn>
         <v-btn href="https://github.com/Tengyyy/word-puzzle" target="_blank" variant="text" class="text-white">
-          Github
+          <v-icon left>mdi-github</v-icon>
+          Lähtekood
+        </v-btn>
+
+        <v-btn href="https://forms.gle/" target="_blank" variant="text" class="text-white">
+          <v-icon left>mdi-comment-outline</v-icon>
+          Tagasiside
         </v-btn>
       </v-container>
     </v-app-bar>

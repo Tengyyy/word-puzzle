@@ -3,7 +3,7 @@
 import {useErrorStore} from "@/stores/errorStore.js";
 import {ENDPOINTS} from "../../../shared/ApiEndpoints.js";
 import router from "@/router/index.js"
-import logo from '@/assets/logo.svg'
+import logo from '@/assets/logo_large.svg'
 import { onBeforeRouteLeave } from 'vue-router'
 
 

@@ -35,6 +35,7 @@ import {
   VRow,
   VCol,
   VSpacer,
+  VDivider,
 } from 'vuetify/lib/components/index.mjs'
 import 'vuetify/styles'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
@@ -81,6 +82,7 @@ const vuetify = createVuetify({
     VRow,
     VCol,
     VSpacer,
+    VDivider,
   },
 })
 export default vuetify
