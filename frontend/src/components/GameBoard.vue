@@ -5,18 +5,36 @@ import { useCreatorStore } from '@/stores/creatorStore.js'
 import { useGameStore } from '@/stores/gameStore.js'
 import { usePrintStore } from '@/stores/printStore.js'
 
+const props = defineProps({
+  mode: {
+    type: String,
+    required: true,
+    validator: value => ['game', 'create'].includes(value),
+  },
+  printView: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
+  width: {
+    type: Number,
+    required: true,
+  },
+  height: {
+    type: Number,
+    required: true,
+  },
+  cellSize: {
+    type: Number,
+    required: false,
+    default: 40,
+  },
+})
+
 const MODE = Object.freeze({
   GAME: 'game',
   CREATE: 'create',
 })
-
-const computedCellSize = computed(() => {
-  const baseSize = 40; // or any default size you want
-  const screenWidth = window.innerWidth; // Or use any logic for size scaling
-
-  // Adjust the size based on screen size or other factors
-  return screenWidth < 768 ? baseSize / 1.5 : baseSize; // Example scaling based on screen width
-});
 
 const DIRECTION = Object.freeze({
   EAST: 0,
@@ -29,31 +47,18 @@ const DIRECTION = Object.freeze({
   NORTH_EAST: 315,
 })
 
-const OFFSETS = computed(() => ({
-  E: { x: 0, y: 0 },
-  SE: { x: computedCellSize.value / 2, y: -computedCellSize.value / 5 },
-  S: { x: computedCellSize.value, y: 0 },
-  SW: { x: computedCellSize.value + computedCellSize.value / 5, y: computedCellSize.value / 2 },
-  W: { x: computedCellSize.value, y: computedCellSize.value },
-  NW: { x: computedCellSize.value / 2, y: computedCellSize.value + computedCellSize.value / 5 },
-  N: { x: 0, y: computedCellSize.value },
-  NE: { x: -computedCellSize.value / 5, y: computedCellSize.value / 2 },
-}));
-
 let lastAngle = null
 
-const props = defineProps({
-  mode: {
-    type: String,
-    required: true,
-    validator: value => ['game', 'create'].includes(value),
-  },
-  printView: {
-    type: Boolean,
-    required: false,
-    default: false,
-  },
-})
+const OFFSETS = computed(() => ({
+  E: { x: 0, y: 0 },
+  SE: { x: props.cellSize / 2, y: -props.cellSize / 5 },
+  S: { x: props.cellSize, y: 0 },
+  SW: { x: props.cellSize + props.cellSize / 5, y: props.cellSize / 2 },
+  W: { x: props.cellSize, y: props.cellSize },
+  NW: { x: props.cellSize / 2, y: props.cellSize + props.cellSize / 5 },
+  N: { x: 0, y: props.cellSize },
+  NE: { x: -props.cellSize / 5, y: props.cellSize / 2 },
+}))
 
 const store = props.printView
   ? usePrintStore()
@@ -229,14 +234,6 @@ const gridDimensions = computed(() => {
   }
 })
 
-const gridWidth = computed(() => {
-  return gridDimensions.value.cols * computedCellSize.value
-})
-
-const gridHeight = computed(() => {
-  return gridDimensions.value.rows * computedCellSize.value
-})
-
 // Calculate the cells to highlight based on the direction
 const calculateCellsToHighlight = (start, current, direction) => {
   const cells = []
@@ -299,41 +296,41 @@ const calculateOutline = (highlightedCells, direction) => {
   const endCell = highlightedCells[highlightedCells.length - 1]
 
   // Base starting position
-  let startX = startCell.col * computedCellSize.value
-  let startY = startCell.row * computedCellSize.value
+  let startX = startCell.col * props.cellSize
+  let startY = startCell.row * props.cellSize
 
   let width = 0
-  let height = computedCellSize.value
+  let height = props.cellSize
 
   const transitionDuration = getTransitionDuration(direction)
   lastAngle = calculateAngle(direction)
 
   switch (direction) {
     case DIRECTION.EAST:
-      width = highlightedCells.length * computedCellSize.value
+      width = highlightedCells.length * props.cellSize
       startX += OFFSETS.value.E.x
       startY += OFFSETS.value.E.y
       break
     case DIRECTION.WEST:
-      width = highlightedCells.length * computedCellSize.value
+      width = highlightedCells.length * props.cellSize
       startX += OFFSETS.value.W.x
       startY += OFFSETS.value.W.y
       break
     case DIRECTION.NORTH:
-      width = highlightedCells.length * computedCellSize.value
+      width = highlightedCells.length * props.cellSize
       startX += OFFSETS.value.N.x
       startY += OFFSETS.value.N.y
       break
     case DIRECTION.SOUTH:
-      width = highlightedCells.length * computedCellSize.value
+      width = highlightedCells.length * props.cellSize
       startX += OFFSETS.value.S.x
       startY += OFFSETS.value.S.y
       break
     case DIRECTION.SOUTH_EAST: {
       const dx = endCell.col - startCell.col
       const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * computedCellSize.value
-      width = distance + computedCellSize.value
+      const distance = Math.sqrt(dx * dx + dy * dy) * props.cellSize
+      width = distance + props.cellSize
       startX += OFFSETS.value.SE.x
       startY += OFFSETS.value.SE.y
       break
@@ -341,8 +338,8 @@ const calculateOutline = (highlightedCells, direction) => {
     case DIRECTION.SOUTH_WEST: {
       const dx = endCell.col - startCell.col
       const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * computedCellSize.value
-      width = distance + computedCellSize.value
+      const distance = Math.sqrt(dx * dx + dy * dy) * props.cellSize
+      width = distance + props.cellSize
       startX += OFFSETS.value.SW.x
       startY += OFFSETS.value.SW.y
       break
@@ -350,8 +347,8 @@ const calculateOutline = (highlightedCells, direction) => {
     case DIRECTION.NORTH_WEST: {
       const dx = endCell.col - startCell.col
       const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * computedCellSize.value
-      width = distance + computedCellSize.value
+      const distance = Math.sqrt(dx * dx + dy * dy) * props.cellSize
+      width = distance + props.cellSize
       startX += OFFSETS.value.NW.x
       startY += OFFSETS.value.NW.y
       break
@@ -359,8 +356,8 @@ const calculateOutline = (highlightedCells, direction) => {
     case DIRECTION.NORTH_EAST: {
       const dx = endCell.col - startCell.col
       const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * computedCellSize.value
-      width = distance + computedCellSize.value
+      const distance = Math.sqrt(dx * dx + dy * dy) * props.cellSize
+      width = distance + props.cellSize
       startX += OFFSETS.value.NE.x
       startY += OFFSETS.value.NE.y
       break
@@ -507,8 +504,9 @@ const handleSelection = () => {
     @mouseup="handleMouseUp"
     @mouseleave="handleMouseUp"
     :style="{
-      backgroundSize: `${computedCellSize}px ${computedCellSize}px`,
-      width: gridWidth + 'px', height: gridHeight + 'px'
+      backgroundSize: `${props.cellSize}px ${props.cellSize}px`,
+      width: props.width + 'px',
+      height: props.height + 'px',
     }"
   >
     <!--Highlighted/found words-->
@@ -530,8 +528,8 @@ const handleSelection = () => {
     <div
       class="grid"
       :style="{
-        gridTemplateRows: `repeat(${store.getGrid ? store.getGrid.length : 0}, ${computedCellSize}px)`,
-        gridTemplateColumns: `repeat(${store.getGrid && store.getGrid[0] ? store.getGrid[0].length : 0}, ${computedCellSize}px)`,
+        gridTemplateRows: `repeat(${store.getGrid ? store.getGrid.length : 0}, ${props.cellSize}px)`,
+        gridTemplateColumns: `repeat(${store.getGrid && store.getGrid[0] ? store.getGrid[0].length : 0}, ${props.cellSize}px)`,
       }"
     >
       <template v-for="(row, rowIndex) in store.getGrid">
@@ -548,6 +546,7 @@ const handleSelection = () => {
             )
           "
           :selectable="playable"
+          :cell-size="props.cellSize"
           @mousedown="() => handleMouseDown(rowIndex, colIndex)"
           @mousemove="() => handleMouseMove(rowIndex, colIndex)"
         />

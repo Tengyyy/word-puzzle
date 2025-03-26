@@ -36,6 +36,8 @@ import {
   VCol,
   VSpacer,
   VDivider,
+  VTooltip,
+  VNavigationDrawer,
 } from 'vuetify/lib/components/index.mjs'
 import 'vuetify/styles'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
@@ -83,6 +85,8 @@ const vuetify = createVuetify({
     VCol,
     VSpacer,
     VDivider,
+    VTooltip,
+    VNavigationDrawer,
   },
 })
 export default vuetify

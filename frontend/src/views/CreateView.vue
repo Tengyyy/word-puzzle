@@ -148,6 +148,19 @@ const print = async () => {
     }
   }
 }
+
+const gridCellSize = computed(() => {
+  return 40;
+})
+
+const gridWidth = computed(() => {
+  return creatorStore.width * gridCellSize.value;
+})
+
+const gridHeight = computed(() => {
+  return creatorStore.height * gridCellSize.value;
+})
+
 </script>
 
 <template>
@@ -179,9 +192,10 @@ const print = async () => {
       @blur="userIsTyping = false"
       ref="titleInput"
       :disabled="loadingStore.isLoading"
+      class="mt-6"
     />
 
-    <GameBoard mode="create" ref="boardRef" />
+    <GameBoard mode="create" ref="boardRef" :cell-size="gridCellSize" :width="gridWidth" :height="gridHeight" />
     <WordList mode="create" />
     <v-switch
       label="Kuva peidetud sõnad"

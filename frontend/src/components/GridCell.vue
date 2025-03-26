@@ -1,13 +1,6 @@
 <script setup>
 import { computed } from 'vue'
 
-const computedCellSize = computed(() => {
-  const baseSize = 40; // or any default size you want
-  const screenWidth = window.innerWidth; // Or use any logic for size scaling
-
-  return screenWidth < 768 ? baseSize / 1.5 : baseSize; // Example scaling based on screen width
-})
-
 const props = defineProps({
   char: {
     type: String,
@@ -28,13 +21,18 @@ const props = defineProps({
   selectable: {
     type: Boolean,
     required: true,
+  },
+  cellSize: {
+    type: Number,
+    required: false,
+    default: 40,
   }
 })
 
 const cellStyle = computed(() => {
   return {
-    width: `${computedCellSize.value}px`,
-    height: `${computedCellSize.value}px`,
+    width: `${props.cellSize}px`,
+    height: `${props.cellSize}px`,
     backgroundColor: 'transparent',
     fontSize: '18px',
     fontWeight: 'bold',

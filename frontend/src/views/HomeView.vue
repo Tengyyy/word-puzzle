@@ -86,13 +86,15 @@ const getButtonColor = (value) => {
         <!-- Controls -->
         <v-col cols="12" md="6" class="d-flex flex-column align-center">
 
-          <v-card class="control-panel px-4 py-6 d-flex controls-col">
+          <v-card class="control-panel px-4 py-16 d-flex controls-col background-light">
             <v-text-field
                 label="Sõnarägastiku teema"
                 v-model="topic"
                 :disabled="loadingStore.isLoading"
                 class="w-75"
                 @keyup.enter="startGame"
+                rounded
+                variant="solo"
             />
 
             <v-select
@@ -103,6 +105,8 @@ const getButtonColor = (value) => {
                 item-title="text"
                 item-value="value"
                 class="w-75"
+                rounded
+                variant="solo"
             />
 
             <v-select
@@ -113,10 +117,12 @@ const getButtonColor = (value) => {
                 item-title="text"
                 item-value="value"
                 class="w-75"
+                rounded
+                variant="solo"
             />
 
             <!-- Difficulty Toggle -->
-            <v-btn-toggle v-model="difficulty" divided rounded="xl" mandatory class="my-4">
+            <v-btn-toggle v-model="difficulty" divided rounded="xl" mandatory class="my-4" variant="elevated">
               <v-btn
                   v-for="mode in Object.values(Constants.DIFFICULTY)"
                   :key="mode.value"
@@ -127,10 +133,10 @@ const getButtonColor = (value) => {
               </v-btn>
             </v-btn-toggle>
 
-            <v-divider class="my-4"></v-divider>
+            <v-divider class="my-2"></v-divider>
 
             <!-- Start Button -->
-            <v-btn @click="startGame" :disabled="loadingStore.isLoading" class="w-50">
+            <v-btn @click="startGame" :disabled="loadingStore.isLoading" class="w-50" color="primary" rounded size="x-large">
               Mängi
             </v-btn>
           </v-card>
@@ -141,6 +147,7 @@ const getButtonColor = (value) => {
 </template>
 
 <style scoped>
+@import '@/assets/main.css';
 
 .controls-col {
   flex-direction: column;
@@ -170,7 +177,7 @@ const getButtonColor = (value) => {
   width: 100vw;
   height: 100vh;
   background: url('@/assets/solved_puzzle.png') repeat-x center;
-  background-size: auto 100%;
+  background-size: 200% 100%;
   filter: blur(3px);
 }
 

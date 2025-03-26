@@ -1,5 +1,14 @@
 @import './base.css';
 
+:root {
+  --background-light: rgb(239, 212, 143);
+  --logo-light-green: rgb(125, 227, 99);
+  --logo-dark-green: rgb(20, 91, 11);
+}
+
+.background-light {
+  background-color: var(--background-light) !important;
+}
 
 html {
   overflow-y: auto !important

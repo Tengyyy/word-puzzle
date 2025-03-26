@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import GameBoard from '@/components/GameBoard.vue'
 import WordList from '@/components/WordList.vue'
 import { useGameStore } from '@/stores/gameStore.js'
@@ -46,6 +46,26 @@ const handleSelect = async selectedWord => {
     )
   }
 }
+
+const gridCellSize = computed(() => {
+  return 40;
+})
+
+const gridWidth = computed(() => {
+  let firstRow = [];
+  const grid = gameStore.getGrid;
+  if (grid && grid.length > 0 && grid[0] && grid[0].length > 0) firstRow = grid[0];
+
+  return firstRow.length * gridCellSize.value;
+})
+
+const gridHeight = computed(() => {
+  let grid = []
+  if (gameStore.getGrid && gameStore.getGrid.length > 0) grid = gameStore.getGrid
+
+  return grid.length * gridCellSize.value;
+})
+
 </script>
 
 <template>
@@ -55,7 +75,7 @@ const handleSelect = async selectedWord => {
       <v-row>
         <!-- Game Grid on Left -->
         <v-col cols="12" md="6">
-          <GameBoard mode="game" @select="handleSelect" ref="boardRef" />
+          <GameBoard mode="game" @select="handleSelect" ref="boardRef" :cell-size="gridCellSize" :width="gridWidth" :height="gridHeight" />
         </v-col>
         <!-- Word List on Right (initially, can move to bottom on smaller screens) -->
         <v-col cols="12" md="6">
