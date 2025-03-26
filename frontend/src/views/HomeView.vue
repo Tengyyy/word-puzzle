@@ -90,7 +90,6 @@ const getButtonColor = (value) => {
             <v-text-field
                 label="Sõnarägastiku teema"
                 v-model="topic"
-                :disabled="loadingStore.isLoading"
                 class="w-75"
                 @keyup.enter="startGame"
                 rounded
@@ -100,7 +99,6 @@ const getButtonColor = (value) => {
             <v-select
                 label="Sisendkeel"
                 v-model="inputLanguage"
-                :disabled="loadingStore.isLoading"
                 :items="Object.values(Constants.LANGUAGE)"
                 item-title="text"
                 item-value="value"
@@ -112,7 +110,6 @@ const getButtonColor = (value) => {
             <v-select
                 label="Väljundkeel"
                 v-model="outputLanguage"
-                :disabled="loadingStore.isLoading"
                 :items="Object.values(Constants.LANGUAGE)"
                 item-title="text"
                 item-value="value"
@@ -168,16 +165,16 @@ const getButtonColor = (value) => {
 
 .background-images {
   display: flex; /* Arrange images side by side */
-  width: 200vw; /* Two images side by side */
+  width: 400vw; /* Two images side by side */
   height: 100vh;
-  animation: pan-background 30s linear infinite;
+  animation: pan-background 60s linear infinite;
 }
 
 .background-image {
-  width: 100vw;
+  width: 200vw;
   height: 100vh;
   background: url('@/assets/solved_puzzle.png') repeat-x center;
-  background-size: 200% 100%;
+  background-size: auto 100%;
   filter: blur(3px);
 }
 
@@ -195,7 +192,7 @@ const getButtonColor = (value) => {
     transform: translateX(0);
   }
   to {
-    transform: translateX(-100vw);
+    transform: translateX(-200vw);
   }
 }
 

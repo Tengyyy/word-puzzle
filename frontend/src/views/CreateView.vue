@@ -4,14 +4,12 @@ import WordSettings from '@/components/WordSettings.vue'
 import GameBoard from '@/components/GameBoard.vue'
 import WordList from '@/components/WordList.vue'
 import { useCreatorStore } from '@/stores/creatorStore.js'
-import { useAlertStore } from '@/stores/alertStore.js'
 import { ref, computed, onMounted } from 'vue'
 import { apiRequest } from '@/api.js'
 import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { useLoadingStore } from '@/stores/loadingStore.js'
 
 const creatorStore = useCreatorStore()
-const alertStore = useAlertStore()
 const loadingStore = useLoadingStore()
 
 const boardRef = ref(null)
@@ -106,19 +104,22 @@ const share = async () => {
   }
 }
 
-const copyLink = () => {
-  if (!link.value) {
-    return
-  }
+const copyTooltip = ref(false)
+const copyTooltipText = ref("Kopeeri")
 
-  navigator.clipboard
-    .writeText(link.value)
-    .then(() => {
-      linkCopied.value = true
-    })
-    .catch(err => {
-      console.log('Lingi kopeerimine ebaõnnestus: ', err)
-    })
+const copyLink = () => {
+  if (!link.value) return
+  navigator.clipboard.writeText(link.value).then(() => {
+    linkCopied.value = true
+    copyTooltipText.value = "Link kopeeritud"
+    copyTooltip.value = true
+
+    setTimeout(() => {
+      linkCopied.value = false
+      copyTooltipText.value = "Kopeeri"
+      copyTooltip.value = false
+    }, 2000)
+  })
 }
 
 const print = async () => {
@@ -150,82 +151,195 @@ const print = async () => {
 }
 
 const gridCellSize = computed(() => {
-  return 40;
+  return 40
 })
 
 const gridWidth = computed(() => {
-  return creatorStore.width * gridCellSize.value;
+  return creatorStore.width * gridCellSize.value
 })
 
 const gridHeight = computed(() => {
-  return creatorStore.height * gridCellSize.value;
+  return creatorStore.height * gridCellSize.value
 })
-
 </script>
 
 <template>
-  <v-main>
-    <v-expansion-panels>
-      <v-expansion-panel>
-        <v-expansion-panel-title>
-          Sõnarägastiku sätted
-        </v-expansion-panel-title>
-        <v-expansion-panel-text>
-          <BoardSettings />
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-      <v-expansion-panel>
-        <v-expansion-panel-title>
-          Sõnade sätted
-        </v-expansion-panel-title>
-        <v-expansion-panel-text>
-          <WordSettings @generate-words="generateWords" />
-        </v-expansion-panel-text>
-      </v-expansion-panel>
-    </v-expansion-panels>
+  <v-main class="pa-4">
+    <div class="container">
+      <div class="settings-panel">
 
-    <v-text-field
-      label="Pealkiri"
-      v-model="creatorStore.title"
-      @input="handleInput"
-      @focus="userIsTyping = true"
-      @blur="userIsTyping = false"
-      ref="titleInput"
-      :disabled="loadingStore.isLoading"
-      class="mt-6"
-    />
+        <v-text-field
+            label="Pealkiri"
+            v-model="creatorStore.title"
+            @input="handleInput"
+            @focus="userIsTyping = true"
+            @blur="userIsTyping = false"
+            ref="titleInput"
+            class="title-input mx-auto mt-4"
+            rounded
+            variant="solo"
+        />
 
-    <GameBoard mode="create" ref="boardRef" :cell-size="gridCellSize" :width="gridWidth" :height="gridHeight" />
-    <WordList mode="create" />
-    <v-switch
-      label="Kuva peidetud sõnad"
-      v-model="creatorStore.highlight"
-      @change="boardRef.toggleHighlights()"
-      :disabled="loadingStore.isLoading"
-    />
+        <v-expansion-panels>
+          <v-expansion-panel>
+            <v-expansion-panel-title>
+              <h3 class="font-weight-bold">Sõnarägastiku sätted</h3>
+            </v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <BoardSettings />
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+          <v-expansion-panel>
+            <v-expansion-panel-title><h3 class="font-weight-bold">Sõnade sätted</h3></v-expansion-panel-title>
+            <v-expansion-panel-text>
+              <WordSettings @generate-words="generateWords" />
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+        </v-expansion-panels>
 
-    <v-btn @click="generate" :disabled="loadingStore.isLoading">
-      Genereeri
-    </v-btn>
-    <v-btn
-      @click="share"
-      :disabled="!generated || gameSaved || loadingStore.isLoading"
-    >
-      Jaga mängu
-    </v-btn>
-    <template v-if="gameSaved">
-      <v-text-field
-        readonly
-        :value="link"
-      />
-      <v-btn @click="copyLink">
-        {{ linkCopied ? 'Kopeeritud' : 'Kopeeri' }}
-      </v-btn>
-    </template>
-    <v-btn @click="print" :disabled="!generated || loadingStore.isLoading">
-      Prindi mäng
-    </v-btn>
+      </div>
+
+      <div class="game-container">
+        <div class="gameboard-wrapper">
+          <GameBoard
+              mode="create"
+              ref="boardRef"
+              :cell-size="gridCellSize"
+              :width="gridWidth"
+              :height="gridHeight"
+          />
+
+          <v-switch
+              label="Kuva peidetud sõnad"
+              v-model="creatorStore.highlight"
+              @change="boardRef.toggleHighlights()"
+              class="highlight-toggle"
+          />
+
+        </div>
+        <WordList mode="create" />
+      </div>
+
+      <div class="buttons">
+        <v-btn
+          @click="generate"
+          :disabled="loadingStore.isLoading"
+          color="primary"
+          class="mr-2"
+          rounded
+        >
+          Genereeri
+        </v-btn>
+
+        <v-btn
+          @click="share"
+          :disabled="!generated || gameSaved || loadingStore.isLoading"
+          color="secondary"
+          class="mr-2"
+          rounded
+        >
+          <v-icon left>mdi-share-variant</v-icon>
+          Jaga
+        </v-btn>
+
+        <v-btn
+          @click="print"
+          :disabled="!generated || loadingStore.isLoading"
+          color="success"
+          rounded
+        >
+          <v-icon left>mdi-printer</v-icon>
+          Prindi
+        </v-btn>
+      </div>
+
+      <template v-if="id">
+        <div class="share-container mt-4">
+          <v-text-field
+              readonly
+              :value="link"
+              class="share-link"
+              rounded
+              variant="solo"
+              hide-details
+          />
+
+          <v-tooltip :model-value="copyTooltip" location="top">
+            <template #activator="{ props }">
+              <v-btn icon v-bind="props" @click="copyLink" class="copy-button">
+                <v-icon v-if="linkCopied">mdi-check</v-icon>
+                <v-icon v-else>mdi-content-copy</v-icon>
+              </v-btn>
+            </template>
+            <span>{{ copyTooltipText }}</span>
+          </v-tooltip>
+        </div>
+      </template>
+    </div>
   </v-main>
 </template>
 
-<style scoped></style>
+<style scoped>
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: auto;
+  padding: 20px;
+}
+
+.settings-panel {
+  width: 80%;
+  max-width: 900px;
+  margin-bottom: 20px;
+}
+
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .game-container {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 20px;
+  }
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.share-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 600px;
+  margin: 10px auto;
+}
+
+.share-link {
+  flex-grow: 1;
+  max-width: 500px;
+  min-width: 200px;
+}
+
+.copy-button {
+  margin-left: 10px;
+}
+
+.highlight-toggle {
+  align-self: flex-start;
+  margin-left: 0;
+}
+</style>
