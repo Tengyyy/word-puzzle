@@ -10,7 +10,7 @@ import { useLoadingStore } from '@/stores/loadingStore.js'
 import logo from '@/assets/logo_large.svg'
 
 
-const topic = ref(null)
+const topic = ref('')
 
 const difficulty = ref(Constants.DIFFICULTY.MEDIUM.value)
 
@@ -24,6 +24,28 @@ const gameStore = useGameStore()
 const alertStore = useAlertStore()
 
 const loadingStore = useLoadingStore()
+
+const suggestions = ref([])
+
+const fetchSuggestions = async () => {
+  if (!topic.value) {
+    return
+  }
+
+  try {
+    suggestions.value = await apiRequest(
+        ENDPOINTS.autocomplete.full +
+        '?' +
+        new URLSearchParams({
+          query: topic.value,
+          language: inputLanguage.value,
+        }),
+    )
+    // eslint-disable-next-line no-unused-vars
+  } catch (err) {
+    /* empty */
+  }
+}
 
 const startGame = async () => {
   if (!topic.value) {
@@ -87,13 +109,18 @@ const getButtonColor = (value) => {
         <v-col cols="12" md="6" class="d-flex flex-column align-center">
 
           <v-card class="control-panel px-4 py-16 d-flex controls-col background-light">
-            <v-text-field
+
+            <v-combobox
                 label="Sõnarägastiku teema"
                 v-model="topic"
                 class="w-75"
-                @keyup.enter="startGame"
                 rounded
                 variant="solo"
+                @update:search="fetchSuggestions"
+                :items="suggestions"
+                auto-select-first
+                :hide-no-data="false"
+                no-data-text="Lemma puudub"
             />
 
             <v-select
@@ -197,7 +224,6 @@ const getButtonColor = (value) => {
 }
 
 .control-panel {
-  background: white;
   border-radius: 16px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }

@@ -18,7 +18,7 @@ export default class GridGeneratorService {
     });
   }
 
-  static async generateGrid(words, options) {
+  static async generateGrid(customWords, words, options) {
     if (!this.worker)
       throw new Error("Sõnarägastike generaator pole veel initsialiseeritud");
 
@@ -45,7 +45,7 @@ export default class GridGeneratorService {
         }
       });
 
-      this.worker.postMessage({ words, options });
+      this.worker.postMessage({ customWords, words, options });
     });
   }
 }

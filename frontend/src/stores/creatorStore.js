@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { Constants } from '../../../shared/Constants.js'
+import {getRandomColor} from "../../../shared/Utils.js";
 
 export const useCreatorStore = defineStore('creator', () => {
   const width = ref(15)
@@ -19,10 +20,10 @@ export const useCreatorStore = defineStore('creator', () => {
   const highlight = ref(false)
   const title = ref(null)
   const answers = ref([])
-  const widthInput = ref(15)
-  const heightInput = ref(15)
   const wordListCasing = ref(Constants.CASING.MAINTAIN_CASING.value)
-  const spacesAllowed = ref(false)
+  const nonAlphaAllowed = ref(false)
+  const generateWordList = ref(false)
+  const highlightColors = ref([])
 
   const getGrid = computed(() => {
     if (grid.value.length > 0) {
@@ -52,11 +53,19 @@ export const useCreatorStore = defineStore('creator', () => {
   })
 
   function addWord(input, validate) {
-    if (!input.hint && !input.word) {
+
+    if (!input.word) {
       return { success: false, message: 'Tühja sõne ei saa lisada nimekirja' }
     }
-    if (!input.hint) input.hint = input.word
-    if (!input.word) input.word = input.hint
+
+    if (mode.value === Constants.MODE.HINTS.value) {
+      if (!input.hint) {
+        return { success: false, message: 'Palun lisa sõnale vihje' }
+      }
+    } else {
+      input.hint = input.word
+    }
+
     if (
       validate &&
       words.value.some(
@@ -67,26 +76,16 @@ export const useCreatorStore = defineStore('creator', () => {
     ) {
       return { success: false, message: 'See sõna juba on nimekirjas' }
     }
-    if (validate && !spacesAllowed.value && /\s/.test(input.word)) {
+    if (validate && !nonAlphaAllowed.value && /\s/.test(input.word)) {
       return {
         success: false,
         message: 'Tühikuid sisaldavad sõned pole lubatud',
       }
     }
     if (validate && input.word.length > Math.max(width.value, height.value)) {
-      return { success: false, message: 'Sõna ei mahu rägastikku' }
+      return { success: false, message: 'Sõna on liiga pikk. Suurenda sõnarägastiku mõõtmeid' }
     }
-    const maxCharacters = Math.max(0, width.value * height.value * 0.8)
-    const totalCharacters =
-      words.value.reduce((sum, obj) => sum + obj.word.length, 0) +
-      input.word.length
-    if (validate && totalCharacters > maxCharacters) {
-      return {
-        success: false,
-        message:
-          'Nimekirjas on liiga palju sõnu. Suurenda rägastiku laiust või kõrgust',
-      }
-    }
+
     words.value.push(input)
     return { success: true }
   }
@@ -104,10 +103,16 @@ export const useCreatorStore = defineStore('creator', () => {
   }
 
   function generateGrid(data) {
-    width.value = widthInput.value
-    height.value = heightInput.value
+    words.value = data.words
     grid.value = data.grid
     answers.value = data.answers
+
+    highlightColors.value = []
+    let lastColor = null
+    for (let i = 0; i < data.words.length; i++) {
+      lastColor = getRandomColor(lastColor);
+      highlightColors.value.push(lastColor)
+    }
   }
 
   function setTitle(newTitle) {
@@ -131,10 +136,10 @@ export const useCreatorStore = defineStore('creator', () => {
     highlight.value = false
     title.value = null
     answers.value = []
-    widthInput.value = 15
-    heightInput.value = 15
     wordListCasing.value = Constants.CASING.MAINTAIN_CASING.value
-    spacesAllowed.value = false
+    nonAlphaAllowed.value = false
+    generateWordList.value = false
+    highlightColors.value = []
   }
 
   return {
@@ -152,10 +157,10 @@ export const useCreatorStore = defineStore('creator', () => {
     highlight,
     title,
     answers,
-    widthInput,
-    heightInput,
+    highlightColors,
     wordListCasing,
-    spacesAllowed,
+    nonAlphaAllowed,
+    generateWordList,
     getGrid,
     getWords,
     addWord,

@@ -48,7 +48,7 @@ export default class WordNetService {
       }, 5000); // 5 seconds timeout
 
       const onMessage = (msg) => {
-        if (msg.type === "result") {
+        if (msg.type === "getWordsResult") {
           resolve(msg.result);
           this.worker.off("message", onMessage);
         }
@@ -57,8 +57,8 @@ export default class WordNetService {
       this.worker.once("message", (msg) => {
         clearTimeout(timeout); // Clear timeout if worker responds in time
 
-        if (msg.type === "result") {
-          if (msg.result.inputs && msg.result.inputs.length > 0)
+        if (msg.type === "getWordsResult") {
+          if (msg.result && msg.result.length > 0)
             resolve(msg.result);
           else
             reject(
@@ -81,6 +81,47 @@ export default class WordNetService {
       });
     });
   }
+
+  static async autocomplete(
+    query,
+    language,
+  ){
+    if (!this.ready) {
+      throw new ServerException("WordNet pole veel laetud");
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(
+          new TimeoutException(
+            "Lemmade leidmine sõne alguse põhjal aegus peale 5 sekundit"
+          )
+        );
+      }, 5000); // 5 seconds timeout
+
+      const onMessage = (msg) => {
+        if (msg.type === "autocompleteResult") {
+          resolve(msg.result);
+          this.worker.off("message", onMessage);
+        }
+      };
+
+      this.worker.once("message", (msg) => {
+        clearTimeout(timeout); // Clear timeout if worker responds in time
+
+        if (msg.type === "autocompleteResult") {
+            resolve(msg.result);
+        }
+      });
+
+      this.worker.postMessage({
+        type: "autocomplete",
+        query: query,
+        language: language,
+      });
+    })
+  }
+
 }
 
 // Initialize worker when the module is loaded

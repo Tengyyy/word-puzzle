@@ -84,9 +84,28 @@ function cleanupExpiredEntries() {
 // Run cleanup every minute
 setInterval(cleanupExpiredEntries, 60 * 1000);
 
+export async function autocomplete(req, res) {
+  try {
+    const query = req.query.query?.toLowerCase();
+    const language = Validation.validateLanguage(req.query.language);
+    if (!query) {
+      res.json([]).end();
+    }
+
+    const result = await WordNetService.autocomplete(query, language);
+    res.json(result).end();
+  } catch (err) {
+    console.error(err);
+
+    res
+      .status(err.statusCode || 500)
+      .json({ message: err.message || "Midagi läks valesti" });
+  }
+}
+
 export async function createGame(req, res) {
   try {
-    const topic = Validation.validateString(req.query.topic, "teema");
+    const topic = Validation.validateString(req.query.topic, "sisendteema");
     const diff = Validation.validateDifficulty(req.query.difficulty);
     const inputLanguage = Validation.validateLanguage(req.query.inputLanguage);
     const outputLanguage = Validation.validateLanguage(
@@ -95,7 +114,7 @@ export async function createGame(req, res) {
 
     let options = optionsFromDifficulty(diff);
 
-    const { inputs, outputs } = await WordNetService.getWords(
+    const wordNetResult = await WordNetService.getWords(
       topic,
       inputLanguage,
       outputLanguage,
@@ -105,28 +124,25 @@ export async function createGame(req, res) {
       false
     );
 
-    console.log(inputs);
-    console.log(outputs);
+    console.log(wordNetResult);
 
     options.language = outputLanguage;
 
     const { mode, ...gridOptions } = options;
 
-    const { grid, answers } = await GridGeneratorService.generateGrid(
-      outputs,
+    const { chosenWords, grid, answers } = await GridGeneratorService.generateGrid(
+      [],
+      wordNetResult,
       gridOptions
     );
-    const words = inputs.map((hint, index) => ({
-      hint: hint,
-      word: outputs[index],
-    }));
+
     const game = await pool.query(
       "INSERT INTO games (topic, title, grid, words, answers, metadata) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
       [
         topic,
         Utils.capitalizeFirstLetter(topic),
         grid,
-        JSON.stringify(words),
+        JSON.stringify(chosenWords),
         JSON.stringify(answers),
         JSON.stringify({
           inputLanguage: inputLanguage,
@@ -141,7 +157,7 @@ export async function createGame(req, res) {
     const data = {
       id: id,
       grid: grid,
-      words: words,
+      words: chosenWords,
       title: Utils.capitalizeFirstLetter(topic),
       answers: answers,
     };
@@ -202,42 +218,6 @@ export async function loadGame(req, res) {
   }
 }
 
-export async function createWordList(req, res) {
-  const data = req.body;
-  try {
-    const width = Validation.validateDimension(data.width);
-    const height = Validation.validateDimension(data.height);
-    const topic = Validation.validateString(data.topic, "teema");
-    const inputLanguage = Validation.validateLanguage(data.inputLanguage);
-    const outputLanguage = Validation.validateLanguage(data.outputLanguage);
-    const mode = Validation.validateMode(data.mode);
-    const spacesAllowed = Validation.validateBool(
-      data.spacesAllowed,
-      "tühikud lubatud",
-      false
-    );
-    const { inputs, outputs } = await WordNetService.getWords(
-      topic,
-      inputLanguage,
-      outputLanguage,
-      mode,
-      width,
-      height,
-      spacesAllowed
-    );
-    const words = inputs.map((hint, index) => ({
-      hint: hint,
-      word: outputs[index],
-    }));
-    res.json(words).end();
-  } catch (err) {
-    console.error(err);
-    res
-      .status(err.statusCode || 500)
-      .json({ message: err.message || "Midagi läks valesti" });
-  }
-}
-
 export async function createCustomGame(req, res) {
   const data = req.body;
   try {
@@ -255,8 +235,42 @@ export async function createCustomGame(req, res) {
       false
     );
     const casing = Validation.validateCasing(data.casing, true);
-    const words = Validation.validateWords(data.words, width, height);
-    const language = Validation.validateLanguage(data.language);
+    const wordListCasing = Validation.validateCasing(data.wordListCasing, false);
+    const customWords = Validation.validateWords(data.words, width, height, true) || [];
+
+    let topic = null;
+    if (data.topic) {
+      topic = Validation.validateString(data.topic, "sisendteema");
+    }
+    const inputLanguage = Validation.validateLanguage(data.inputLanguage);
+    const outputLanguage = Validation.validateLanguage(data.outputLanguage);
+
+    const nonAlphaAllowed = Validation.validateBool(
+      data.nonAlphaAllowed,
+      "mitte-tähestikulised sümbolid lubatud",
+      false
+    );
+    const mode = Validation.validateMode(data.mode);
+    Validation.validateTitle(data.title);
+
+    let wordNetResult = [];
+
+
+    if (topic) {
+      wordNetResult = await WordNetService.getWords(
+        topic,
+        inputLanguage,
+        outputLanguage,
+        mode,
+        width,
+        height,
+        nonAlphaAllowed
+      );
+    } else {
+      if (customWords.length === 0) {
+        throw new ValidationException("Sõnade nimekiri ja sisendteema ei saa samaaegselt tühjad olla");
+      }
+    }
 
     const options = {
       rows: height,
@@ -265,11 +279,14 @@ export async function createCustomGame(req, res) {
       backward: backwardsEnabled,
       overlap: overlap,
       uppercase: casing === Constants.CASING.UPPERCASE.value,
-      language: language,
+      language: outputLanguage,
     };
 
-    const result = await GridGeneratorService.generateGrid(words, options);
-    res.json(result).end();
+    const { chosenWords, grid, answers } = await GridGeneratorService.generateGrid(customWords, wordNetResult, options);
+
+    const words = applyCasing(chosenWords, wordListCasing);
+
+    res.json({ words: words, grid: grid, answers: answers }).end();
   } catch (err) {
     console.error(err);
     res
@@ -283,16 +300,11 @@ export async function persistGame(req, res) {
 
   try {
     const grid = Validation.validateGrid(data.grid);
-    const wordListCasing = Validation.validateCasing(
-      data.wordListCasing,
-      false
-    );
-    let wordHints = Validation.validateWordHints(
+    const wordHints = Validation.validateWordHints(
       data.words,
       grid.length,
       grid[0].length
     );
-    wordHints = applyCasing(wordHints, wordListCasing);
     const words = wordHints.map((wordHint) => wordHint.word);
     const answers = Validation.validateAnswers(data.answers, grid, words);
     const title = Validation.validateTitle(data.title);
@@ -333,16 +345,11 @@ export async function saveGame(req, res) {
 
   try {
     const grid = Validation.validateGrid(data.grid);
-    const wordListCasing = Validation.validateCasing(
-      data.wordListCasing,
-      false
-    );
-    let wordHints = Validation.validateWordHints(
+    const wordHints = Validation.validateWordHints(
       data.words,
       grid.length,
       grid[0].length
     );
-    wordHints = applyCasing(wordHints, wordListCasing);
     const words = wordHints.map((wordHint) => wordHint.word);
     const answers = Validation.validateAnswers(data.answers, grid, words);
     const title = Validation.validateTitle(data.title);

@@ -9,7 +9,7 @@ import {fileURLToPath} from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const wordNets = new Map(); // language -> { lemmaToSynsets, synsetToLemmas, synsetRelations }
+const wordNets = new Map(); // language -> { lemmaToSynsets, synsetToLemmas, synsetRelations, trie }
 const iliToSynsets = new Map(); // ili ID -> { lang: synsetID, ... }
 
 // Function to load and process a WordNet for a specific language
@@ -113,12 +113,17 @@ async function loadWordNet(lang, filePath) {
     }
   });
 
+  const trie = new Trie(
+    Array.from(lemmaToSynsets.keys())
+  );
+
   wordNets.set(lang, {
     lemmaToSynsets,
     synsetToLemmas,
     synsetRelations,
     synsetDefinitions,
     synsetToIli,
+    trie,
   });
 }
 
@@ -144,7 +149,7 @@ function getWords(
   mode,
   width,
   height,
-  spacesAllowed
+  nonAlphaAllowed
 ) {
   const inputWordNet = wordNets.get(inputLanguage);
   const outputWordNet = wordNets.get(outputLanguage);
@@ -194,7 +199,7 @@ function getWords(
       const lemmas = synsetToLemmas.get(synsetID);
       if (lemmas) {
         for (const lemma of lemmas) {
-          if (!spacesAllowed && /\s/.test(lemma)) continue;
+          if (!nonAlphaAllowed && /\s/.test(lemma)) continue;
           if (lemma.length > maxWordLength) continue;
           if (inputSet.has(lemma)) continue;
 
@@ -220,7 +225,7 @@ function getWords(
           const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
           if (outputLemmas) {
             for (const lemma of outputLemmas) {
-              if (!spacesAllowed && /\s/.test(lemma)) continue;
+              if (!nonAlphaAllowed && /\s/.test(lemma)) continue;
               if (lemma.length > maxWordLength) continue;
               if (outputSet.has(lemma)) continue;
 
@@ -271,7 +276,62 @@ function getWords(
     return arr[Math.floor(Math.random() * arr.length)];
   }
 
-  return { inputs, outputs };
+  return inputs.map((hint, index) => ({
+    hint: hint,
+    word: outputs[index],
+  }));
+}
+
+function autocomplete(
+  query,
+  language
+) {
+  const wordnet = wordNets.get(language);
+  if (!wordnet) return [];
+
+  return wordnet.trie.searchPrefix(query, 10);
+}
+
+// Trie data-structure implementation for faster prefix-based lemma autocomplete search
+class TrieNode {
+  constructor() {
+    this.children = {};
+    this.isWord = false;
+  }
+}
+
+class Trie {
+  constructor(words) {
+    this.root = new TrieNode();
+    words.forEach((word) => this.insert(word.toLowerCase())); // Convert words to lowercase
+  }
+
+  insert(word) {
+    let node = this.root;
+    for (const char of word) {
+      if (!node.children[char]) node.children[char] = new TrieNode();
+      node = node.children[char];
+    }
+    node.isWord = true;
+  }
+
+  searchPrefix(prefix, limit = 10) {
+    let node = this.root;
+    for (const char of prefix) {
+      if (!node.children[char]) return []; // No matches
+      node = node.children[char];
+    }
+    return this._collectWords(node, prefix, [], limit);
+  }
+
+  _collectWords(node, prefix, results, limit) {
+    if (results.length >= limit) return results;
+    if (node.isWord) results.push(prefix);
+    for (const char in node.children) {
+      this._collectWords(node.children[char], prefix + char, results, limit);
+    }
+    return results;
+  }
 }
 
 parentPort.on("message", async (msg) => {
@@ -286,8 +346,11 @@ parentPort.on("message", async (msg) => {
       msg.mode,
       msg.width,
       msg.height,
-      msg.spacesAllowed
+      msg.nonAlphaAllowed
     );
-    parentPort.postMessage({ type: "result", result });
+    parentPort.postMessage({ type: "getWordsResult", result });
+  } else if (msg.type === "autocomplete") {
+    const result = autocomplete(msg.query, msg.language);
+    parentPort.postMessage({ type: "autocompleteResult", result });
   }
 });

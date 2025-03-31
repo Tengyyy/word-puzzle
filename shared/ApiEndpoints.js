@@ -3,10 +3,6 @@ const API_PATH = "/api";
 const FRONTEND_URL = "http://localhost:5173";
 
 export const ENDPOINTS = Object.freeze({
-  createWordList: {
-    full: `${BASE_URL}${API_PATH}/create-word-list`,
-    relative: `${API_PATH}/create-word-list`,
-  },
   createCustomGame: {
     full: `${BASE_URL}${API_PATH}/create-custom-game`,
     relative: `${API_PATH}/create-custom-game`,
@@ -22,6 +18,10 @@ export const ENDPOINTS = Object.freeze({
   getGame: {
     full: `${BASE_URL}${API_PATH}/get-game`,
     relative: `${API_PATH}/get-game`,
+  },
+  autocomplete: {
+    full: `${BASE_URL}${API_PATH}/autocomplete`,
+    relative: `${API_PATH}/autocomplete`,
   },
   home: {
     full: `${FRONTEND_URL}/`,

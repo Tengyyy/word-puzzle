@@ -8,6 +8,7 @@ import { ref, computed, onMounted } from 'vue'
 import { apiRequest } from '@/api.js'
 import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { useLoadingStore } from '@/stores/loadingStore.js'
+import CreatorWordList from "@/components/CreatorWordList.vue";
 
 const creatorStore = useCreatorStore()
 const loadingStore = useLoadingStore()
@@ -18,53 +19,31 @@ const linkCopied = ref(false)
 const gameSaved = ref(false)
 const generated = ref(false)
 
+const shareDialog = ref(false)
+
 const link = computed(() => `${ENDPOINTS.game.full}/${id.value}`)
-const userIsTyping = ref(false)
-const titleSetByUser = ref(false)
 
 onMounted(() => {
   creatorStore.clearData()
 })
 
-const handleInput = () => {
-  if (userIsTyping.value) {
-    titleSetByUser.value = true
-  }
-}
-
-const generateWords = async () => {
-  try {
-    const words = await apiRequest(ENDPOINTS.createWordList.full, 'POST', {
-      width: creatorStore.widthInput,
-      height: creatorStore.heightInput,
-      topic: creatorStore.topic,
-      inputLanguage: creatorStore.inputLanguage,
-      outputLanguage: creatorStore.outputLanguage,
-      mode: creatorStore.mode,
-      spacesAllowed: creatorStore.spacesAllowed,
-    })
-
-    words.forEach(word => creatorStore.addWord(word, false))
-    if (!creatorStore.title || !titleSetByUser.value) {
-      creatorStore.setTitle(creatorStore.topic)
-    }
-    // eslint-disable-next-line no-unused-vars
-  } catch (err) {
-    /* empty */
-  }
-}
-
 const generate = async () => {
   try {
     const response = await apiRequest(ENDPOINTS.createCustomGame.full, 'POST', {
-      width: creatorStore.widthInput,
-      height: creatorStore.heightInput,
+      width: creatorStore.width,
+      height: creatorStore.height,
       overlap: creatorStore.overlap,
       backwardsEnabled: creatorStore.backwardsEnabled,
       diagonalsEnabled: creatorStore.diagonalsEnabled,
       casing: creatorStore.casing,
-      language: creatorStore.outputLanguage,
-      words: creatorStore.getWords.map(word => word.word),
+      wordListCasing: creatorStore.wordListCasing,
+      words: creatorStore.getWords,
+      topic: creatorStore.generateWordList ? creatorStore.topic : null,
+      inputLanguage: creatorStore.inputLanguage,
+      outputLanguage: creatorStore.outputLanguage,
+      nonAlphaAllowed: creatorStore.nonAlphaAllowed,
+      mode: creatorStore.mode,
+      title: creatorStore.title,
     })
 
     const highlightsToggled = creatorStore.highlight
@@ -93,7 +72,6 @@ const share = async () => {
       words: creatorStore.getWords,
       title: creatorStore.title,
       answers: creatorStore.answers,
-      wordListCasing: creatorStore.wordListCasing,
     })
 
     id.value = response.id
@@ -104,7 +82,6 @@ const share = async () => {
   }
 }
 
-const copyTooltip = ref(false)
 const copyTooltipText = ref("Kopeeri")
 
 const copyLink = () => {
@@ -112,12 +89,10 @@ const copyLink = () => {
   navigator.clipboard.writeText(link.value).then(() => {
     linkCopied.value = true
     copyTooltipText.value = "Link kopeeritud"
-    copyTooltip.value = true
 
     setTimeout(() => {
       linkCopied.value = false
       copyTooltipText.value = "Kopeeri"
-      copyTooltip.value = false
     }, 2000)
   })
 }
@@ -150,6 +125,11 @@ const print = async () => {
   }
 }
 
+const removeAllWords = () => {
+
+  creatorStore.removeAllWords()
+}
+
 const gridCellSize = computed(() => {
   return 40
 })
@@ -164,182 +144,203 @@ const gridHeight = computed(() => {
 </script>
 
 <template>
-  <v-main class="pa-4">
-    <div class="container">
-      <div class="settings-panel">
 
-        <v-text-field
-            label="Pealkiri"
-            v-model="creatorStore.title"
-            @input="handleInput"
-            @focus="userIsTyping = true"
-            @blur="userIsTyping = false"
-            ref="titleInput"
-            class="title-input mx-auto mt-4"
-            rounded
-            variant="solo"
-        />
-
-        <v-expansion-panels>
-          <v-expansion-panel>
-            <v-expansion-panel-title>
-              <h3 class="font-weight-bold">Sõnarägastiku sätted</h3>
-            </v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <BoardSettings />
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-          <v-expansion-panel>
-            <v-expansion-panel-title><h3 class="font-weight-bold">Sõnade sätted</h3></v-expansion-panel-title>
-            <v-expansion-panel-text>
-              <WordSettings @generate-words="generateWords" />
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-        </v-expansion-panels>
-
-      </div>
-
-      <div class="game-container">
-        <div class="gameboard-wrapper">
-          <GameBoard
-              mode="create"
-              ref="boardRef"
-              :cell-size="gridCellSize"
-              :width="gridWidth"
-              :height="gridHeight"
-          />
-
-          <v-switch
-              label="Kuva peidetud sõnad"
-              v-model="creatorStore.highlight"
-              @change="boardRef.toggleHighlights()"
-              class="highlight-toggle"
-          />
-
-        </div>
-        <WordList mode="create" />
-      </div>
-
-      <div class="buttons">
-        <v-btn
-          @click="generate"
-          :disabled="loadingStore.isLoading"
-          color="primary"
-          class="mr-2"
-          rounded
-        >
-          Genereeri
-        </v-btn>
-
-        <v-btn
-          @click="share"
-          :disabled="!generated || gameSaved || loadingStore.isLoading"
-          color="secondary"
-          class="mr-2"
-          rounded
-        >
-          <v-icon left>mdi-share-variant</v-icon>
-          Jaga
-        </v-btn>
-
-        <v-btn
-          @click="print"
-          :disabled="!generated || loadingStore.isLoading"
-          color="success"
-          rounded
-        >
-          <v-icon left>mdi-printer</v-icon>
-          Prindi
-        </v-btn>
-      </div>
-
-      <template v-if="id">
-        <div class="share-container mt-4">
-          <v-text-field
-              readonly
-              :value="link"
-              class="share-link"
-              rounded
-              variant="solo"
-              hide-details
-          />
-
-          <v-tooltip :model-value="copyTooltip" location="top">
-            <template #activator="{ props }">
-              <v-btn icon v-bind="props" @click="copyLink" class="copy-button">
-                <v-icon v-if="linkCopied">mdi-check</v-icon>
-                <v-icon v-else>mdi-content-copy</v-icon>
-              </v-btn>
-            </template>
-            <span>{{ copyTooltipText }}</span>
-          </v-tooltip>
-        </div>
-      </template>
+  <div class="background-wrapper">
+    <div class="background-images">
+      <div class="background-image"></div>
+      <div class="background-image"></div>
     </div>
+    <div class="background-overlay"></div>
+  </div>
+
+  <v-main class="pa-4">
+
+    <v-container>
+      <v-card class="px-6 py-8 mt-12 rounded-lg">
+        <v-card-title class="text-h5 font-weight-bold">
+          Loo oma sõnarägastik
+        </v-card-title>
+
+        <v-divider class="my-4" />
+
+        <template v-if="!generated">
+
+          <!-- Step 1: Title -->
+          <div class="font-weight-bold py-4 text-h6">1. Pealkiri</div>
+          <v-text-field
+              placeholder="Pealkiri"
+              v-model="creatorStore.title"
+              variant="outlined"
+              class="mt-2 mb-4"
+              required
+              rounded
+          />
+
+          <v-divider class="my-4" />
+
+          <!-- Step 2: Board Settings -->
+          <div class="font-weight-bold py-4 text-h6">2. Sõnarägastiku sätted</div>
+          <BoardSettings class="mb-4" />
+
+          <v-divider class="my-4" />
+
+          <!-- Step 3: Word Settings -->
+          <div class="font-weight-bold py-4 text-h6">3. Sõnade sätted</div>
+          <WordSettings class="mb-4" />
+
+          <v-divider class="my-4" />
+
+          <!-- Step 4: Word List -->
+          <div class="title-container py-4">
+            <div class="font-weight-bold py-4 text-h6">
+              4. Sõnad
+              <v-tooltip location="top">
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" size="30">mdi-information-outline</v-icon>
+                </template>
+                Kui valisid eelnevalt sisendteema põhjal sõnade nimekirja genereerimise, siis ei pea siia ühtegi sõna lisama,<br>
+                kuid kõik lisatud sõnad peidetakse siiski lisaks automaatselt genereeritud sõnadele ka sõnarägastikku.<br>
+                Kui sa ei valinud sisendteema põhjal sõnade nimekirja genereerimist, siis peab siia lisama kõik sõnad,<br>
+                mida sa soovid sõnarägastikku peita.
+
+              </v-tooltip>
+            </div>
+
+            <v-btn @click="removeAllWords" color="red" rounded :disabled="!creatorStore.getWords || creatorStore.getWords.length === 0">
+              Eemalda kõik sõnad
+            </v-btn>
+          </div>
+          <CreatorWordList class="mb-4" />
+
+          <v-divider class="my-4" />
+
+          <!-- Generate Button -->
+          <v-btn @click="generate" color="primary" rounded class="generate-button">
+            Genereeri sõnarägastik
+          </v-btn>
+
+        </template>
+
+        <template v-else>
+          <!-- Word Search Grid -->
+          <div class="grid-container">
+            <div class="grid-wrapper">
+              <GameBoard
+                  mode="create"
+                  ref="boardRef"
+                  :cell-size="gridCellSize"
+                  :width="gridWidth"
+                  :height="gridHeight"
+              />
+
+              <v-switch
+                  label="Kuva peidetud sõnad"
+                  v-model="creatorStore.highlight"
+                  @change="boardRef.toggleHighlights()"
+                  class="highlight-toggle"
+              />
+            </div>
+
+            <WordList mode="create" />
+          </div>
+
+          <v-divider class="my-4" />
+
+          <!-- Action Buttons -->
+          <div class="button-container">
+            <v-btn @click="generate" color="primary" rounded>
+              Genereeri uuesti
+            </v-btn>
+
+            <v-btn @click="print" color="success" rounded>
+              <v-icon left>mdi-printer</v-icon>
+              Prindi
+            </v-btn>
+
+            <v-btn @click="copyLink" color="secondary" rounded>
+              <v-icon left v-if="linkCopied">mdi-check</v-icon>
+              <v-icon left v-else>mdi-content-copy</v-icon>
+              Kopeeri link
+            </v-btn>
+          </div>
+        </template>
+
+      </v-card>
+    </v-container>
   </v-main>
 </template>
 
 <style scoped>
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 1200px;
-  margin: auto;
-  padding: 20px;
-}
 
-.settings-panel {
-  width: 80%;
-  max-width: 900px;
-  margin-bottom: 20px;
-}
-
-
-.game-container {
+.grid-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
 }
 
-@media (min-width: 1024px) {
-  .game-container {
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 20px;
-  }
+.grid-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.buttons {
+.button-container {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   margin-top: 20px;
-}
-
-.share-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  max-width: 600px;
-  margin: 10px auto;
-}
-
-.share-link {
-  flex-grow: 1;
-  max-width: 500px;
-  min-width: 200px;
-}
-
-.copy-button {
-  margin-left: 10px;
 }
 
 .highlight-toggle {
   align-self: flex-start;
   margin-left: 0;
+}
+
+.background-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.background-images {
+  display: flex;
+  width: 400vw;
+  height: 100vh;
+}
+
+.background-image {
+  width: 200vw;
+  height: 100vh;
+  background: url('@/assets/solved_puzzle.png') repeat-x center;
+  background-size: auto 100%;
+  filter: blur(4px);
+}
+
+.background-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Light filter to soften contrast */
+}
+
+.generate-button {
+  max-width: 300px;
+  width: 100%; /* Ensures it doesn't shrink too much */
+  margin: 0 auto; /* Centers it horizontally */
+  display: flex; /* Ensures proper width behavior */
+  justify-content: center; /* Centers text inside */
+}
+
+.title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 </style>

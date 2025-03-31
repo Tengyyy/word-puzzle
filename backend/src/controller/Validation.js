@@ -160,8 +160,9 @@ export function validateBool(val, fieldName, defaultVal) {
   return val;
 }
 
-export function validateWords(words, width, height) {
+export function validateWords(words, width, height, allowEmpty = false) {
   if (!words) {
+    if (allowEmpty) return []
     throw new ValidationException("Sõnade nimekiri on puudu");
   }
 
@@ -170,6 +171,7 @@ export function validateWords(words, width, height) {
   }
 
   if (words.length === 0) {
+    if (allowEmpty) return []
     throw new ValidationException(
       "Sõnade nimekiri peab sisaldama vähemalt ühte sõna"
     );

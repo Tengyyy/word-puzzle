@@ -205,7 +205,8 @@ class Puzzle {
   };
 
   constructor(
-    vocabulary,
+    customVocabulary = [],
+    vocabulary = [],
     {
       rows = 15,
       columns = 15,
@@ -218,7 +219,8 @@ class Puzzle {
       seed = Date.now(),
     } = {}
   ) {
-    this.vocabulary = vocabulary;
+    this.customVocabulary = customVocabulary; // { hint, word }
+    this.vocabulary = vocabulary;  // { hint, word }
     this.rows = rows;
     this.columns = columns;
     this.diagonal = diagonal;
@@ -229,6 +231,7 @@ class Puzzle {
     this.message = message;
     this.seed = seed;
     this.answers = [];
+    this.chosenWords = [];
 
     this._setSeed(this.seed);
     this._generate();
@@ -243,11 +246,22 @@ class Puzzle {
   }
 
   _generate() {
-    const words = [...this.vocabulary]
-      .sort((a, b) => b.length - a.length)
-      .map((word) =>
-        this.uppercase ? word.toUpperCase() : word.toLowerCase()
-      ); // Sort words by length descending
+    const customWords = [...this.customVocabulary]
+      .sort((a, b) => b.word.length - a.word.length)
+      .map((wordItem) => ({
+        hint: wordItem.hint,
+        word: this.uppercase ? wordItem.word.toUpperCase() : wordItem.word.toLowerCase(),
+        weight: wordItem.weight || 1,
+      })); // Sort words by length descending
+
+    const words = this._shuffle(
+      [...this.vocabulary]
+        .map((wordItem) => ({
+          hint: wordItem.hint,
+          word: this.uppercase ? wordItem.word.toUpperCase() : wordItem.word.toLowerCase(),
+          weight: wordItem.weight || 1,
+        }))
+    );
 
     let directions = ["right", "down"];
     if (this.diagonal) directions.push("rightdown");
@@ -257,40 +271,33 @@ class Puzzle {
 
     const grid = new Grid(this.rows, this.columns);
     const positions = Array.from({ length: grid.size }, (_, i) => i);
-    const stack = [];
 
-    while (words.length > 0) {
-      const word = words.shift();
-      let placed = false;
-
-      for (
-        let attempt = 0;
-        attempt < (this.overlap === Constants.OVERLAP.FORCE_OVERLAP.value ? 2 : 1);
-        attempt++
-      ) {
-        const forceOverlap =
-          attempt === 0 && this.overlap === Constants.OVERLAP.FORCE_OVERLAP.value; // First attempt: enforce overlap, second: relax it
-        const shuffledPositions = this._shuffle([...positions]);
-        const shuffledDirections = this._shuffle([...directions]);
-
-        for (const pos of shuffledPositions) {
-          for (const dir of shuffledDirections) {
-            const newGrid = this._tryWord(grid, word, pos, dir, forceOverlap);
-            if (newGrid) {
-              grid.grid = newGrid.grid;
-              placed = true;
-              break;
-            }
-          }
-          if (placed) break;
-        }
-
-        if (placed) break; // Stop attempting once placed
+    // Step 1: Try to place all custom words (Fail if any can't be placed)
+    for (const wordItem of customWords) {
+      if (!this._tryToPlaceWord(grid, wordItem.word, positions, directions)) {
+        throw new Error(`Ei suutnud paigutada sõna '${wordItem.word}' rägastikku. Palun suurenda sõnarägastiku mõõtmeid või vähenda sõnade arvu.`);
       }
 
-      if (!placed) {
-        throw new Error(`Ei suutnud paigutada sõna ${word} rägastikku.`);
+      this.chosenWords.push({ hint: wordItem.hint, word: wordItem.word });
+    }
+
+    // Step 2: Place as many words as possible until we fill 90% of the grid
+
+    // Calculate 90% threshold for filled characters
+    const targetFilled = Math.ceil(grid.rows * grid.columns * 0.9);
+
+    // Place as many vocabulary words as possible until 90% is filled
+    let placedChars = this.chosenWords.reduce((sum, w) => sum + w.word.length, 0);
+
+
+    while (words.length > 0 && placedChars < targetFilled) {
+      const wordItem = this._weightedRandomWord(words);
+      if (!this._tryToPlaceWord(grid, wordItem.word, positions, directions)) {
+        words.splice(words.indexOf(wordItem), 1); // Remove word if it couldn't be placed
+        continue;
       }
+      this.chosenWords.push({ hint: wordItem.hint, word: wordItem.word });
+      placedChars += wordItem.word.length;
     }
 
     this.grid = grid;
@@ -308,6 +315,43 @@ class Puzzle {
       [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+  }
+
+  _weightedRandomWord(words) {
+    const totalWeight = words.reduce((sum, word) => sum + word.weight, 0);
+    let rand = Math.random() * totalWeight;
+
+    for (const word of words) {
+      rand -= word.weight;
+      if (rand < 0) return word;
+    }
+
+    return words[words.length - 1]; // Fallback (should never be reached)
+  }
+
+  _tryToPlaceWord(grid, word, positions, directions) {
+    for (
+      let attempt = 0;
+      attempt < (this.overlap === Constants.OVERLAP.FORCE_OVERLAP.value ? 2 : 1);
+      attempt++
+    ) {
+      const forceOverlap =
+        attempt === 0 && this.overlap === Constants.OVERLAP.FORCE_OVERLAP.value; // First attempt: enforce overlap, second: relax it
+      const shuffledPositions = this._shuffle([...positions]);
+      const shuffledDirections = this._shuffle([...directions]);
+
+      for (const pos of shuffledPositions) {
+        for (const dir of shuffledDirections) {
+          const newGrid = this._tryWord(grid, word, pos, dir, forceOverlap);
+          if (newGrid) {
+            grid.grid = newGrid.grid;
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
   _tryWord(grid, word, position, direction, forceOverlap) {
@@ -405,10 +449,10 @@ class Puzzle {
 
 parentPort.on("message", (data) => {
   try {
-    const { words, options } = data;
-    const puzzle = new Puzzle(words, options);
+    const { customWords, words, options } = data;
+    const puzzle = new Puzzle(customWords, words, options);
     const grid = puzzle.to2DArray();
-    const response = { grid, answers: puzzle.answers };
+    const response = { chosenWords: puzzle.chosenWords, grid: grid, answers: puzzle.answers };
     parentPort.postMessage({ status: "success", data: response });
   } catch (err) {
     parentPort.postMessage({ status: "error", message: err.message });

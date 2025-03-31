@@ -1,10 +1,8 @@
 <script setup>
-import { useAlertStore } from '@/stores/alertStore.js'
 import { useCreatorStore } from '@/stores/creatorStore.js'
 import { useGameStore } from '@/stores/gameStore.js'
-import { useLoadingStore } from '@/stores/loadingStore.js'
 import { usePrintStore } from '@/stores/printStore.js'
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 
 const MODE = Object.freeze({
   GAME: 'game',
@@ -29,48 +27,15 @@ const props = defineProps({
   },
 })
 
-const editable = computed(() => {
-  return props.mode === MODE.CREATE && !props.printView
-})
-
 const store = props.printView
   ? usePrintStore()
   : props.mode === MODE.GAME
     ? useGameStore()
     : useCreatorStore()
 
-const alertStore = useAlertStore()
-const loadingStore = useLoadingStore()
-
-const wordInput = ref(null)
-const hintInput = ref(null)
-
 const showAnswers = computed(() => {
-  return editable.value || props.answerList
+  return props.mode === MODE.CREATE || props.answerList
 })
-
-const addWord = () => {
-  if (!editable.value) {
-    return
-  }
-
-  const result = store.addWord(
-    { word: wordInput.value, hint: hintInput.value },
-    true,
-  )
-  if (!result.success) {
-    alertStore.showAlert(result.message)
-  } else {
-    wordInput.value = ''
-    hintInput.value = ''
-  }
-}
-
-const removeAllWords = () => {
-  if (!editable.value) return
-
-  store.removeAllWords()
-}
 
 const isFound = word =>
   props.mode === MODE.GAME &&
@@ -85,6 +50,34 @@ const shouldShowAnswer = (word, wordFound) => {
     word.word.toUpperCase() !== word.hint.toUpperCase()
   )
 }
+
+const getColorForWord = (word, idx) => {
+  if (props.printView) {
+    if (props.answerList) {
+      const color = store.highlightColors[idx];
+      if (!color) return 'rgb(0, 0, 0)'
+      return `rgb(${color.r}, ${color.g}, ${color.b})`
+    }
+
+    return 'rgb(0, 0, 0)'
+
+  } else if (props.mode === MODE.GAME) {
+    const color = store.highlightColors[idx];
+    if (!color) return 'rgb(0, 0, 0)'
+
+    return `rgb(${color.r}, ${color.g}, ${color.b})`
+  } else {
+    if (store.highlight) {
+      const color = store.highlightColors[idx];
+      if (!color) return 'rgb(0, 0, 0)'
+      return `rgb(${color.r}, ${color.g}, ${color.b})`
+
+    }
+
+    return 'rgb(0, 0, 0)'
+  }
+}
+
 </script>
 
 <template>
@@ -93,37 +86,15 @@ const shouldShowAnswer = (word, wordFound) => {
       <v-list-item
         v-for="(word, index) in store.getWords"
         :key="index"
-        :class="{ 'text-decoration-line-through': isFound(word) }"
+        :style="{ 'color': getColorForWord(word, index) }"
       >
-        <v-list-item-title>
+        <v-list-item-title
+            :class="{ 'text-decoration-line-through': isFound(word), 'font-weight-bold': isFound(word) }"
+        >
           {{ shouldShowAnswer(word, isFound(word)) ? `${word.hint} (${word.word})` : word.hint }}
         </v-list-item-title>
-        <template v-slot:append v-if="editable">
-          <v-btn icon="mdi-delete" color="red" @click="store.removeWord(word)"></v-btn>
-        </template>
       </v-list-item>
     </v-list>
-
-    <template v-if="editable">
-      <v-btn @click="removeAllWords" :disabled="loadingStore.isLoading" color="red" class="mb-4">
-        Eemalda kõik sõnad
-      </v-btn>
-
-      <v-text-field
-          label="Vihje"
-          v-model="hintInput"
-          @keyup.enter="addWord"
-          :disabled="loadingStore.isLoading"
-      />
-      <v-text-field
-          label="Sõna"
-          v-model="wordInput"
-          @keyup.enter="addWord"
-          :disabled="loadingStore.isLoading"
-      />
-      <v-btn @click="addWord" color="blue" class="mt-2">Lisa</v-btn>
-    </template>
-
   </v-container>
 </template>
 

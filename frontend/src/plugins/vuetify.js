@@ -38,6 +38,7 @@ import {
   VDivider,
   VTooltip,
   VNavigationDrawer,
+  VCombobox,
 } from 'vuetify/lib/components/index.mjs'
 import 'vuetify/styles'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
@@ -87,6 +88,7 @@ const vuetify = createVuetify({
     VDivider,
     VTooltip,
     VNavigationDrawer,
+    VCombobox,
   },
 })
 export default vuetify

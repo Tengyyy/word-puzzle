@@ -4,6 +4,7 @@ import GridCell from './GridCell.vue'
 import { useCreatorStore } from '@/stores/creatorStore.js'
 import { useGameStore } from '@/stores/gameStore.js'
 import { usePrintStore } from '@/stores/printStore.js'
+import { getRandomColor } from "../../../shared/Utils.js";
 
 const props = defineProps({
   mode: {
@@ -103,10 +104,10 @@ const toggleHighlights = () => {
     return
   }
 
-  if (!store.highlight && !props.printView) {
+  if (!props.printView && !store.highlight) {
     highlights.value = []
   } else {
-    highlights.value = store.answers.map(pos => {
+    highlights.value = store.answers.map((pos, index) => {
       const direction = calculateDirection(
         pos.startRow,
         pos.startCol,
@@ -121,45 +122,16 @@ const toggleHighlights = () => {
         },
         direction,
       )
+
+      const color = store.highlightColors[index];
       const outline = calculateOutline(cells, direction)
-      outlineColor.value = getRandomColor()
       return {
         ...outline,
         border: 'none',
-        backgroundColor: `rgba(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b}, 0.9)`,
+        backgroundColor: `rgba(${color.value.r}, ${color.value.g}, ${color.value.b}, 0.9)`,
       }
     })
   }
-}
-
-// Utility function to get random rgb color, used to change the color of the highlight outline every time a word is found
-const getRandomColor = (opacity = 1) => {
-  const minRGB = 50 // Minimum RGB value to avoid very light colors
-  const maxRGB = 200 // Maximum RGB value to avoid extremely bright colors
-  const minDifference = 100 // Minimum difference between consecutive colors (sum of RGB differences)
-
-  let r, g, b
-
-  let i = 0
-  do {
-    r = Math.floor(Math.random() * (maxRGB - minRGB + 1)) + minRGB
-    g = Math.floor(Math.random() * (maxRGB - minRGB + 1)) + minRGB
-    b = Math.floor(Math.random() * (maxRGB - minRGB + 1)) + minRGB
-
-    // If there's no last color, accept the first generated color
-    if (!lastColor.value) break
-
-    // Calculate the difference between the new color and the last color
-    const diff =
-      Math.abs(r - lastColor.value.r) +
-      Math.abs(g - lastColor.value.g) +
-      Math.abs(b - lastColor.value.b)
-    if (diff >= minDifference) break // Ensure the difference is significant enough
-    i++
-  } while (i < 5)
-
-  lastColor.value = { r, g, b } // Update the last color
-  return { r, g, b, opacity }
 }
 
 const outlineColor = ref(getRandomColor()) // Default color
@@ -172,12 +144,17 @@ const resetSelection = success => {
 
   if (success) {
     // Add highlight with the same color as the outline but without a border
+
     highlights.value.push({
       ...outlinePosition.value,
       border: 'none',
       backgroundColor: `rgba(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b}, 0.9)`, // Same color as outline with transparency
     })
-    outlineColor.value = getRandomColor() // Set a new random color
+
+    lastColor.value = outlineColor.value
+    store.setLastHighlightColor(outlineColor.value)
+
+    outlineColor.value = getRandomColor(lastColor.value) // Set a new random color
 
     if (!store.gameEnded) {
       correct_audio.play()

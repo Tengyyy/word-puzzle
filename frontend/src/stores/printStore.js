@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import {getRandomColor} from "../../../shared/Utils.js";
 
 export const usePrintStore = defineStore('print', () => {
   const id = ref(null)
@@ -7,6 +8,7 @@ export const usePrintStore = defineStore('print', () => {
   const words = ref(null)
   const title = ref(null)
   const answers = ref([])
+  const highlightColors = ref([])
 
   const getGrid = computed(() => {
     return grid.value
@@ -26,6 +28,13 @@ export const usePrintStore = defineStore('print', () => {
     id.value = data.id
     title.value = data.title
     answers.value = data.answers ? [...data.answers] : []
+
+    highlightColors.value = []
+    let lastColor = null
+    for (let i = 0; i < data.words.length; i++) {
+      lastColor = getRandomColor(lastColor);
+      highlightColors.value.push(lastColor)
+    }
   }
 
   function clearGameData() {
@@ -34,12 +43,14 @@ export const usePrintStore = defineStore('print', () => {
     words.value = null
     title.value = null
     answers.value = []
+    highlightColors.value = []
   }
 
   return {
     id,
     title,
     answers,
+    highlightColors,
     getGrid,
     getWords,
     isCreateView,

@@ -9,6 +9,7 @@ export const useGameStore = defineStore('game', () => {
   const topic = ref(null)
   const wordsToFind = ref([])
   const foundWords = ref([])
+  const highlightColors = ref([]);
   const gameEnded = ref(false)
   const gameInProgress = ref(false)
 
@@ -28,6 +29,7 @@ export const useGameStore = defineStore('game', () => {
     topic.value = data.topic
     wordsToFind.value = [...data.words]
     foundWords.value = []
+    highlightColors.value = []
   }
 
   function clearGameData() {
@@ -38,6 +40,7 @@ export const useGameStore = defineStore('game', () => {
     topic.value = null
     wordsToFind.value = []
     foundWords.value = []
+    highlightColors.value = []
   }
 
   function resetGame() {
@@ -69,6 +72,7 @@ export const useGameStore = defineStore('game', () => {
       if (upper === forwards || upper === backwards) {
         wordsToFind.value.splice(i, 1)
         foundWords.value.push(word)
+        highlightColors.value.push({ r: 0, g: 0, b: 0 }) // dummy color, will be changed to the correct color in GameBoard logic
         success = true
         break
       }
@@ -81,12 +85,17 @@ export const useGameStore = defineStore('game', () => {
     return success
   }
 
+  function setLastHighlightColor(color) {
+    highlightColors.value[highlightColors.value.length - 1] = color;
+  }
+
   return {
     id,
     title,
     topic,
     wordsToFind,
     foundWords,
+    highlightColors,
     gameEnded,
     gameInProgress,
     getGrid,
@@ -95,5 +104,6 @@ export const useGameStore = defineStore('game', () => {
     clearGameData,
     startGame,
     selectWord,
+    setLastHighlightColor,
   }
 })
