@@ -21,12 +21,18 @@ export function getRandomColor(lastColor = null, opacity = 1) {
 
     // Calculate the difference between the new color and the last color
     const diff =
-      Math.abs(r - lastColor.value.r) +
-      Math.abs(g - lastColor.value.g) +
-      Math.abs(b - lastColor.value.b)
+      Math.abs(r - lastColor.r) +
+      Math.abs(g - lastColor.g) +
+      Math.abs(b - lastColor.b)
     if (diff >= minDifference) break // Ensure the difference is significant enough
     i++
   } while (i < 5)
 
   return { r, g, b, opacity }
+}
+
+export function isOnlyLetters(str) {
+  if (typeof str !== "string") return false;
+
+  return /^\p{L}+$/u.test(str);
 }

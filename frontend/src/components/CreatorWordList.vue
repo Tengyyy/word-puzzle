@@ -36,7 +36,7 @@ const addWord = () => {
     <v-container class="word-list">
       <v-row>
         <v-col
-            v-for="(word, index) in creatorStore.getWords"
+            v-for="(word, index) in creatorStore.getCustomWords"
             :key="index"
             :cols="isHintMode ? 12 : 12"
             :sm="isHintMode ? 12 : 6"

@@ -5,6 +5,7 @@ import {Parser} from "xml2js";
 import {Constants} from "../../../shared/Constants.js";
 import path from "path";
 import {fileURLToPath} from "url";
+import {isOnlyLetters} from "../../../shared/Utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -199,7 +200,7 @@ function getWords(
       const lemmas = synsetToLemmas.get(synsetID);
       if (lemmas) {
         for (const lemma of lemmas) {
-          if (!nonAlphaAllowed && /\s/.test(lemma)) continue;
+          if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
           if (lemma.length > maxWordLength) continue;
           if (inputSet.has(lemma)) continue;
 
@@ -225,7 +226,7 @@ function getWords(
           const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
           if (outputLemmas) {
             for (const lemma of outputLemmas) {
-              if (!nonAlphaAllowed && /\s/.test(lemma)) continue;
+              if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
               if (lemma.length > maxWordLength) continue;
               if (outputSet.has(lemma)) continue;
 

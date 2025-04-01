@@ -136,13 +136,15 @@ export async function createGame(req, res) {
       gridOptions
     );
 
+    const words = chosenWords.sort((a, b) => a.hint.localeCompare(b.hint));
+
     const game = await pool.query(
       "INSERT INTO games (topic, title, grid, words, answers, metadata) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
       [
         topic,
         Utils.capitalizeFirstLetter(topic),
         grid,
-        JSON.stringify(chosenWords),
+        JSON.stringify(words),
         JSON.stringify(answers),
         JSON.stringify({
           inputLanguage: inputLanguage,
@@ -157,7 +159,7 @@ export async function createGame(req, res) {
     const data = {
       id: id,
       grid: grid,
-      words: chosenWords,
+      words: words,
       title: Utils.capitalizeFirstLetter(topic),
       answers: answers,
     };
@@ -236,7 +238,7 @@ export async function createCustomGame(req, res) {
     );
     const casing = Validation.validateCasing(data.casing, true);
     const wordListCasing = Validation.validateCasing(data.wordListCasing, false);
-    const customWords = Validation.validateWords(data.words, width, height, true) || [];
+    const customWords = Validation.validateWordHints(data.words, width, height, true) || [];
 
     let topic = null;
     if (data.topic) {
@@ -251,6 +253,7 @@ export async function createCustomGame(req, res) {
       false
     );
     const mode = Validation.validateMode(data.mode);
+    const alphabetize = Validation.validateBool(data.alphabetize, false);
     Validation.validateTitle(data.title);
 
     let wordNetResult = [];
@@ -284,7 +287,10 @@ export async function createCustomGame(req, res) {
 
     const { chosenWords, grid, answers } = await GridGeneratorService.generateGrid(customWords, wordNetResult, options);
 
-    const words = applyCasing(chosenWords, wordListCasing);
+    let words = applyCasing(chosenWords, wordListCasing);
+    if (alphabetize) {
+      words = words.sort((a, b) => a.hint.localeCompare(b.hint.localeCompare));
+    }
 
     res.json({ words: words, grid: grid, answers: answers }).end();
   } catch (err) {

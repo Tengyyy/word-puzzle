@@ -89,7 +89,7 @@ const getColorForWord = (word, idx) => {
         :style="{ 'color': getColorForWord(word, index) }"
       >
         <v-list-item-title
-            :class="{ 'text-decoration-line-through': isFound(word), 'font-weight-bold': isFound(word) }"
+            :class="{ 'text-decoration-line-through': isFound(word), 'font-weight-bold': !isFound(word) }"
         >
           {{ shouldShowAnswer(word, isFound(word)) ? `${word.hint} (${word.word})` : word.hint }}
         </v-list-item-title>

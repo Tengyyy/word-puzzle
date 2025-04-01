@@ -37,13 +37,14 @@ const generate = async () => {
       diagonalsEnabled: creatorStore.diagonalsEnabled,
       casing: creatorStore.casing,
       wordListCasing: creatorStore.wordListCasing,
-      words: creatorStore.getWords,
+      words: creatorStore.getCustomWords,
       topic: creatorStore.generateWordList ? creatorStore.topic : null,
       inputLanguage: creatorStore.inputLanguage,
       outputLanguage: creatorStore.outputLanguage,
       nonAlphaAllowed: creatorStore.nonAlphaAllowed,
       mode: creatorStore.mode,
       title: creatorStore.title,
+      alphabetize: creatorStore.alphabetize,
     })
 
     const highlightsToggled = creatorStore.highlight
@@ -67,6 +68,11 @@ const generate = async () => {
 
 const share = async () => {
   try {
+    if (gameSaved.value) {
+      shareDialog.value = true
+      return
+    }
+
     const response = await apiRequest(ENDPOINTS.persistGame.full, 'POST', {
       grid: creatorStore.getGrid,
       words: creatorStore.getWords,
@@ -76,6 +82,7 @@ const share = async () => {
 
     id.value = response.id
     gameSaved.value = true
+    shareDialog.value = true
     // eslint-disable-next-line no-unused-vars
   } catch (err) {
     /* empty */
@@ -110,7 +117,6 @@ const print = async () => {
         words: creatorStore.getWords,
         title: creatorStore.title,
         answers: creatorStore.answers,
-        wordListCasing: creatorStore.wordListCasing,
       })
 
       id.value = response.id
@@ -155,10 +161,50 @@ const gridHeight = computed(() => {
 
   <v-main class="pa-4">
 
+    <v-dialog v-model="shareDialog" max-width="700">
+      <v-card class="py-4 px-2">
+        <v-card-title class="text-h5">Jaga</v-card-title>
+        <v-card-text>
+          <v-text-field
+              v-model="link"
+              readonly
+              rounded
+              variant="outlined"
+              @click:append-inner="copyLink"
+          >
+            <template #append-inner>
+              <v-tooltip top>
+                <template #activator="{ props }">
+                  <v-icon v-bind="props" @click="copyLink" v-if="!linkCopied">mdi-content-copy</v-icon>
+                  <v-icon v-bind="props" @click="copyLink" v-else>mdi-check</v-icon>
+                </template>
+                <span>{{ copyTooltipText }}</span>
+              </v-tooltip>
+            </template>
+          </v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" @click="shareDialog = false" rounded variant="outlined" class="px-4">Sulge</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-container>
       <v-card class="px-6 py-8 mt-12 rounded-lg">
-        <v-card-title class="text-h5 font-weight-bold">
-          Loo oma sõnarägastik
+        <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
+          <template v-if="!generated">
+            Loo oma sõnarägastik
+          </template>
+          <template v-else>
+            <v-tooltip text="Tagasi">
+              <template #activator="{ props }">
+                <v-btn icon v-bind="props" size="large" variant="text" class="back-button" @click="generated = false">
+                  <v-icon>mdi-arrow-left</v-icon>
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <span class="title-text">{{ creatorStore.title }}</span>
+          </template>
         </v-card-title>
 
         <v-divider class="my-4" />
@@ -248,19 +294,18 @@ const gridHeight = computed(() => {
 
           <!-- Action Buttons -->
           <div class="button-container">
-            <v-btn @click="generate" color="primary" rounded>
+            <v-btn @click="generate" color="primary" rounded class="mr-16" :disabled="loadingStore.isLoading">
               Genereeri uuesti
             </v-btn>
 
-            <v-btn @click="print" color="success" rounded>
-              <v-icon left>mdi-printer</v-icon>
+            <v-btn @click="print" color="primary" rounded variant="outlined">
+              <v-icon class="mr-2">mdi-printer</v-icon>
               Prindi
             </v-btn>
 
-            <v-btn @click="copyLink" color="secondary" rounded>
-              <v-icon left v-if="linkCopied">mdi-check</v-icon>
-              <v-icon left v-else>mdi-content-copy</v-icon>
-              Kopeeri link
+            <v-btn @click="share" color="primary" rounded variant="outlined">
+              <v-icon class="mr-2">mdi-share</v-icon>
+              Jaga
             </v-btn>
           </div>
         </template>
@@ -342,5 +387,19 @@ const gridHeight = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.back-button {
+  position: absolute;
+  left: 0;
+}
+
+.title-text {
+  flex-grow: 1;
+  text-align: center;
 }
 </style>

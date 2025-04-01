@@ -128,7 +128,7 @@ const toggleHighlights = () => {
       return {
         ...outline,
         border: 'none',
-        backgroundColor: `rgba(${color.value.r}, ${color.value.g}, ${color.value.b}, 0.9)`,
+        backgroundColor: `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`,
       }
     })
   }

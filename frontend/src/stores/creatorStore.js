@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { Constants } from '../../../shared/Constants.js'
-import {getRandomColor} from "../../../shared/Utils.js";
+import {getRandomColor, isOnlyLetters} from "../../../shared/Utils.js";
 
 export const useCreatorStore = defineStore('creator', () => {
   const width = ref(15)
@@ -16,6 +16,7 @@ export const useCreatorStore = defineStore('creator', () => {
   const outputLanguage = ref(Constants.LANGUAGE.ESTONIAN.value)
   const mode = ref(Constants.MODE.WORDS.value)
   const words = ref([])
+  const customWords = ref([])
   const alphabetize = ref(false)
   const highlight = ref(false)
   const title = ref(null)
@@ -52,6 +53,24 @@ export const useCreatorStore = defineStore('creator', () => {
       : formattedWords
   })
 
+  const getCustomWords = computed(() => {
+    let formattedWords = customWords.value
+    if (wordListCasing.value === Constants.CASING.UPPERCASE.value) {
+      formattedWords = customWords.value.map(obj => ({
+        ...obj,
+        hint: obj.hint.toUpperCase(),
+      }))
+    } else if (wordListCasing.value === Constants.CASING.LOWERCASE.value) {
+      formattedWords = customWords.value.map(obj => ({
+        ...obj,
+        hint: obj.hint.toLowerCase(),
+      }))
+    }
+    return alphabetize.value
+      ? formattedWords.slice().sort((a, b) => a.hint.localeCompare(b.hint))
+      : formattedWords
+  })
+
   function addWord(input, validate) {
 
     if (!input.word) {
@@ -68,7 +87,7 @@ export const useCreatorStore = defineStore('creator', () => {
 
     if (
       validate &&
-      words.value.some(
+      customWords.value.some(
         word =>
           word.word.toUpperCase() === input.word.toUpperCase() ||
           word.hint.toUpperCase() === input.hint.toUpperCase(),
@@ -76,22 +95,22 @@ export const useCreatorStore = defineStore('creator', () => {
     ) {
       return { success: false, message: 'See sõna juba on nimekirjas' }
     }
-    if (validate && !nonAlphaAllowed.value && /\s/.test(input.word)) {
+    if (validate && !nonAlphaAllowed.value && !isOnlyLetters(input.word)) {
       return {
         success: false,
-        message: 'Tühikuid sisaldavad sõned pole lubatud',
+        message: 'Numbreid ja erisümboleid sisaldavad sõned pole lubatud',
       }
     }
     if (validate && input.word.length > Math.max(width.value, height.value)) {
       return { success: false, message: 'Sõna on liiga pikk. Suurenda sõnarägastiku mõõtmeid' }
     }
 
-    words.value.push(input)
+    customWords.value.push(input)
     return { success: true }
   }
 
   function removeWord(word) {
-    words.value = words.value.filter(
+    customWords.value = customWords.value.filter(
       item =>
         item.word.toUpperCase() !== word.word.toUpperCase() &&
         item.hint.toUpperCase() !== word.hint.toUpperCase(),
@@ -99,7 +118,7 @@ export const useCreatorStore = defineStore('creator', () => {
   }
 
   function removeAllWords() {
-    words.value = []
+    customWords.value = []
   }
 
   function generateGrid(data) {
@@ -132,6 +151,7 @@ export const useCreatorStore = defineStore('creator', () => {
     outputLanguage.value = Constants.LANGUAGE.ESTONIAN.value
     mode.value = Constants.MODE.WORDS.value
     words.value = []
+    customWords.value = []
     alphabetize.value = false
     highlight.value = false
     title.value = null
@@ -163,6 +183,7 @@ export const useCreatorStore = defineStore('creator', () => {
     generateWordList,
     getGrid,
     getWords,
+    getCustomWords,
     addWord,
     removeWord,
     removeAllWords,
