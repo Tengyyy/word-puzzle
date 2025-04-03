@@ -90,5 +90,19 @@ const vuetify = createVuetify({
     VNavigationDrawer,
     VCombobox,
   },
+  defaults: {
+    VCheckbox: {
+      color: 'primary',
+    },
+    VRadioGroup: {
+      color: 'primary',
+    },
+    VRadio: {
+      color: 'primary',
+    },
+    VSwitch: {
+      color: 'primary',
+    },
+  },
 })
 export default vuetify

@@ -1,8 +1,20 @@
 <script setup>
 import { useCreatorStore } from '@/stores/creatorStore.js'
 import { Constants } from '../../../shared/Constants.js'
+import {ref} from "vue";
+import InfoTooltip from "@/components/InfoTooltip.vue";
 
 const creatorStore = useCreatorStore()
+
+const tooltips = ref({
+  dimensions: `
+<b>Laius</b> - Veergude arv sõnarägastikus<br />
+<b>Kõrgus</b> - Ridade arv sõnarägastikus<br />
+Mõõtmed peavad jääma vahemikku 5 - 30<br />
+<b>NB!</b> Sõnarägastikud suuremad kui <b>15 x 15</b> ei pruugi olla väljaprinditavad ega lahendatavad väiksematel ekraanidel (telefonidel)
+`
+})
+
 </script>
 
 <template>
@@ -10,15 +22,7 @@ const creatorStore = useCreatorStore()
     <div class="size-settings mt-4">
       <div class="sub-setting-title pl-4" style="color: rgba(0, 0, 0, 0.6)">
         <span>Sõnarägastiku mõõtmed</span>
-        <v-tooltip location="top">
-          <template #activator="{ props }">
-            <v-icon v-bind="props" size="30">mdi-information-outline</v-icon>
-          </template>
-          <b>Laius</b> - Veergude arv sõnarägastikus<br />
-          <b>Kõrgus</b> - Ridade arv sõnarägastikus<br />
-          Mõõtmed peavad jääma vahemikku 5 - 30<br />
-          <b>NB!</b> Sõnarägastikud suuremad kui <b>15 x 15</b> ei pruugi olla väljaprinditavad ega lahendatavad väiksematel ekraanidel (telefonidel)
-        </v-tooltip>
+        <InfoTooltip :text="tooltips.dimensions" />
       </div>
 
       <div class="settings-container mt-4">

@@ -287,12 +287,18 @@ export async function createCustomGame(req, res) {
 
     const { chosenWords, grid, answers } = await GridGeneratorService.generateGrid(customWords, wordNetResult, options);
 
-    let words = applyCasing(chosenWords, wordListCasing);
+    let processedWords = applyCasing(chosenWords, wordListCasing);
+    let processedAnswers = answers;
     if (alphabetize) {
-      words = words.sort((a, b) => a.hint.localeCompare(b.hint.localeCompare));
+      // merge words and answers together for sorting
+      let mergedWords = [...processedWords].map((item, index) => ({ wordItem: item, answerItem: answers[index] }));
+      mergedWords = mergedWords.sort((a, b) => a.wordItem.hint.localeCompare(b.wordItem.hint.localeCompare));
+
+      processedWords = mergedWords.map((item) => item.wordItem);
+      processedAnswers = mergedWords.map((item) => item.answerItem);
     }
 
-    res.json({ words: words, grid: grid, answers: answers }).end();
+    res.json({ words: processedWords, grid: grid, answers: processedAnswers }).end();
   } catch (err) {
     console.error(err);
     res

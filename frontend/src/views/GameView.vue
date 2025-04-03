@@ -70,30 +70,40 @@ const gridHeight = computed(() => {
 
 <template>
   <v-main>
-    <h1>{{ gameStore.title }}</h1>
     <v-container>
-      <v-row>
-        <!-- Game Grid on Left -->
-        <v-col cols="12" md="6">
-          <GameBoard mode="game" @select="handleSelect" ref="boardRef" :cell-size="gridCellSize" :width="gridWidth" :height="gridHeight" />
-        </v-col>
-        <!-- Word List on Right (initially, can move to bottom on smaller screens) -->
-        <v-col cols="12" md="6">
-          <WordList mode="game" />
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col>
-          <v-btn @click="print" :disabled="loadingStore.isLoading">
+      <v-card class="px-6 py-4 rounded-lg">
+        <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
+          {{ gameStore.title }}
+          <v-btn @click="print" color="primary" rounded class="print-button">
+            <v-icon class="mr-2">mdi-printer</v-icon>
             Prindi mäng
           </v-btn>
-        </v-col>
-      </v-row>
+        </v-card-title>
+
+        <v-divider class="mb-6" />
+
+
+        <v-row>
+            <!-- Game Grid on Left -->
+            <v-col cols="12" md="6">
+              <GameBoard mode="game" @select="handleSelect" ref="boardRef" :cell-size="gridCellSize" :width="gridWidth" :height="gridHeight" />
+            </v-col>
+            <!-- Word List on Right (initially, can move to bottom on smaller screens) -->
+            <v-col cols="12" md="6">
+              <WordList mode="game" />
+            </v-col>
+          </v-row>
+      </v-card>
     </v-container>
   </v-main>
 </template>
 
 <style scoped>
+.print-button {
+  position: absolute;
+  right: 0;
+}
+
 .v-row {
   transition: flex-direction 0.3s ease;
 }

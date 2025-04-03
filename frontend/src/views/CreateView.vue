@@ -9,6 +9,16 @@ import { apiRequest } from '@/api.js'
 import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { useLoadingStore } from '@/stores/loadingStore.js'
 import CreatorWordList from "@/components/CreatorWordList.vue";
+import InfoTooltip from "@/components/InfoTooltip.vue";
+
+const tooltips = ref({
+  words: `
+Kui valisid eelnevalt sisendteema põhjal sõnade nimekirja genereerimise, siis ei pea siia ühtegi sõna lisama,<br>
+kuid kõik lisatud sõnad peidetakse siiski lisaks automaatselt genereeritud sõnadele ka sõnarägastikku.<br>
+Kui sa ei valinud sisendteema põhjal sõnade nimekirja genereerimist, siis peab siia lisama kõik sõnad,<br>
+mida sa soovid sõnarägastikku peita.
+`
+})
 
 const creatorStore = useCreatorStore()
 const loadingStore = useLoadingStore()
@@ -150,15 +160,6 @@ const gridHeight = computed(() => {
 </script>
 
 <template>
-
-  <div class="background-wrapper">
-    <div class="background-images">
-      <div class="background-image"></div>
-      <div class="background-image"></div>
-    </div>
-    <div class="background-overlay"></div>
-  </div>
-
   <v-main class="pa-4">
 
     <v-dialog v-model="shareDialog" max-width="700">
@@ -203,7 +204,7 @@ const gridHeight = computed(() => {
                 </v-btn>
               </template>
             </v-tooltip>
-            <span class="title-text">{{ creatorStore.title }}</span>
+            {{ creatorStore.title }}
           </template>
         </v-card-title>
 
@@ -240,16 +241,7 @@ const gridHeight = computed(() => {
           <div class="title-container py-4">
             <div class="font-weight-bold py-4 text-h6">
               4. Sõnad
-              <v-tooltip location="top">
-                <template #activator="{ props }">
-                  <v-icon v-bind="props" size="30">mdi-information-outline</v-icon>
-                </template>
-                Kui valisid eelnevalt sisendteema põhjal sõnade nimekirja genereerimise, siis ei pea siia ühtegi sõna lisama,<br>
-                kuid kõik lisatud sõnad peidetakse siiski lisaks automaatselt genereeritud sõnadele ka sõnarägastikku.<br>
-                Kui sa ei valinud sisendteema põhjal sõnade nimekirja genereerimist, siis peab siia lisama kõik sõnad,<br>
-                mida sa soovid sõnarägastikku peita.
-
-              </v-tooltip>
+              <InfoTooltip :text="tooltips.words" />
             </div>
 
             <v-btn @click="removeAllWords" color="red" rounded :disabled="!creatorStore.getWords || creatorStore.getWords.length === 0">
@@ -342,39 +334,6 @@ const gridHeight = computed(() => {
   margin-left: 0;
 }
 
-.background-wrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.background-images {
-  display: flex;
-  width: 400vw;
-  height: 100vh;
-}
-
-.background-image {
-  width: 200vw;
-  height: 100vh;
-  background: url('@/assets/solved_puzzle.png') repeat-x center;
-  background-size: auto 100%;
-  filter: blur(4px);
-}
-
-.background-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5); /* Light filter to soften contrast */
-}
-
 .generate-button {
   max-width: 300px;
   width: 100%; /* Ensures it doesn't shrink too much */
@@ -396,10 +355,5 @@ const gridHeight = computed(() => {
 .back-button {
   position: absolute;
   left: 0;
-}
-
-.title-text {
-  flex-grow: 1;
-  text-align: center;
 }
 </style>

@@ -39,6 +39,15 @@ const drawer = ref(false)
 </script>
 
 <template>
+
+  <div class="background-wrapper">
+    <div class="background-images">
+      <div class="background-image"></div>
+      <div class="background-image"></div>
+    </div>
+    <div class="background-overlay"></div>
+  </div>
+
   <v-app>
     <v-app-bar app dense class="background-light">
       <v-container class="d-flex align-center">
@@ -161,5 +170,48 @@ const drawer = ref(false)
   padding: 20px; /* Add padding if needed */
   box-sizing: border-box;
   overflow: hidden; /* Prevent horizontal scroll if content fits */
+}
+
+.background-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.background-images {
+  display: flex; /* Arrange images side by side */
+  width: 400vw; /* Two images side by side */
+  height: 100vh;
+  animation: pan-background 120s linear infinite;
+}
+
+.background-image {
+  width: 200vw;
+  height: 100vh;
+  background: url('@/assets/solved_puzzle.png') repeat-x center;
+  background-size: auto 100%;
+  filter: blur(3px);
+}
+
+.background-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Light filter to soften contrast */
+}
+
+@keyframes pan-background {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-200vw);
+  }
 }
 </style>

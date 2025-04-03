@@ -274,6 +274,8 @@ class Puzzle {
 
     // Step 1: Try to place all custom words (Fail if any can't be placed)
     for (const wordItem of customWords) {
+      if (this.chosenWords.some(cw => cw.word === wordItem.word || cw.hint === wordItem.hint)) continue;
+
       if (!this._tryToPlaceWord(grid, wordItem.word, positions, directions)) {
         throw new Error(`Ei suutnud paigutada sõna '${wordItem.word}' rägastikku. Palun suurenda sõnarägastiku mõõtmeid või vähenda sõnade arvu.`);
       }
@@ -292,6 +294,11 @@ class Puzzle {
 
     while (words.length > 0 && placedChars < targetFilled) {
       const wordItem = this._weightedRandomWord(words);
+      if (this.chosenWords.some(cw => cw.word === wordItem.word || cw.hint === wordItem.hint)) {
+        words.splice(words.indexOf(wordItem), 1); // Remove word if it is already chosen
+        continue;
+      }
+
       if (!this._tryToPlaceWord(grid, wordItem.word, positions, directions)) {
         words.splice(words.indexOf(wordItem), 1); // Remove word if it couldn't be placed
         continue;

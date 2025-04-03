@@ -4,8 +4,36 @@ import { Constants } from '../../../shared/Constants.js'
 import {ref} from "vue";
 import {apiRequest} from "@/api.js";
 import {ENDPOINTS} from "../../../shared/ApiEndpoints.js";
+import InfoTooltip from "@/components/InfoTooltip.vue";
 
 const creatorStore = useCreatorStore()
+
+const tooltips = ref({
+  generateWordList: `
+Kui see valik on lubatud, luuakse sõnade nimekiri automaatselt
+    sisendteema põhjal.<br />
+    Vastasel korral peab kõik soovitud sõnad sisestama manuaalselt.
+`,
+  topic: `
+Sisendsõna, mille põhjal genereeritakse sarnastest sõnadest
+sõnarägastiku sõnade nimekiri<br />
+Sisendteema peab olema sisendkeeles.<br />
+Teema peab olema algvormis (ainsuses ja nimetavas käändes).
+`,
+  language: `
+<b>Sisendkeel</b> - selles keeles on sõnad sõnade nimekirjas
+sõnarägastiku kõrval<br />
+<b>Väljundkeel</b> - selles keeles on peidetud sõnad sõnarägastikus<br />
+`,
+  mode: `
+Valik määrab, kas sõnarägastiku kõrval kuvatakse samad sõnad, mida
+peab otsima, või nende sõnade definitsioonid.
+`,
+  nonAlphaAllowed: `
+Valik määrab, kas sõnad võivad sisaldada tühikuid, numbreid ja muid
+sümboleid, mis ei ole tähed.
+`
+})
 
 const suggestions = ref([])
 const fetchSuggestions = async () => {
@@ -35,31 +63,14 @@ const fetchSuggestions = async () => {
     <v-switch v-model="creatorStore.generateWordList" dense class="pl-2">
       <template #label>
         <span>Genereeri automaatselt sisendteema põhjal sõnade nimekiri</span>
-        <v-tooltip location="top">
-          <template #activator="{ props }">
-            <v-icon v-bind="props" size="30" class="ml-1" color="rgb(0,0,0,0.6)"
-              >mdi-information-outline</v-icon
-            >
-          </template>
-          Kui see valik on lubatud, luuakse sõnade nimekiri automaatselt
-          sisendteema põhjal.<br />
-          Vastasel korral peab kõik soovitud sõnad sisestama manuaalselt.
-        </v-tooltip>
+        <InfoTooltip :text="tooltips.generateWordList" />
       </template>
     </v-switch>
 
     <div class="topic-container">
       <div class="sub-setting-title pl-4" style="color: rgba(0, 0, 0, 0.6)">
         <span>Sõnarägastiku teema</span>
-        <v-tooltip location="top">
-          <template #activator="{ props }">
-            <v-icon v-bind="props" size="30">mdi-information-outline</v-icon>
-          </template>
-          Sisendsõna, mille põhjal genereeritakse sarnastest sõnadest
-          sõnarägastiku sõnade nimekiri<br />
-          Sisendteema peab olema sisendkeeles.<br />
-          Teema peab olema algvormis (ainsuses ja nimetavas käändes).
-        </v-tooltip>
+        <InfoTooltip :text="tooltips.topic" />
       </div>
     </div>
     <v-combobox
@@ -79,14 +90,7 @@ const fetchSuggestions = async () => {
     <div class="mt-4">
       <div class="sub-setting-title pl-4" style="color: rgba(0, 0, 0, 0.6)">
         <span>Sõnarägastiku keel</span>
-        <v-tooltip location="top">
-          <template #activator="{ props }">
-            <v-icon v-bind="props" size="30">mdi-information-outline</v-icon>
-          </template>
-          <b>Sisendkeel</b> - selles keeles on sõnad sõnade nimekirjas
-          sõnarägastiku kõrval<br />
-          <b>Väljundkeel</b> - selles keeles on peidetud sõnad sõnarägastikus<br />
-        </v-tooltip>
+        <InfoTooltip :text="tooltips.language" />
       </div>
       <div class="language-controls mt-4">
         <v-select
@@ -116,15 +120,7 @@ const fetchSuggestions = async () => {
     <v-radio-group class="mt-4" v-model="creatorStore.mode" dense>
       <template #label>
         <span>Kuva sõnarägastiku kõrval</span>
-        <v-tooltip location="top">
-          <template #activator="{ props }">
-            <v-icon v-bind="props" size="30" class="ml-1"
-              >mdi-information-outline</v-icon
-            >
-          </template>
-          Valik määrab, kas sõnarägastiku kõrval kuvatakse samad sõnad, mida
-          peab otsima, või nende sõnade definitsioonid.
-        </v-tooltip>
+        <InfoTooltip :text="tooltips.mode" />
       </template>
       <template v-for="mode in Constants.MODE" :key="mode.value">
         <v-radio :value="mode.value" :label="mode.text" />
@@ -149,15 +145,7 @@ const fetchSuggestions = async () => {
     >
       <template #label>
         <span>Luba mitte-tähestikulised märgid sõnedes</span>
-        <v-tooltip location="top">
-          <template #activator="{ props }">
-            <v-icon v-bind="props" size="30" class="ml-1" color="rgb(0,0,0,0.6)"
-              >mdi-information-outline</v-icon
-            >
-          </template>
-          Valik määrab, kas sõnad võivad sisaldada tühikuid, numbreid ja muid
-          sümboleid, mis ei ole tähed.
-        </v-tooltip>
+        <InfoTooltip :text="tooltips.nonAlphaAllowed" />
       </template>
     </v-checkbox>
     <v-switch

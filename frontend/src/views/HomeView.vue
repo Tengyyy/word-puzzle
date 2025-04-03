@@ -89,14 +89,6 @@ const getButtonColor = (value) => {
 
 </script>
 <template>
-  <div class="background-wrapper">
-    <div class="background-images">
-      <div class="background-image"></div>
-      <div class="background-image"></div>
-    </div>
-    <div class="background-overlay"></div>
-  </div>
-
   <v-main class="d-flex align-center justify-center">
     <v-container class="d-flex align-center justify-center" style="flex: 1;">
       <v-row class="w-100 d-flex align-center justify-center">
@@ -178,49 +170,6 @@ const getButtonColor = (value) => {
   align-items: center; /* Center horizontally */
   justify-content: center; /* Center vertically */
   width: 100%; /* Ensure it takes full space */
-}
-
-.background-wrapper {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.background-images {
-  display: flex; /* Arrange images side by side */
-  width: 400vw; /* Two images side by side */
-  height: 100vh;
-  animation: pan-background 60s linear infinite;
-}
-
-.background-image {
-  width: 200vw;
-  height: 100vh;
-  background: url('@/assets/solved_puzzle.png') repeat-x center;
-  background-size: auto 100%;
-  filter: blur(3px);
-}
-
-.background-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5); /* Light filter to soften contrast */
-}
-
-@keyframes pan-background {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-200vw);
-  }
 }
 
 .control-panel {

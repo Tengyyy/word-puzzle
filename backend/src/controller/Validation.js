@@ -194,12 +194,14 @@ export function validateWords(words, width, height, allowEmpty = false) {
   return words;
 }
 
-export function validateWordHints(wordHints, width, height) {
+export function validateWordHints(wordHints, width, height, allowEmpty = false) {
   if (!Array.isArray(wordHints)) {
+    if (allowEmpty) return []
     throw new ValidationException("Väli 'sõnavihje' peab olema massiiv");
   }
 
   if (wordHints.length === 0) {
+    if (allowEmpty) return []
     throw new ValidationException("Väli 'sõnavihjed' ei tohi olla tühi");
   }
 
