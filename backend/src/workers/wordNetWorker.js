@@ -169,9 +169,8 @@ function getWords(
   if (!synsets || synsets.length === 0) return { inputs: [], outputs: [] };
 
   const maxWordLength = Math.max(width, height);
-
-  // select words until we can roughly fill 3 word-search grids to get a decent randomized selection later
-  const maxCharacters = width * height * 3;
+  const maxCharacters = width * height * 3; // select words until we can roughly fill 3 word-search grids to get a decent randomized selection later
+  const maxDepth = 4;
 
   let collectedSynsets = new Set();
   let inputSet = new Set();
@@ -181,108 +180,99 @@ function getWords(
   let weights = []
   let totalCharacters = 0;
 
-  let availableSynsets = [...synsets];
+  let queue = synsets.map((synsetID) => ({ synsetID, depth: 0 }));
 
-  const maxDepth = 4;
+  while (queue.length > 0 && totalCharacters < maxCharacters) {
+    let nextQueue = [];
 
-  function collectWords(synsetID, depth = 0) {
-    if (totalCharacters >= maxCharacters || depth > maxDepth) return;
-    if (collectedSynsets.has(synsetID)) return;
+    for (let { synsetID, depth } of queue) {
+      if (totalCharacters >= maxCharacters || depth > maxDepth) break;
+      if (collectedSynsets.has(synsetID)) continue;
+      collectedSynsets.add(synsetID);
 
-    collectedSynsets.add(synsetID);
+      if (depth > 0) {
+        let input = null;
+        let output = null;
 
-    if (depth > 0) {
-      let input = null;
-      let output = null;
+        if (mode === Constants.MODE.HINTS.value) {
+          input = synsetDefinitions.get(synsetID);
+        }
 
-      if (mode === Constants.MODE.HINTS.value) {
-        input = synsetDefinitions.get(synsetID);
-      }
+        if (mode === Constants.MODE.WORDS.value || inputLanguage === outputLanguage) {
+          const lemmas = synsetToLemmas.get(synsetID);
+          if (lemmas) {
+            for (const lemma of lemmas) {
+              if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
+              if (lemma.length > maxWordLength) continue;
+              if (inputSet.has(lemma)) continue;
 
-      if (mode === Constants.MODE.WORDS.value || inputLanguage === outputLanguage) {
-        const lemmas = synsetToLemmas.get(synsetID);
-        if (lemmas) {
-          for (const lemma of lemmas) {
-            if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
-            if (lemma.length > maxWordLength) continue;
-            if (inputSet.has(lemma)) continue;
-
-            if (mode === Constants.MODE.WORDS.value) {
-              input = lemma;
+              if (mode === Constants.MODE.WORDS.value) {
+                input = lemma;
+              }
+              if (inputLanguage === outputLanguage) {
+                output = lemma;
+              }
+              break;
             }
-
-            if (inputLanguage === outputLanguage) {
-              output = lemma;
-            }
-
-            break;
           }
         }
+
+        if (outputLanguage !== inputLanguage) {
+          output = null;
+          const ili = synsetToIli.get(synsetID);
+          if (ili) {
+            const outputSynset = iliToSynsets.get(ili)[outputLanguage];
+            if (outputSynset) {
+              const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
+              if (outputLemmas) {
+                for (const lemma of outputLemmas) {
+                  if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
+                  if (lemma.length > maxWordLength) continue;
+                  if (outputSet.has(lemma)) continue;
+
+                  output = lemma;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (input && output && totalCharacters + output.length <= maxCharacters && !inputSet.has(input)) {
+          inputs.push(input);
+          outputs.push(output);
+          weights.push(maxDepth + 1 - depth);
+          inputSet.add(input);
+          outputSet.add(output);
+          totalCharacters += output.length;
+        }
+
+        if (totalCharacters >= maxCharacters) break;
       }
 
-      if (outputLanguage !== inputLanguage) {
-        output = null;
-        const ili = synsetToIli.get(synsetID);
-        if (ili) {
-          const outputSynset = iliToSynsets.get(ili)[outputLanguage];
-          if (outputSynset) {
-            const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
-            if (outputLemmas) {
-              for (const lemma of outputLemmas) {
-                if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
-                if (lemma.length > maxWordLength) continue;
-                if (outputSet.has(lemma)) continue;
+      // Explore related synsets dynamically based on depth
+      // (for depths 0, 1 and 2 we look at hyponyms and other presumably sub-words and other more narrows concepts,
+      // if we reach depths 3 and 4 and the target character count is still not reached,
+      // then we expand our search to hypernyms and more general words)
+      const priorityRelations = depth < 3 ?
+        ["hyponym", "subevent", "mero_part", "mero_member", "mero_location", "mero_portion", "similar"] :
+        ["hypernym", "holo_part", "holo_member", "causes", "is_caused_by", "role", "involved", "involved_agent", "involved_instrument", "is_subevent_of", "state_of"];
 
-                output = lemma;
-                break;
+      const relations = synsetRelations.get(synsetID);
+      if (relations) {
+        for (const relation of priorityRelations) {
+          if (relations[relation]) {
+            for (const relatedSynset of relations[relation]) {
+              if (!collectedSynsets.has(relatedSynset)) {
+                nextQueue.push({ synsetID: relatedSynset, depth: depth + 1 });
               }
             }
           }
         }
       }
-
-      if (input && output && totalCharacters + output.length <= maxCharacters && !inputSet.has(input)) {
-        inputs.push(input);
-        outputs.push(output);
-        weights.push(maxDepth + 1 - depth);
-        inputSet.add(input);
-        outputSet.add(output);
-        totalCharacters += output.length;
-      }
-
-      if (totalCharacters >= maxCharacters) return;
     }
 
-    // Explore related synsets dynamically based on depth
-    // (for depths 0, 1 and 2 we look at hyponyms and other presumably subwords and more narrows concepts,
-    // if we reach depths 3 and 4 and the target character count is still not reached,
-    // then we expand our search to hypernyms/more general words)
-    const priorityRelations = depth < 3 ?
-      ["hyponym", "subevent", "mero_part", "mero_member", "mero_location", "mero_portion", "similar"] :
-      ["hypernym", "holo_part", "holo_member", "causes", "is_caused_by", "role", "involved", "involved_agent", "involved_instrument", "is_subevent_of", "state_of"];
-
-    const relations = synsetRelations.get(synsetID);
-    if (relations) {
-      for (const relation of priorityRelations) {
-        if (relations[relation]) {
-          for (const relatedSynset of relations[relation]) {
-            collectWords(relatedSynset, depth + 1);
-            if (totalCharacters >= maxCharacters) return;
-          }
-        }
-      }
-    }
-  }
-
-  //extend to different definitions of input word if we still can't reach the threshold
-  while (totalCharacters < maxCharacters && availableSynsets.length > 0) {
-    const selectedSynset = getRandomElement(availableSynsets);
-    collectWords(selectedSynset);
-    availableSynsets = availableSynsets.filter((s) => !collectedSynsets.has(s));
-  }
-
-  function getRandomElement(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
+    queue = nextQueue; // Move to the next depth level
   }
 
   return inputs.map((hint, index) => ({
