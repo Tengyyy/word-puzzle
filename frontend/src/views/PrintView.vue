@@ -51,7 +51,6 @@ const gridHeight = computed(() => {
 </script>
 
 <template>
-  <v-main>
     <h1>{{ printStore.title }}</h1>
     <v-btn @click="showPrintModal" class="no-print">Prindi</v-btn>
     <GameBoard :mode="mode" :printView="true" :cell-size="gridCellSize" :width="gridWidth" :height="gridHeight" />
@@ -61,7 +60,6 @@ const gridHeight = computed(() => {
       <GameBoard :mode="mode" :printView="true" ref="answerBoard" :cell-size="gridCellSize" :width="gridWidth" :height="gridHeight" />
       <WordList :mode="mode" :printView="true" :answerList="true" />
     </template>
-  </v-main>
 </template>
 
 <style scoped>

@@ -89,77 +89,75 @@ const getButtonColor = (value) => {
 
 </script>
 <template>
-  <v-main class="d-flex align-center justify-center">
-    <v-container class="d-flex align-center justify-center" style="flex: 1;">
-      <v-row class="w-100 d-flex align-center justify-center">
-        <!-- Logo: Visible only on larger screens -->
-        <v-col cols="12" md="6" class="d-none d-md-flex justify-center">
-          <v-img :src="logo" max-width="500" contain />
-        </v-col>
+  <v-container class="d-flex align-center justify-center" style="flex: 1;">
+    <v-row class="w-100 d-flex align-center justify-center">
+      <!-- Logo: Visible only on larger screens -->
+      <v-col cols="12" md="6" class="d-none d-md-flex justify-center">
+        <v-img :src="logo" max-width="500" contain />
+      </v-col>
 
-        <!-- Controls -->
-        <v-col cols="12" md="6" class="d-flex flex-column align-center">
+      <!-- Controls -->
+      <v-col cols="12" md="6" class="d-flex flex-column align-center">
 
-          <v-card class="control-panel px-4 py-16 d-flex controls-col background-light">
+        <v-card class="control-panel px-4 py-16 d-flex controls-col background-light">
 
-            <v-combobox
-                label="Sõnarägastiku teema"
-                v-model="topic"
-                class="w-75"
-                rounded
-                variant="solo"
-                @update:search="fetchSuggestions"
-                :items="suggestions"
-                auto-select-first
-                :hide-no-data="false"
-                no-data-text="Lemma puudub"
-            />
+          <v-combobox
+              label="Sõnarägastiku teema"
+              v-model="topic"
+              class="w-75"
+              rounded
+              variant="solo"
+              @update:search="fetchSuggestions"
+              :items="suggestions"
+              auto-select-first
+              :hide-no-data="false"
+              no-data-text="Lemma puudub"
+          />
 
-            <v-select
-                label="Sisendkeel"
-                v-model="inputLanguage"
-                :items="Object.values(Constants.LANGUAGE)"
-                item-title="text"
-                item-value="value"
-                class="w-75"
-                rounded
-                variant="solo"
-            />
+          <v-select
+              label="Sisendkeel"
+              v-model="inputLanguage"
+              :items="Object.values(Constants.LANGUAGE)"
+              item-title="text"
+              item-value="value"
+              class="w-75"
+              rounded
+              variant="solo"
+          />
 
-            <v-select
-                label="Väljundkeel"
-                v-model="outputLanguage"
-                :items="Object.values(Constants.LANGUAGE)"
-                item-title="text"
-                item-value="value"
-                class="w-75"
-                rounded
-                variant="solo"
-            />
+          <v-select
+              label="Väljundkeel"
+              v-model="outputLanguage"
+              :items="Object.values(Constants.LANGUAGE)"
+              item-title="text"
+              item-value="value"
+              class="w-75"
+              rounded
+              variant="solo"
+          />
 
-            <!-- Difficulty Toggle -->
-            <v-btn-toggle v-model="difficulty" divided rounded="xl" mandatory class="my-4" variant="elevated">
-              <v-btn
-                  v-for="mode in Object.values(Constants.DIFFICULTY)"
-                  :key="mode.value"
-                  :value="mode.value"
-                  :color="getButtonColor(mode.value)"
-              >
-                {{ mode.text }}
-              </v-btn>
-            </v-btn-toggle>
-
-            <v-divider class="my-2"></v-divider>
-
-            <!-- Start Button -->
-            <v-btn @click="startGame" :disabled="loadingStore.isLoading" class="w-50" color="primary" rounded size="x-large">
-              Mängi
+          <!-- Difficulty Toggle -->
+          <v-btn-toggle v-model="difficulty" divided rounded="xl" mandatory class="my-4" variant="elevated">
+            <v-btn
+                v-for="mode in Object.values(Constants.DIFFICULTY)"
+                :key="mode.value"
+                :value="mode.value"
+                :color="getButtonColor(mode.value)"
+            >
+              {{ mode.text }}
             </v-btn>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
-  </v-main>
+          </v-btn-toggle>
+
+          <v-divider class="my-2"></v-divider>
+
+          <!-- Start Button -->
+          <v-btn @click="startGame" :disabled="loadingStore.isLoading" class="w-50" color="primary" rounded size="x-large">
+            Mängi
+          </v-btn>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <style scoped>

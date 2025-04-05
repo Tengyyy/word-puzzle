@@ -167,7 +167,6 @@ const drawer = ref(false)
   justify-content: center; /* Center vertically */
   align-items: center; /* Center horizontally */
   min-height: 100vh; /* Ensure it takes at least the full viewport height */
-  padding: 20px; /* Add padding if needed */
   box-sizing: border-box;
   overflow: hidden; /* Prevent horizontal scroll if content fits */
 }

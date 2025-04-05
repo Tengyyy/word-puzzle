@@ -25,6 +25,22 @@ const props = defineProps({
     required: false,
     default: false,
   },
+  hintMode: {
+    type: Boolean,
+    required: false
+  },
+  stackedLayout: {
+    type: Boolean,
+    required: false
+  },
+  columnCount: {
+    type: Number,
+    required: true,
+  },
+  columnSize: {
+    type: Number,
+    required: true,
+  }
 })
 
 const store = props.printView
@@ -80,28 +96,62 @@ const getColorForWord = (word, idx) => {
   }
 }
 
+const columns = computed(() => {
+  return Array.from({ length: props.columnCount }, (_, colIdx) =>
+      store.getWords.slice(colIdx * props.columnSize, (colIdx + 1) * props.columnSize)
+  )
+})
+
 </script>
 
 <template>
-  <v-container>
-    <v-list>
-      <v-list-item
-        v-for="(word, index) in store.getWords"
-        :key="index"
-        :style="{ 'color': getColorForWord(word, index) }"
+
+
+  <div
+      :class="{ 'ml-6': !stackedLayout, 'mt-6': stackedLayout }"
+      class="d-flex flex-row word-list-wrap pa-0"
+  >
+    <div
+        v-for="(column, colIdx) in columns"
+        :key="colIdx"
+        class="d-flex flex-column ma-0 pa-0"
+    >
+      <div
+          v-for="(word, index) in column"
+          :key="index"
+          :class="{ 'my-2': hintMode }"
+          :style="{
+            color: getColorForWord(word, colIdx * columnSize + index),
+            height: hintMode ? {} : '40px',
+            width: hintMode ? '100%' : '150px',
+            whiteSpace: hintMode ? 'normal' : 'nowrap',
+            wordBreak: hintMode ? 'break-word' : 'normal',
+          }"
       >
-        <v-list-item-title
-            :class="{ 'text-decoration-line-through': isFound(word), 'font-weight-bold': !isFound(word) }"
+        <span
+            :class="{
+            'text-decoration-line-through': isFound(word),
+            'font-weight-bold': !isFound(word),
+          }"
         >
-          {{ shouldShowAnswer(word, isFound(word)) ? `${word.hint} (${word.word})` : word.hint }}
-        </v-list-item-title>
-      </v-list-item>
-    </v-list>
-  </v-container>
+          {{
+            shouldShowAnswer(word, isFound(word))
+                ? `${word.hint} (${word.word})`
+                : word.hint
+          }}
+        </span>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
 .text-decoration-line-through {
   text-decoration: line-through;
 }
+
+.word-list-wrap {
+  flex-wrap: wrap;
+}
+
 </style>

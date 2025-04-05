@@ -160,151 +160,148 @@ const gridHeight = computed(() => {
 </script>
 
 <template>
-  <v-main class="pa-4">
-
-    <v-dialog v-model="shareDialog" max-width="700">
-      <v-card class="py-4 px-2">
-        <v-card-title class="text-h5">Jaga</v-card-title>
-        <v-card-text>
-          <v-text-field
-              v-model="link"
-              readonly
-              rounded
-              variant="outlined"
-              @click:append-inner="copyLink"
-          >
-            <template #append-inner>
-              <v-tooltip top>
-                <template #activator="{ props }">
-                  <v-icon v-bind="props" @click="copyLink" v-if="!linkCopied">mdi-content-copy</v-icon>
-                  <v-icon v-bind="props" @click="copyLink" v-else>mdi-check</v-icon>
-                </template>
-                <span>{{ copyTooltipText }}</span>
-              </v-tooltip>
-            </template>
-          </v-text-field>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="primary" @click="shareDialog = false" rounded variant="outlined" class="px-4">Sulge</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-    <v-container>
-      <v-card class="px-6 py-8 mt-12 rounded-lg">
-        <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
-          <template v-if="!generated">
-            Loo oma sõnarägastik
-          </template>
-          <template v-else>
-            <v-tooltip text="Tagasi">
+  <v-dialog v-model="shareDialog" max-width="700">
+    <v-card class="py-4 px-2">
+      <v-card-title class="text-h5">Jaga</v-card-title>
+      <v-card-text>
+        <v-text-field
+            v-model="link"
+            readonly
+            rounded
+            variant="outlined"
+            @click:append-inner="copyLink"
+        >
+          <template #append-inner>
+            <v-tooltip top>
               <template #activator="{ props }">
-                <v-btn icon v-bind="props" size="large" variant="text" class="back-button" @click="generated = false">
-                  <v-icon>mdi-arrow-left</v-icon>
-                </v-btn>
+                <v-icon v-bind="props" @click="copyLink" v-if="!linkCopied">mdi-content-copy</v-icon>
+                <v-icon v-bind="props" @click="copyLink" v-else>mdi-check</v-icon>
               </template>
+              <span>{{ copyTooltipText }}</span>
             </v-tooltip>
-            {{ creatorStore.title }}
           </template>
-        </v-card-title>
+        </v-text-field>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn color="primary" @click="shareDialog = false" rounded variant="outlined" class="px-4">Sulge</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+  <v-container>
+    <v-card class="px-6 py-8 mt-12 rounded-lg">
+      <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
+        <template v-if="!generated">
+          Loo oma sõnarägastik
+        </template>
+        <template v-else>
+          <v-tooltip text="Tagasi">
+            <template #activator="{ props }">
+              <v-btn icon v-bind="props" size="large" variant="text" class="back-button" @click="generated = false">
+                <v-icon>mdi-arrow-left</v-icon>
+              </v-btn>
+            </template>
+          </v-tooltip>
+          {{ creatorStore.title }}
+        </template>
+      </v-card-title>
+
+      <v-divider class="my-4" />
+
+      <template v-if="!generated">
+
+        <!-- Step 1: Title -->
+        <div class="font-weight-bold py-4 text-h6">1. Pealkiri</div>
+        <v-text-field
+            placeholder="Pealkiri"
+            v-model="creatorStore.title"
+            variant="outlined"
+            class="mt-2 mb-4"
+            required
+            rounded
+        />
 
         <v-divider class="my-4" />
 
-        <template v-if="!generated">
+        <!-- Step 2: Board Settings -->
+        <div class="font-weight-bold py-4 text-h6">2. Sõnarägastiku sätted</div>
+        <BoardSettings class="mb-4" />
 
-          <!-- Step 1: Title -->
-          <div class="font-weight-bold py-4 text-h6">1. Pealkiri</div>
-          <v-text-field
-              placeholder="Pealkiri"
-              v-model="creatorStore.title"
-              variant="outlined"
-              class="mt-2 mb-4"
-              required
-              rounded
-          />
+        <v-divider class="my-4" />
 
-          <v-divider class="my-4" />
+        <!-- Step 3: Word Settings -->
+        <div class="font-weight-bold py-4 text-h6">3. Sõnade sätted</div>
+        <WordSettings class="mb-4" />
 
-          <!-- Step 2: Board Settings -->
-          <div class="font-weight-bold py-4 text-h6">2. Sõnarägastiku sätted</div>
-          <BoardSettings class="mb-4" />
+        <v-divider class="my-4" />
 
-          <v-divider class="my-4" />
-
-          <!-- Step 3: Word Settings -->
-          <div class="font-weight-bold py-4 text-h6">3. Sõnade sätted</div>
-          <WordSettings class="mb-4" />
-
-          <v-divider class="my-4" />
-
-          <!-- Step 4: Word List -->
-          <div class="title-container py-4">
-            <div class="font-weight-bold py-4 text-h6">
-              4. Sõnad
-              <InfoTooltip :text="tooltips.words" />
-            </div>
-
-            <v-btn @click="removeAllWords" color="red" rounded :disabled="!creatorStore.getWords || creatorStore.getWords.length === 0">
-              Eemalda kõik sõnad
-            </v-btn>
+        <!-- Step 4: Word List -->
+        <div class="title-container py-4">
+          <div class="font-weight-bold py-4 text-h6">
+            4. Sõnad
+            <InfoTooltip :text="tooltips.words" />
           </div>
-          <CreatorWordList class="mb-4" />
 
-          <v-divider class="my-4" />
+          <v-btn @click="removeAllWords" color="red" rounded :disabled="!creatorStore.getWords || creatorStore.getWords.length === 0">
+            Eemalda kõik sõnad
+          </v-btn>
+        </div>
+        <CreatorWordList class="mb-4" />
 
-          <!-- Generate Button -->
-          <v-btn @click="generate" color="primary" rounded class="generate-button">
-            Genereeri sõnarägastik
+        <v-divider class="my-4" />
+
+        <!-- Generate Button -->
+        <v-btn @click="generate" color="primary" rounded class="generate-button">
+          Genereeri sõnarägastik
+        </v-btn>
+
+      </template>
+
+      <template v-else>
+        <!-- Word Search Grid -->
+        <div class="grid-container">
+          <div class="grid-wrapper">
+            <GameBoard
+                mode="create"
+                ref="boardRef"
+                :cell-size="gridCellSize"
+                :width="gridWidth"
+                :height="gridHeight"
+            />
+
+            <v-switch
+                label="Kuva peidetud sõnad"
+                v-model="creatorStore.highlight"
+                @change="boardRef.toggleHighlights()"
+                class="highlight-toggle"
+            />
+          </div>
+
+          <WordList mode="create" />
+        </div>
+
+        <v-divider class="my-4" />
+
+        <!-- Action Buttons -->
+        <div class="button-container">
+          <v-btn @click="generate" color="primary" rounded class="mr-16" :disabled="loadingStore.isLoading">
+            Genereeri uuesti
           </v-btn>
 
-        </template>
+          <v-btn @click="print" color="primary" rounded variant="outlined">
+            <v-icon class="mr-2">mdi-printer</v-icon>
+            Prindi
+          </v-btn>
 
-        <template v-else>
-          <!-- Word Search Grid -->
-          <div class="grid-container">
-            <div class="grid-wrapper">
-              <GameBoard
-                  mode="create"
-                  ref="boardRef"
-                  :cell-size="gridCellSize"
-                  :width="gridWidth"
-                  :height="gridHeight"
-              />
+          <v-btn @click="share" color="primary" rounded variant="outlined">
+            <v-icon class="mr-2">mdi-share</v-icon>
+            Jaga
+          </v-btn>
+        </div>
+      </template>
 
-              <v-switch
-                  label="Kuva peidetud sõnad"
-                  v-model="creatorStore.highlight"
-                  @change="boardRef.toggleHighlights()"
-                  class="highlight-toggle"
-              />
-            </div>
-
-            <WordList mode="create" />
-          </div>
-
-          <v-divider class="my-4" />
-
-          <!-- Action Buttons -->
-          <div class="button-container">
-            <v-btn @click="generate" color="primary" rounded class="mr-16" :disabled="loadingStore.isLoading">
-              Genereeri uuesti
-            </v-btn>
-
-            <v-btn @click="print" color="primary" rounded variant="outlined">
-              <v-icon class="mr-2">mdi-printer</v-icon>
-              Prindi
-            </v-btn>
-
-            <v-btn @click="share" color="primary" rounded variant="outlined">
-              <v-icon class="mr-2">mdi-share</v-icon>
-              Jaga
-            </v-btn>
-          </div>
-        </template>
-
-      </v-card>
-    </v-container>
-  </v-main>
+    </v-card>
+  </v-container>
 </template>
 
 <style scoped>

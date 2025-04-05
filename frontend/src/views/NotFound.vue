@@ -20,14 +20,12 @@ onBeforeRouteLeave(() => {
 
 
 <template>
-  <v-main>
-    <v-empty-state
-        headline="404"
-        title="Lehte ei leitud"
-        :text="errorStore.text"
-        action-text="Mine avalehele"
-        @click:action="goHome"
-        :image="logo"
-    ></v-empty-state>
-  </v-main>
+  <v-empty-state
+      headline="404"
+      title="Lehte ei leitud"
+      :text="errorStore.text"
+      action-text="Mine avalehele"
+      @click:action="goHome"
+      :image="logo"
+  ></v-empty-state>
 </template>
