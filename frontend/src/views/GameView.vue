@@ -1,11 +1,13 @@
 <script setup>
-import {ref, onMounted, computed, onBeforeUnmount, nextTick, watch} from 'vue'
+import {ref, onMounted, computed, onBeforeUnmount} from 'vue'
 import GameBoard from '@/components/GameBoard.vue'
 import WordList from '@/components/WordList.vue'
 import { useGameStore } from '@/stores/gameStore.js'
 import { useRouter } from 'vue-router'
 import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { useDialogStore } from '@/stores/dialogStore.js'
+import MainCard from "@/components/MainCard.vue";
+import {calculateWordItemWidth} from "../../../shared/Utils.js";
 
 const boardRef = ref(null)
 
@@ -66,8 +68,9 @@ const gridHeight = computed(() => {
 })
 
 const estimateWordItemHeight = 40
-const estimatedWordItemWidth = 150
-
+const estimatedWordItemWidth = computed(() => {
+  return calculateWordItemWidth(gameStore.getWords)
+})
 const mainContainer = ref(null)
 const availableWidth = ref(1200)
 
@@ -82,7 +85,7 @@ const estimatedColumnCount = computed(() => {
 })
 
 const estimatedWordListWidth = computed(() => {
-  return estimatedColumnCount.value * estimatedWordItemWidth
+  return estimatedColumnCount.value * estimatedWordItemWidth.value
 })
 
 const stackedLayout = computed(() => {
@@ -114,7 +117,7 @@ const columnCount = computed(() => {
   }
 
   if (stackedLayout.value) {
-    return Math.floor(totalWords.value, Math.floor(gridWidth.value / estimatedWordItemWidth))
+    return Math.min(totalWords.value, Math.floor(gridWidth.value / estimatedWordItemWidth.value))
   }
 
   return estimatedColumnCount.value
@@ -157,8 +160,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-container class="d-flex justify-center" ref="mainContainer">
-    <v-card :width="cardWidth" elevation="6" class="py-4 px-6 rounded-xl">
+  <v-container
+      class="d-flex justify-center"
+      :class="$vuetify.display.smAndDown ? 'pa-0 ma-0' : 'justify-center'"
+      ref="mainContainer"
+      fluid
+  >
+    <main-card
+        :width="cardWidth"
+    >
       <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
         {{ gameStore.title }}
         <v-btn @click="print" color="primary" rounded class="print-button">
@@ -174,14 +184,16 @@ onMounted(() => {
             :cols="stackedLayout ? 12 : undefined"
             :style="!stackedLayout ? { width: gridWidth + 'px' } : undefined"
         >
-          <GameBoard
-              mode="game"
-              @select="handleSelect"
-              ref="boardRef"
-              :cell-size="gridCellSize"
-              :width="gridWidth"
-              :height="gridHeight"
-          />
+          <div class="d-flex justify-center align-center">
+            <GameBoard
+                mode="game"
+                @select="handleSelect"
+                ref="boardRef"
+                :cell-size="gridCellSize"
+                :width="gridWidth"
+                :height="gridHeight"
+            />
+          </div>
         </v-col>
         <v-col
             :cols="stackedLayout ? 12 : undefined"
@@ -193,16 +205,18 @@ onMounted(() => {
               :column-count="columnCount"
               :column-size="columnSize"
               :stacked-layout="stackedLayout"
+              :word-item-width="estimatedWordItemWidth"
           />
         </v-col>
       </v-row>
 
-    </v-card>
+    </main-card>
 
   </v-container>
 </template>
 
 <style scoped>
+
 .print-button {
   position: absolute;
   right: 0;

@@ -39,9 +39,8 @@ const addWord = () => {
             v-for="(word, index) in creatorStore.getCustomWords"
             :key="index"
             :cols="isHintMode ? 12 : 12"
-            :sm="isHintMode ? 12 : 6"
-            :md="isHintMode ? 12 : 4"
-            :lg="isHintMode ? 12 : 3"
+            :md="isHintMode ? 12 : 6"
+            :lg="isHintMode ? 12 : 4"
         >
           <v-card class="word-item">
             <v-card-text class="word-text">

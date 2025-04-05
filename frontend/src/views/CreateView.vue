@@ -4,12 +4,14 @@ import WordSettings from '@/components/WordSettings.vue'
 import GameBoard from '@/components/GameBoard.vue'
 import WordList from '@/components/WordList.vue'
 import { useCreatorStore } from '@/stores/creatorStore.js'
-import { ref, computed, onMounted } from 'vue'
+import {ref, computed, onMounted, onBeforeUnmount} from 'vue'
 import { apiRequest } from '@/api.js'
 import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { useLoadingStore } from '@/stores/loadingStore.js'
 import CreatorWordList from "@/components/CreatorWordList.vue";
 import InfoTooltip from "@/components/InfoTooltip.vue";
+import MainCard from "@/components/MainCard.vue";
+import {calculateWordItemWidth} from "../../../shared/Utils.js";
 
 const tooltips = ref({
   words: `
@@ -32,10 +34,6 @@ const generated = ref(false)
 const shareDialog = ref(false)
 
 const link = computed(() => `${ENDPOINTS.game.full}/${id.value}`)
-
-onMounted(() => {
-  creatorStore.clearData()
-})
 
 const generate = async () => {
   try {
@@ -146,6 +144,14 @@ const removeAllWords = () => {
   creatorStore.removeAllWords()
 }
 
+const mainContainer = ref(null)
+const availableWidth = ref(1200)
+
+const hintMode = computed(() => {
+  const words = creatorStore.getWords;
+  return !!words.find((item) => item.hint.toUpperCase() !== item.word.toUpperCase());
+})
+
 const gridCellSize = computed(() => {
   return 40
 })
@@ -156,6 +162,92 @@ const gridWidth = computed(() => {
 
 const gridHeight = computed(() => {
   return creatorStore.height * gridCellSize.value
+})
+
+const estimateWordItemHeight = 40
+const estimatedWordItemWidth = computed(() => {
+  return calculateWordItemWidth(creatorStore.getWords)
+})
+const minHintModeListWidth = 1000
+
+const totalWords = computed(() => {
+  return creatorStore.getWords.length
+})
+
+const estimatedColumnCount = computed(() => {
+  return Math.ceil((totalWords.value * estimateWordItemHeight) / gridHeight.value)
+})
+
+const estimatedWordListWidth = computed(() => {
+  return estimatedColumnCount.value * estimatedWordItemWidth.value
+})
+
+const stackedLayout = computed(() => {
+  const totalEstimatedWidth = gridWidth.value + (hintMode.value ? minHintModeListWidth : estimatedWordListWidth.value)
+  // add 48 because of card padding and 24 because of word-list left margin
+  return totalEstimatedWidth + 48 + 24 > availableWidth.value
+})
+
+
+const wordListWidth = computed(() => {
+  if (stackedLayout.value) {
+    return Math.max(gridWidth.value, 500)
+  }
+
+  return hintMode.value ? minHintModeListWidth + 24 : estimatedWordListWidth.value + 24
+})
+
+const cardWidth = computed(() => {
+  if (stackedLayout.value) {
+    return Math.max(gridWidth.value, 500) + 48
+  }
+
+  // add 48 because of card padding
+  return gridWidth.value + wordListWidth.value + 48
+})
+
+const columnCount = computed(() => {
+  if (hintMode.value) {
+    return 1
+  }
+
+  if (stackedLayout.value) {
+    return Math.min(totalWords.value, Math.floor(gridWidth.value / estimatedWordItemWidth.value))
+  }
+
+  return estimatedColumnCount.value
+})
+
+const columnSize = computed(() => {
+  if (hintMode.value) {
+    return totalWords.value
+  }
+
+  if (stackedLayout.value) {
+    return Math.ceil(totalWords.value / columnCount.value)
+  }
+
+  return Math.floor(gridHeight.value / estimateWordItemHeight)
+})
+
+onMounted(() => {
+
+  const el = mainContainer.value?.$el
+  if (el instanceof HTMLElement) {
+    availableWidth.value = el.getBoundingClientRect().width
+
+    const resizeObserver = new ResizeObserver(() => {
+      availableWidth.value = el.getBoundingClientRect().width
+    })
+
+    resizeObserver.observe(el)
+
+    onBeforeUnmount(() => {
+      resizeObserver.disconnect()
+    })
+  }
+
+  creatorStore.clearData()
 })
 </script>
 
@@ -184,12 +276,15 @@ const gridHeight = computed(() => {
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="primary" @click="shareDialog = false" rounded variant="outlined" class="px-4">Sulge</v-btn>
+        <v-btn color="primary" @click="shareDialog = false" rounded variant="flat" class="px-4">Sulge</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
-  <v-container>
-    <v-card class="px-6 py-8 mt-12 rounded-lg">
+  <v-container
+      :class="{ 'd-flex': generated, 'align-center': generated, 'justify-center': generated }"
+      ref="mainContainer"
+  >
+    <main-card :width="generated ? cardWidth : undefined" class="mt-16">
       <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
         <template v-if="!generated">
           Loo oma sõnarägastik
@@ -259,32 +354,58 @@ const gridHeight = computed(() => {
 
       <template v-else>
         <!-- Word Search Grid -->
-        <div class="grid-container">
-          <div class="grid-wrapper">
-            <GameBoard
+
+        <v-row no-gutters :class="stackedLayout ? 'stacked-layout' : 'side-by-side-layout'">
+          <v-col
+              :cols="stackedLayout ? 12 : undefined"
+              :style="!stackedLayout ? { width: gridWidth + 'px' } : undefined"
+          >
+            <div class="grid-wrapper">
+              <GameBoard
+                  mode="create"
+                  ref="boardRef"
+                  :cell-size="gridCellSize"
+                  :width="gridWidth"
+                  :height="gridHeight"
+              />
+
+              <v-switch
+                  label="Kuva peidetud sõnad"
+                  v-model="creatorStore.highlight"
+                  @change="boardRef.toggleHighlights()"
+                  class="highlight-toggle"
+              />
+            </div>
+          </v-col>
+          <v-col
+            :cols="stackedLayout ? 12 : undefined"
+            :style="!stackedLayout ? { width: wordListWidth + 'px' } : undefined"
+          >
+            <WordList
                 mode="create"
-                ref="boardRef"
-                :cell-size="gridCellSize"
-                :width="gridWidth"
-                :height="gridHeight"
+                :hintMode="hintMode"
+                :column-count="columnCount"
+                :column-size="columnSize"
+                :stacked-layout="stackedLayout"
+                :word-item-width="estimatedWordItemWidth"
             />
-
-            <v-switch
-                label="Kuva peidetud sõnad"
-                v-model="creatorStore.highlight"
-                @change="boardRef.toggleHighlights()"
-                class="highlight-toggle"
-            />
-          </div>
-
-          <WordList mode="create" />
-        </div>
+          </v-col>
+        </v-row>
 
         <v-divider class="my-4" />
 
         <!-- Action Buttons -->
         <div class="button-container">
-          <v-btn @click="generate" color="primary" rounded class="mr-16" :disabled="loadingStore.isLoading">
+          <v-btn
+              @click="generate"
+              color="primary"
+              rounded
+              :disabled="loadingStore.isLoading"
+              :class="{
+                'mr-16': $vuetify.display.mdAndUp,
+                'mr-8': $vuetify.display.smAndDown
+              }"
+          >
             Genereeri uuesti
           </v-btn>
 
@@ -300,18 +421,11 @@ const gridHeight = computed(() => {
         </div>
       </template>
 
-    </v-card>
+    </main-card>
   </v-container>
 </template>
 
 <style scoped>
-
-.grid-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
 
 .grid-wrapper {
   display: flex;

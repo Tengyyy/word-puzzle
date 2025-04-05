@@ -1,5 +1,5 @@
 <script setup>
-import { RouterView, useRouter } from 'vue-router'
+import {RouterView, useRoute, useRouter} from 'vue-router'
 import { useLoadingStore } from '@/stores/loadingStore.js'
 import { computed, ref } from 'vue'
 import AlertMessage from './components/AlertMessage.vue'
@@ -10,6 +10,7 @@ const loadingStore = useLoadingStore()
 const isLoading = computed(() => loadingStore.isLoading)
 
 const router = useRouter()
+const route = useRoute()
 
 const navigateHome = () => {
   router.push(ENDPOINTS.home.relative)
@@ -36,11 +37,19 @@ const buttons = [
 
 // Drawer state for mobile navigation
 const drawer = ref(false)
+
+const isPrintView = computed(() => route.name === "printer")
+const isHomeView = computed(() => route.name === "home")
+const isNotFound = computed(() => route.name === "NotFound")
+
 </script>
 
 <template>
 
-  <div class="background-wrapper">
+  <div
+      v-if="!isPrintView && (isHomeView || isNotFound || $vuetify.display.mdAndUp)"
+      class="background-wrapper"
+  >
     <div class="background-images">
       <div class="background-image"></div>
       <div class="background-image"></div>
@@ -131,10 +140,8 @@ const drawer = ref(false)
       </v-list>
     </v-navigation-drawer>
 
-    <v-main class="main-container">
-      <v-container fluid>
-        <RouterView />
-      </v-container>
+    <v-main class="main-container no-max-width">
+      <RouterView />
     </v-main>
 
     <AlertMessage />
@@ -169,6 +176,12 @@ const drawer = ref(false)
   min-height: 100vh; /* Ensure it takes at least the full viewport height */
   box-sizing: border-box;
   overflow: hidden; /* Prevent horizontal scroll if content fits */
+  padding: 0;
+}
+
+.no-max-width {
+  max-width: 100% !important;
+  width: 100%;
 }
 
 .background-wrapper {

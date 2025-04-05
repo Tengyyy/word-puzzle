@@ -40,6 +40,10 @@ const props = defineProps({
   columnSize: {
     type: Number,
     required: true,
+  },
+  wordItemWidth: {
+    type: Number,
+    required: false,
   }
 })
 
@@ -50,7 +54,7 @@ const store = props.printView
     : useCreatorStore()
 
 const showAnswers = computed(() => {
-  return props.mode === MODE.CREATE || props.answerList
+  return (!props.printView && props.mode === MODE.CREATE) || props.answerList
 })
 
 const isFound = word =>
@@ -97,9 +101,14 @@ const getColorForWord = (word, idx) => {
 }
 
 const columns = computed(() => {
-  return Array.from({ length: props.columnCount }, (_, colIdx) =>
+
+  const arr = Array.from({ length: props.columnCount }, (_, colIdx) =>
       store.getWords.slice(colIdx * props.columnSize, (colIdx + 1) * props.columnSize)
   )
+
+  console.log(arr)
+
+  return arr
 })
 
 </script>
@@ -109,7 +118,7 @@ const columns = computed(() => {
 
   <div
       :class="{ 'ml-6': !stackedLayout, 'mt-6': stackedLayout }"
-      class="d-flex flex-row word-list-wrap pa-0"
+      class="d-flex flex-row word-list-wrap pa-0 justify-center"
   >
     <div
         v-for="(column, colIdx) in columns"
@@ -123,7 +132,7 @@ const columns = computed(() => {
           :style="{
             color: getColorForWord(word, colIdx * columnSize + index),
             height: hintMode ? {} : '40px',
-            width: hintMode ? '100%' : '150px',
+            width: hintMode ? '100%' : wordItemWidth + 'px',
             whiteSpace: hintMode ? 'normal' : 'nowrap',
             wordBreak: hintMode ? 'break-word' : 'normal',
           }"

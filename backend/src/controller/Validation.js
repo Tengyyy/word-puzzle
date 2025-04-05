@@ -132,14 +132,14 @@ export function validateDifficulty(val) {
   return formatted;
 }
 
-export function validateString(val, fieldName) {
+export function validateString(val, fieldName, length = 100) {
   if (typeof val !== "string") {
     throw new ValidationException(`Väli '${fieldName}' peab olema sõne`);
   }
 
-  if (val.length === 0 || val.length > 100) {
+  if (val.length === 0 || val.length > length) {
     throw new ValidationException(
-      `Välja '${fieldName}' pikkus peab olema 1-50 tähte`
+      `Välja '${fieldName}' pikkus peab olema 1-${length} tähte`
     );
   }
 
@@ -208,7 +208,7 @@ export function validateWordHints(wordHints, width, height, allowEmpty = false) 
   const words = wordHints.map((wordHint) => wordHint.word);
   validateWords(words, width, height);
   wordHints.forEach((wordHint) => {
-    validateString(wordHint.hint, "sõna vihje");
+    validateString(wordHint.hint, "sõna vihje", 1000);
   });
 
   return wordHints;

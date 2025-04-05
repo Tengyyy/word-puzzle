@@ -36,3 +36,22 @@ export function isOnlyLetters(str) {
 
   return /^\p{L}+$/u.test(str);
 }
+
+export function calculateWordItemWidth(wordList, font = '16px Roboto') {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  context.font = font;
+
+  let maxWidth = 0;
+
+  for (const word of wordList) {
+    const width = context.measureText(word.hint).width;
+    if (width > maxWidth) {
+      maxWidth = width;
+    }
+  }
+
+  console.log(maxWidth)
+
+  return Math.max(50, Math.ceil(maxWidth) + 65);
+}
