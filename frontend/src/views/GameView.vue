@@ -43,36 +43,83 @@ const handleSelect = async selectedWord => {
   }
 }
 
+const scrollbarWidth = ref(0)
+
+const measureScrollbarWidth = () => {
+  const scrollDiv = document.createElement('div')
+  scrollDiv.style.visibility = 'hidden'
+  scrollDiv.style.overflow = 'scroll'
+  scrollDiv.style.position = 'absolute'
+  scrollDiv.style.top = '-9999px'
+  scrollDiv.style.width = '100px'
+  scrollDiv.style.height = '100px'
+  document.body.appendChild(scrollDiv)
+
+  const inner = document.createElement('div')
+  inner.style.width = '100%'
+  scrollDiv.appendChild(inner)
+
+  scrollbarWidth.value = scrollDiv.offsetWidth - inner.offsetWidth
+
+  document.body.removeChild(scrollDiv)
+}
+
+const mainContainer = ref(null)
+const availableWidth = ref(1200)
+
 const hintMode = computed(() => {
   const words = gameStore.getWords;
   return !!words.find((item) => item.hint.toUpperCase() !== item.word.toUpperCase());
 })
 
-const gridCellSize = computed(() => {
-  return 40;
+const gridRowCount = computed(() => {
+  if (gameStore.getGrid && gameStore.getGrid.length > 0) return gameStore.getGrid.length
+
+  return 0
 })
 
-const gridWidth = computed(() => {
-  let firstRow = [];
-  const grid = gameStore.getGrid;
-  if (grid && grid.length > 0 && grid[0] && grid[0].length > 0) firstRow = grid[0];
+const gridColumnCount = computed(() => {
+  if (gameStore.getGrid && gameStore.getGrid.length > 0 && gameStore.getGrid[0] && gameStore.getGrid[0].length > 0) return gameStore.getGrid[0].length;
 
-  return firstRow.length * gridCellSize.value;
+  return 0
+})
+
+const gridCellSize = ref(40)
+const resizeTimeout = ref(null)
+
+const updateGridCellSize = () => {
+  const steps = [40, 30, 20];
+
+  cancelAnimationFrame(resizeTimeout.value)
+
+  resizeTimeout.value = requestAnimationFrame(() => {
+    for (const size of steps) {
+      const newGridWidth = gridColumnCount.value * size
+      if (newGridWidth + 48 <= availableWidth.value) {
+        if (gridCellSize.value !== size) {
+          gridCellSize.value = size
+        }
+        return
+      }
+    }
+    if (gridCellSize.value !== 20) {
+      gridCellSize.value = 20
+    }
+  })
+}
+
+const gridWidth = computed(() => {
+  return gridColumnCount.value * gridCellSize.value;
 })
 
 const gridHeight = computed(() => {
-  let grid = []
-  if (gameStore.getGrid && gameStore.getGrid.length > 0) grid = gameStore.getGrid
-
-  return grid.length * gridCellSize.value;
+  return gridRowCount.value * gridCellSize.value;
 })
 
 const estimateWordItemHeight = 40
 const estimatedWordItemWidth = computed(() => {
   return calculateWordItemWidth(gameStore.getWords)
 })
-const mainContainer = ref(null)
-const availableWidth = ref(1200)
 
 const minHintModeListWidth = 1000
 
@@ -91,20 +138,20 @@ const estimatedWordListWidth = computed(() => {
 const stackedLayout = computed(() => {
   const totalEstimatedWidth = gridWidth.value + (hintMode.value ? minHintModeListWidth : estimatedWordListWidth.value)
   // add 48 because of card padding and 24 because of word-list left margin
-  return totalEstimatedWidth + 48 + 24 > availableWidth.value
+  return totalEstimatedWidth + 48 + 24 + 36 > availableWidth.value
 })
 
 const wordListWidth = computed(() => {
   if (stackedLayout.value) {
-    return Math.max(gridWidth.value, 500)
+    return gridWidth.value
   }
 
-  return hintMode.value ? minHintModeListWidth + 24 : estimatedWordListWidth.value + 24
+  return hintMode.value ? minHintModeListWidth + 24 + 36 : estimatedWordListWidth.value + 24 + 36
 })
 
 const cardWidth = computed(() => {
   if (stackedLayout.value) {
-    return Math.max(gridWidth.value, 500) + 48
+    return Math.min(availableWidth.value, Math.max(gridWidth.value, 500) + 48)
   }
 
   // add 48 because of card padding
@@ -135,15 +182,17 @@ const columnSize = computed(() => {
   return Math.floor(gridHeight.value / estimateWordItemHeight)
 })
 
-
-
 onMounted(() => {
+
+  measureScrollbarWidth()
+
   const el = mainContainer.value?.$el
   if (el instanceof HTMLElement) {
-    availableWidth.value = el.getBoundingClientRect().width
+    availableWidth.value = Math.min(window.innerWidth, el.clientWidth + scrollbarWidth.value)
 
     const resizeObserver = new ResizeObserver(() => {
-      availableWidth.value = el.getBoundingClientRect().width
+      availableWidth.value = Math.min(window.innerWidth, el.clientWidth + scrollbarWidth.value)
+      updateGridCellSize()
     })
 
     resizeObserver.observe(el)
@@ -161,8 +210,8 @@ onMounted(() => {
 
 <template>
   <v-container
-      class="d-flex justify-center"
-      :class="$vuetify.display.smAndDown ? 'pa-0 ma-0' : 'justify-center'"
+      :class="$vuetify.display.smAndDown ? 'pa-0 ma-0' : undefined"
+      class="d-flex justify-center mt-16"
       ref="mainContainer"
       fluid
   >
@@ -184,7 +233,7 @@ onMounted(() => {
             :cols="stackedLayout ? 12 : undefined"
             :style="!stackedLayout ? { width: gridWidth + 'px' } : undefined"
         >
-          <div class="d-flex justify-center align-center">
+          <div class="d-flex justify-center align-center pa-0 ma-0">
             <GameBoard
                 mode="game"
                 @select="handleSelect"
@@ -198,6 +247,7 @@ onMounted(() => {
         <v-col
             :cols="stackedLayout ? 12 : undefined"
             :style="!stackedLayout ? { width: wordListWidth + 'px' } : undefined"
+            class="pa-0 ma-0"
         >
           <WordList
               mode="game"
@@ -206,6 +256,7 @@ onMounted(() => {
               :column-size="columnSize"
               :stacked-layout="stackedLayout"
               :word-item-width="estimatedWordItemWidth"
+              :width="wordListWidth"
           />
         </v-col>
       </v-row>

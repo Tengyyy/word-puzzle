@@ -146,14 +146,6 @@ const isNotFound = computed(() => route.name === "NotFound")
 
     <AlertMessage />
     <ConfirmationDialog />
-
-    <v-overlay v-if="isLoading" persistent>
-      <v-progress-circular
-        indeterminate
-        size="64"
-        color="primary"
-      ></v-progress-circular>
-    </v-overlay>
   </v-app>
 </template>
 

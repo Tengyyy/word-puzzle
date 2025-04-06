@@ -34,7 +34,7 @@ const cellStyle = computed(() => {
     width: `${props.cellSize}px`,
     height: `${props.cellSize}px`,
     backgroundColor: 'transparent',
-    fontSize: '18px',
+    fontSize: `${props.cellSize < 30 ? 14 : 18}px`,
     fontWeight: 'bold',
     transition: 'background-color 0.2s ease',
     position: 'relative',

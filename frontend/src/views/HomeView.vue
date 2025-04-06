@@ -151,7 +151,7 @@ const getButtonColor = (value) => {
           <v-divider class="my-2"></v-divider>
 
           <!-- Start Button -->
-          <v-btn @click="startGame" :disabled="loadingStore.isLoading" class="w-50" color="primary" rounded size="x-large">
+          <v-btn @click="startGame" :disabled="loadingStore.isLoading" :loading="loadingStore.isLoading" class="w-50" color="primary" rounded size="x-large">
             Mängi
           </v-btn>
         </v-card>

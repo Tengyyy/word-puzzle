@@ -51,7 +51,5 @@ export function calculateWordItemWidth(wordList, font = '16px Roboto') {
     }
   }
 
-  console.log(maxWidth)
-
   return Math.max(50, Math.ceil(maxWidth) + 65);
 }

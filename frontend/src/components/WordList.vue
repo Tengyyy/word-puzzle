@@ -44,6 +44,10 @@ const props = defineProps({
   wordItemWidth: {
     type: Number,
     required: false,
+  },
+  width: {
+    type: Number,
+    required: false,
   }
 })
 
@@ -102,13 +106,9 @@ const getColorForWord = (word, idx) => {
 
 const columns = computed(() => {
 
-  const arr = Array.from({ length: props.columnCount }, (_, colIdx) =>
+  return Array.from({ length: props.columnCount }, (_, colIdx) =>
       store.getWords.slice(colIdx * props.columnSize, (colIdx + 1) * props.columnSize)
   )
-
-  console.log(arr)
-
-  return arr
 })
 
 </script>
@@ -117,6 +117,7 @@ const columns = computed(() => {
 
 
   <div
+      :style="{ minWidth: stackedLayout && width ? width + 'px' : undefined }"
       :class="{ 'ml-6': !stackedLayout, 'mt-6': stackedLayout }"
       class="d-flex flex-row word-list-wrap pa-0 justify-center"
   >
@@ -130,25 +131,25 @@ const columns = computed(() => {
           :key="index"
           :class="{ 'my-2': hintMode }"
           :style="{
-            color: getColorForWord(word, colIdx * columnSize + index),
-            height: hintMode ? {} : '40px',
-            width: hintMode ? '100%' : wordItemWidth + 'px',
-            whiteSpace: hintMode ? 'normal' : 'nowrap',
-            wordBreak: hintMode ? 'break-word' : 'normal',
-          }"
+          color: getColorForWord(word, colIdx * columnSize + index),
+          height: hintMode ? {} : '40px',
+          width: hintMode ? '100%' : wordItemWidth + 'px',
+          whiteSpace: hintMode ? 'normal' : 'nowrap',
+          wordBreak: hintMode ? 'break-word' : 'normal',
+        }"
       >
-        <span
-            :class="{
-            'text-decoration-line-through': isFound(word),
-            'font-weight-bold': !isFound(word),
-          }"
-        >
-          {{
-            shouldShowAnswer(word, isFound(word))
-                ? `${word.hint} (${word.word})`
-                : word.hint
-          }}
-        </span>
+      <span
+          :class="{
+          'text-decoration-line-through': isFound(word),
+          'font-weight-bold': !isFound(word),
+        }"
+      >
+        {{
+          shouldShowAnswer(word, isFound(word))
+              ? `${word.hint} (${word.word})`
+              : word.hint
+        }}
+      </span>
       </div>
     </div>
   </div>

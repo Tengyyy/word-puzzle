@@ -139,6 +139,27 @@ const print = async () => {
   }
 }
 
+const scrollbarWidth = ref(0)
+
+const measureScrollbarWidth = () => {
+  const scrollDiv = document.createElement('div')
+  scrollDiv.style.visibility = 'hidden'
+  scrollDiv.style.overflow = 'scroll'
+  scrollDiv.style.position = 'absolute'
+  scrollDiv.style.top = '-9999px'
+  scrollDiv.style.width = '100px'
+  scrollDiv.style.height = '100px'
+  document.body.appendChild(scrollDiv)
+
+  const inner = document.createElement('div')
+  inner.style.width = '100%'
+  scrollDiv.appendChild(inner)
+
+  scrollbarWidth.value = scrollDiv.offsetWidth - inner.offsetWidth
+
+  document.body.removeChild(scrollDiv)
+}
+
 const removeAllWords = () => {
 
   creatorStore.removeAllWords()
@@ -152,9 +173,35 @@ const hintMode = computed(() => {
   return !!words.find((item) => item.hint.toUpperCase() !== item.word.toUpperCase());
 })
 
-const gridCellSize = computed(() => {
-  return 40
+const gridColumnCount = computed(() => {
+  if (creatorStore.getGrid && creatorStore.getGrid.length > 0 && creatorStore.getGrid[0] && creatorStore.getGrid[0].length > 0) return creatorStore.getGrid[0].length;
+
+  return 0
 })
+
+const gridCellSize = ref(40)
+const resizeTimeout = ref(null)
+
+const updateGridCellSize = () => {
+  const steps = [40, 30, 20];
+
+  cancelAnimationFrame(resizeTimeout.value)
+
+  resizeTimeout.value = requestAnimationFrame(() => {
+    for (const size of steps) {
+      const newGridWidth = gridColumnCount.value * size
+      if (newGridWidth + 48 <= availableWidth.value) {
+        if (gridCellSize.value !== size) {
+          gridCellSize.value = size
+        }
+        return
+      }
+    }
+    if (gridCellSize.value !== 20) {
+      gridCellSize.value = 20
+    }
+  })
+}
 
 const gridWidth = computed(() => {
   return creatorStore.width * gridCellSize.value
@@ -185,7 +232,7 @@ const estimatedWordListWidth = computed(() => {
 const stackedLayout = computed(() => {
   const totalEstimatedWidth = gridWidth.value + (hintMode.value ? minHintModeListWidth : estimatedWordListWidth.value)
   // add 48 because of card padding and 24 because of word-list left margin
-  return totalEstimatedWidth + 48 + 24 > availableWidth.value
+  return totalEstimatedWidth + 48 + 24 + 36 > availableWidth.value
 })
 
 
@@ -194,7 +241,7 @@ const wordListWidth = computed(() => {
     return Math.max(gridWidth.value, 500)
   }
 
-  return hintMode.value ? minHintModeListWidth + 24 : estimatedWordListWidth.value + 24
+  return hintMode.value ? minHintModeListWidth + 24 + 36 : estimatedWordListWidth.value + 24 + 36
 })
 
 const cardWidth = computed(() => {
@@ -232,12 +279,17 @@ const columnSize = computed(() => {
 
 onMounted(() => {
 
+  creatorStore.clearData()
+
+  measureScrollbarWidth()
+
   const el = mainContainer.value?.$el
   if (el instanceof HTMLElement) {
-    availableWidth.value = el.getBoundingClientRect().width
+    availableWidth.value = Math.min(window.innerWidth, el.clientWidth + scrollbarWidth.value)
 
     const resizeObserver = new ResizeObserver(() => {
-      availableWidth.value = el.getBoundingClientRect().width
+      availableWidth.value = Math.min(window.innerWidth, el.clientWidth + scrollbarWidth.value)
+      updateGridCellSize()
     })
 
     resizeObserver.observe(el)
@@ -246,9 +298,8 @@ onMounted(() => {
       resizeObserver.disconnect()
     })
   }
-
-  creatorStore.clearData()
 })
+
 </script>
 
 <template>
@@ -282,9 +333,11 @@ onMounted(() => {
   </v-dialog>
   <v-container
       :class="{ 'd-flex': generated, 'align-center': generated, 'justify-center': generated }"
+      class="mt-16"
       ref="mainContainer"
+      :fluid="generated"
   >
-    <main-card :width="generated ? cardWidth : undefined" class="mt-16">
+    <main-card :width="generated ? cardWidth : undefined">
       <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
         <template v-if="!generated">
           Loo oma sõnarägastik
@@ -346,7 +399,7 @@ onMounted(() => {
         <v-divider class="my-4" />
 
         <!-- Generate Button -->
-        <v-btn @click="generate" color="primary" rounded class="generate-button">
+        <v-btn @click="generate" color="primary" rounded class="generate-button" :disabled="loadingStore.isLoading" :loading="loadingStore.isLoading">
           Genereeri sõnarägastik
         </v-btn>
 
@@ -380,6 +433,7 @@ onMounted(() => {
           <v-col
             :cols="stackedLayout ? 12 : undefined"
             :style="!stackedLayout ? { width: wordListWidth + 'px' } : undefined"
+            class="pa-0 ma-0"
           >
             <WordList
                 mode="create"
@@ -388,6 +442,7 @@ onMounted(() => {
                 :column-size="columnSize"
                 :stacked-layout="stackedLayout"
                 :word-item-width="estimatedWordItemWidth"
+                :width="wordListWidth"
             />
           </v-col>
         </v-row>
@@ -401,6 +456,7 @@ onMounted(() => {
               color="primary"
               rounded
               :disabled="loadingStore.isLoading"
+              :loading="loadingStore.isLoading"
               :class="{
                 'mr-16': $vuetify.display.mdAndUp,
                 'mr-8': $vuetify.display.smAndDown
@@ -409,12 +465,12 @@ onMounted(() => {
             Genereeri uuesti
           </v-btn>
 
-          <v-btn @click="print" color="primary" rounded variant="outlined">
+          <v-btn @click="print" color="primary" rounded variant="outlined" :disabled="loadingStore.isLoading">
             <v-icon class="mr-2">mdi-printer</v-icon>
             Prindi
           </v-btn>
 
-          <v-btn @click="share" color="primary" rounded variant="outlined">
+          <v-btn @click="share" color="primary" rounded variant="outlined" :disabled="loadingStore.isLoading">
             <v-icon class="mr-2">mdi-share</v-icon>
             Jaga
           </v-btn>

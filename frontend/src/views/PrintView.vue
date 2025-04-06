@@ -131,7 +131,7 @@ const columnSize = computed(() => {
       class="d-flex flex-column justify-center align-center ga-10 full-page"
       ref="mainContainer"
   >
-    <div class="ma-0 mt-16 pa-0 pt-8 no-print d-flex align-center justify-center">
+    <div class="ma-0 mt-16 pa-0 pt-8 no-print">
       <v-btn @click="printPuzzle" color="primary" rounded class="print-button no-print mr-2">
         <v-icon class="mr-2">mdi-printer</v-icon>
         Prindi ülesanne
