@@ -173,12 +173,6 @@ const hintMode = computed(() => {
   return !!words.find((item) => item.hint.toUpperCase() !== item.word.toUpperCase());
 })
 
-const gridColumnCount = computed(() => {
-  if (creatorStore.getGrid && creatorStore.getGrid.length > 0 && creatorStore.getGrid[0] && creatorStore.getGrid[0].length > 0) return creatorStore.getGrid[0].length;
-
-  return 0
-})
-
 const gridCellSize = ref(40)
 const resizeTimeout = ref(null)
 
@@ -189,8 +183,9 @@ const updateGridCellSize = () => {
 
   resizeTimeout.value = requestAnimationFrame(() => {
     for (const size of steps) {
-      const newGridWidth = gridColumnCount.value * size
+      const newGridWidth = creatorStore.width * size
       if (newGridWidth + 48 <= availableWidth.value) {
+        if (creatorStore.height > 25 && size === 40) continue
         if (gridCellSize.value !== size) {
           gridCellSize.value = size
         }

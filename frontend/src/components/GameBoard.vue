@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed } from 'vue'
-import GridCell from './GridCell.vue'
 import { useCreatorStore } from '@/stores/creatorStore.js'
 import { useGameStore } from '@/stores/gameStore.js'
 import { usePrintStore } from '@/stores/printStore.js'
@@ -96,7 +95,6 @@ const isDragging = ref(false)
 const startCell = ref(null)
 const activeDirection = ref(null)
 const outlinePosition = ref({})
-const lastProcessedCell = ref(null) // Track the last processed cell to avoid recalculations when moving mouse over the same cell
 const lastColor = ref(null) // Store the last generated color to ensure sufficient difference
 
 const toggleHighlights = () => {
@@ -124,31 +122,41 @@ const toggleHighlights = () => {
       )
 
       const color = store.highlightColors[index];
-      const outline = calculateOutline(cells, direction)
+
       return {
-        ...outline,
-        border: 'none',
-        backgroundColor: `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`,
+        direction: direction,
+        cells: cells,
+        color: color,
       }
     })
   }
 }
 
+const computedHighlights = computed(() => {
+  return highlights.value.map(highlight => {
+    const color = highlight.color
+    const outline = calculateOutline(highlight.cells, highlight.direction)
+    return {
+      ...outline,
+      border: 'none',
+      backgroundColor: `rgba(${color.r}, ${color.g}, ${color.b}, 0.9)`,
+      transition: 'none',
+    }
+  });
+})
+
 const outlineColor = ref(getRandomColor()) // Default color
 
 // Resets/clears selection, if the selected word was in the word list, then the selection will be highlighted
 const resetSelection = success => {
-  if (!playable.value) {
-    return
-  }
 
   if (success) {
     // Add highlight with the same color as the outline but without a border
 
     highlights.value.push({
-      ...outlinePosition.value,
-      border: 'none',
-      backgroundColor: `rgba(${outlineColor.value.r}, ${outlineColor.value.g}, ${outlineColor.value.b}, 0.9)`, // Same color as outline with transparency
+      direction: activeDirection.value,
+      cells: selectedCells.value,
+      color: outlineColor.value,
     })
 
     lastColor.value = outlineColor.value
@@ -263,6 +271,12 @@ const calculateCellsToHighlight = (start, current, direction) => {
   return cells
 }
 
+const calculateDiagonalLength = (startCell, endCell) => {
+  const dx = endCell.col - startCell.col
+  const dy = endCell.row - startCell.row
+  return Math.sqrt(dx * dx + dy * dy) * props.cellSize + props.cellSize
+}
+
 // Calculate the outline position and size based on the start and current cells
 const calculateOutline = (highlightedCells, direction) => {
   if (!highlightedCells || highlightedCells.length === 0) {
@@ -304,36 +318,28 @@ const calculateOutline = (highlightedCells, direction) => {
       startY += OFFSETS.value.S.y
       break
     case DIRECTION.SOUTH_EAST: {
-      const dx = endCell.col - startCell.col
-      const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * props.cellSize
+      const distance = calculateDiagonalLength(startCell, endCell)
       width = distance + props.cellSize
       startX += OFFSETS.value.SE.x
       startY += OFFSETS.value.SE.y
       break
     }
     case DIRECTION.SOUTH_WEST: {
-      const dx = endCell.col - startCell.col
-      const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * props.cellSize
+      const distance = calculateDiagonalLength(startCell, endCell)
       width = distance + props.cellSize
       startX += OFFSETS.value.SW.x
       startY += OFFSETS.value.SW.y
       break
     }
     case DIRECTION.NORTH_WEST: {
-      const dx = endCell.col - startCell.col
-      const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * props.cellSize
+      const distance = calculateDiagonalLength(startCell, endCell)
       width = distance + props.cellSize
       startX += OFFSETS.value.NW.x
       startY += OFFSETS.value.NW.y
       break
     }
     case DIRECTION.NORTH_EAST: {
-      const dx = endCell.col - startCell.col
-      const dy = endCell.row - startCell.row
-      const distance = Math.sqrt(dx * dx + dy * dy) * props.cellSize
+      const distance = calculateDiagonalLength(startCell, endCell)
       width = distance + props.cellSize
       startX += OFFSETS.value.NE.x
       startY += OFFSETS.value.NE.y
@@ -401,22 +407,19 @@ const handleMouseDown = (row, col) => {
   activeDirection.value = null // Reset direction on new selection
 }
 
-// Handle mouse move event for dragging selection
-const handleMouseMove = (row, col) => {
+let lastProcessedTime = 0
+const throttleMs = 16 // ~60fps
+
+// Handle mouse enter event for dragging selection
+const handleMouseEnter = (row, col) => {
   if (!playable.value) {
     return
   }
 
-  // If we're still in the same cell, do nothing
-  if (
-    lastProcessedCell.value &&
-    lastProcessedCell.value.row === row &&
-    lastProcessedCell.value.col === col
-  ) {
-    return
-  }
-
   if (!isDragging.value || !startCell.value) return
+
+  const now = Date.now()
+  if (now - lastProcessedTime < throttleMs) return
 
   // Calculate direction based on mouse movement
   const newDirection = calculateDirection(
@@ -450,7 +453,6 @@ const handleMouseUp = () => {
   if (!isDragging.value || !playable.value) return
 
   isDragging.value = false
-  activeDirection.value = null
   startCell.value = null
 
   lastAngle = null
@@ -488,7 +490,7 @@ const handleSelection = () => {
   >
     <!--Highlighted/found words-->
     <div
-      v-for="(highlight, index) in highlights"
+      v-for="(highlight, index) in computedHighlights"
       :key="`highlight-${index}`"
       :style="highlight"
       class="highlight"
@@ -510,23 +512,22 @@ const handleSelection = () => {
       }"
     >
       <template v-for="(row, rowIndex) in store.getGrid">
-        <GridCell
-          class="grid-cell"
-          v-for="(char, colIndex) in row"
-          :key="`cell-${rowIndex}-${colIndex}`"
-          :char="char"
-          :row="rowIndex"
-          :col="colIndex"
-          :isSelected="
-            selectedCells.some(
-              cell => cell.row === rowIndex && cell.col === colIndex,
-            )
-          "
-          :selectable="playable"
-          :cell-size="props.cellSize"
-          @mousedown="() => handleMouseDown(rowIndex, colIndex)"
-          @mousemove="() => handleMouseMove(rowIndex, colIndex)"
-        />
+        <div
+            class="grid-cell"
+            v-for="(char, colIndex) in row"
+            :key="`cell-${rowIndex}-${colIndex}`"
+            @mousedown="handleMouseDown(rowIndex, colIndex)"
+            @mouseenter="handleMouseEnter(rowIndex, colIndex)"
+            :style="{
+              width: `${props.cellSize}px`,
+              height: `${props.cellSize}px`,
+              fontSize: `${props.cellSize < 30 ? 14 : 18}px`,
+              cursor: playable ? 'pointer' : 'default',
+            }"
+
+        >
+          {{ char }}
+        </div>
       </template>
     </div>
   </div>
@@ -565,6 +566,14 @@ const handleSelection = () => {
 
 .grid-container .grid-cell {
   z-index: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  position: relative;
+  font-weight: bold;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
   /* Letters on top */
 }
 </style>

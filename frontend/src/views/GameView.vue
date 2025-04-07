@@ -96,6 +96,7 @@ const updateGridCellSize = () => {
     for (const size of steps) {
       const newGridWidth = gridColumnCount.value * size
       if (newGridWidth + 48 <= availableWidth.value) {
+        if (gridRowCount.value > 25 && size === 40) continue
         if (gridCellSize.value !== size) {
           gridCellSize.value = size
         }

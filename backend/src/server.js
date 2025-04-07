@@ -6,6 +6,7 @@ import WordNetService from "./services/WordNetService.js";
 import path from "path";
 import {fileURLToPath} from "url";
 import routes from "./routes.js";
+import GridGeneratorService from "./services/GridGeneratorService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +27,24 @@ app.use(express.static(publicPath));
 app.get(/^(?!\/api).*$/, (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
+
+// Graceful shutdown method
+function shutdown() {
+
+  console.log("Shutting down server...");
+
+  WordNetService.shutdown();
+  GridGeneratorService.shutdown();
+
+  setTimeout(() => {
+    console.log("Server shutdown complete.");
+    process.exit(0);
+  }, 1000); // Wait for 1 second before exiting (adjust if needed)
+}
+
+process.on("SIGINT", shutdown);  // For Ctrl+C termination
+process.on("SIGTERM", shutdown); // For other termination signals
+
 
 async function startServer() {
   console.log("Waiting for WordNet to load...");

@@ -348,9 +348,9 @@ parentPort.on("message", async (msg) => {
       msg.height,
       msg.nonAlphaAllowed
     );
-    parentPort.postMessage({ type: "getWordsResult", result });
+    parentPort.postMessage({ id: msg.id, type: "getWordsResult", result });
   } else if (msg.type === "autocomplete") {
     const result = autocomplete(msg.query, msg.language);
-    parentPort.postMessage({ type: "autocompleteResult", result });
+    parentPort.postMessage({ id: msg.id, type: "autocompleteResult", result });
   }
 });
