@@ -32,7 +32,6 @@ const addWord = () => {
 <template>
   <v-container>
 
-    <!-- Word List -->
     <v-container class="word-list">
       <v-row>
         <v-col
@@ -57,7 +56,6 @@ const addWord = () => {
       </v-row>
     </v-container>
 
-    <!-- Input Fields & Add Button -->
     <div class="mt-10">
       <div class="input-container">
         <div
@@ -96,14 +94,13 @@ const addWord = () => {
 
 <style scoped>
 
-/* Input Field and Add Button Flex Layout */
 .input-container {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   align-items: center;
   justify-content: start;
-  margin-top: 16px; /* Gap between word list and inputs */
+  margin-top: 16px;
 }
 
 .input-inner-container {
@@ -119,11 +116,10 @@ const addWord = () => {
   max-width: 600px;
 }
 
-/* Button moves to new row before inputs wrap */
 .add-button-container {
   flex-shrink: 0;
   flex-grow: 1;
-  align-items: center; /* Center button vertically */
+  align-items: center;
 }
 
 .add-button {
@@ -132,14 +128,12 @@ const addWord = () => {
   padding: 20px 0 35px 0;
 }
 
-/* Word List Items Layout */
 .word-list {
   margin: 0;
   gap: 0;
   padding: 0;
 }
 
-/* Word Items: Minimum Size & Padding */
 .word-item {
   background-color: rgb(220, 220, 220);
   min-width: 200px;
@@ -150,7 +144,6 @@ const addWord = () => {
   align-items: center;
 }
 
-/* Align text to the left */
 .word-text {
   flex-grow: 1;
   text-align: left;

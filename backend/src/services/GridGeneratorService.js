@@ -34,7 +34,7 @@ export default class GridGeneratorService {
         .catch(task.reject)
         .finally(() => {
           this.activeTasks--;
-          this.#processQueue(); // trigger next task
+          this.#processQueue();
         });
 
       this.activeTasks++;
@@ -45,7 +45,7 @@ export default class GridGeneratorService {
     return new Promise((resolve, reject) => {
       const worker = new Worker(gridWorkerPath);
 
-      this.workers.push(worker); // Keep track of workers for later cleanup
+      this.workers.push(worker);
 
       const timeout = setTimeout(() => {
         worker.terminate();
@@ -85,7 +85,6 @@ export default class GridGeneratorService {
     // Reject any pending tasks in the queue
     this.queue.forEach(task => task.reject(new ServerException("Server shutting down")));
 
-    // Clear the queue and active tasks to free memory
     this.queue = [];
     this.activeTasks = 0;
 

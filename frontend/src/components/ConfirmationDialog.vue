@@ -1,4 +1,3 @@
-<!-- ConfirmationDialog.vue -->
 <template>
   <Teleport to="body">
     <v-dialog v-model="dialogStore.visible" max-width="500px" persistent>

@@ -1,6 +1,21 @@
-const BASE_URL = "http://127.0.0.1:8081";
+
+// Determine BASE_URL based on environment
+let BASE_URL;
+
+// If running in Node (backend)
+if (typeof process !== "undefined" && process.env && process.env.BASE_URL) {
+  BASE_URL = process.env.BASE_URL;
+}
+// If running in browser (frontend with Vite)
+else if (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_BASE_URL) {
+  BASE_URL = import.meta.env.VITE_BASE_URL;
+}
+// Fallback default
+else {
+  BASE_URL = "http://127.0.0.1:8081";
+}
+
 const API_PATH = "/api";
-const FRONTEND_URL = "http://localhost:5173";
 
 export const ENDPOINTS = Object.freeze({
   createCustomGame: {
@@ -24,23 +39,23 @@ export const ENDPOINTS = Object.freeze({
     relative: `${API_PATH}/autocomplete`,
   },
   home: {
-    full: `${FRONTEND_URL}/`,
+    full: `${BASE_URL}/`,
     relative: "/",
   },
   game: {
-    full: `${FRONTEND_URL}/game`,
+    full: `${BASE_URL}/game`,
     relative: "/game",
   },
   printer: {
-    full: `${FRONTEND_URL}/print`,
+    full: `${BASE_URL}/print`,
     relative: "/print",
   },
   creator: {
-    full: `${FRONTEND_URL}/create`,
+    full: `${BASE_URL}/create`,
     relative: "/create",
   },
   notFound: {
-    full: `${FRONTEND_URL}/not-found`,
+    full: `${BASE_URL}/not-found`,
     relative: "/not-found",
   }
 });

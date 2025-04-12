@@ -22,19 +22,14 @@ onBeforeRouteLeave(() => {
         max-width="500"
         elevation="4"
     >
-      <!-- Logo -->
       <img  src="@/assets/logo_large.svg" alt="Logo" class="mb-6" />
 
-      <!-- Headline -->
       <h1 class="text-h2 font-weight-bold mb-2">404</h1>
 
-      <!-- Title -->
       <div class="text-h5 font-weight-medium mb-2">Lehte ei leitud</div>
 
-      <!-- Description (error text) -->
       <div class="mb-6" style="opacity: 0.8;">{{ errorStore.text }}</div>
 
-      <!-- Go home button -->
       <v-btn color="primary" rounded @click="goHome">
         Mine avalehele
       </v-btn>

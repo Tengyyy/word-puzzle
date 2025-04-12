@@ -21,17 +21,17 @@ const buttons = [
   {
     text: 'Loo oma sõnarägastik',
     icon: 'mdi-pencil',
-    to: ENDPOINTS.creator.relative, // Vue Router link
+    to: ENDPOINTS.creator.relative,
   },
   {
     text: 'Lähtekood',
     icon: 'mdi-github',
-    href: 'https://github.com/Tengyyy/word-puzzle', // External link
+    href: 'https://github.com/Tengyyy/word-puzzle',
   },
   {
     text: 'Tagasiside',
     icon: 'mdi-comment-outline',
-    href: 'https://forms.gle/', // External link
+    href: 'https://forms.gle/UrEyGyTHbNwTodwv5',
   },
 ]
 
@@ -159,15 +159,14 @@ const isNotFound = computed(() => route.name === "NotFound")
   border-width: 3px;
 }
 
-/* Additional styles for home view page centering */
 .main-container {
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Center vertically */
-  align-items: center; /* Center horizontally */
+  justify-content: center;
+  align-items: center;
   min-height: 100vh; /* Ensure it takes at least the full viewport height */
   box-sizing: border-box;
-  overflow: hidden; /* Prevent horizontal scroll if content fits */
+  overflow: hidden;
   padding: 0;
 }
 
@@ -187,8 +186,8 @@ const isNotFound = computed(() => route.name === "NotFound")
 }
 
 .background-images {
-  display: flex; /* Arrange images side by side */
-  width: 400vw; /* Two images side by side */
+  display: flex;
+  width: 400vw;
   height: 100vh;
   animation: pan-background 120s linear infinite;
 }
@@ -207,7 +206,7 @@ const isNotFound = computed(() => route.name === "NotFound")
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5); /* Light filter to soften contrast */
+  background: rgba(0, 0, 0, 0.5);
 }
 
 @keyframes pan-background {

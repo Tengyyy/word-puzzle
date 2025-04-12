@@ -96,7 +96,6 @@ const getButtonColor = (value) => {
         <v-img :src="logo" max-width="500" contain />
       </v-col>
 
-      <!-- Controls -->
       <v-col cols="12" md="6" class="d-flex flex-column align-center">
 
         <v-card class="control-panel px-4 py-16 d-flex controls-col background-light">
@@ -136,7 +135,6 @@ const getButtonColor = (value) => {
               variant="solo"
           />
 
-          <!-- Difficulty Toggle -->
           <v-btn-toggle v-model="difficulty" divided rounded="xl" mandatory class="my-4" variant="elevated">
             <v-btn
                 v-for="mode in Object.values(Constants.DIFFICULTY)"
@@ -150,7 +148,6 @@ const getButtonColor = (value) => {
 
           <v-divider class="my-2"></v-divider>
 
-          <!-- Start Button -->
           <v-btn @click="startGame" :disabled="loadingStore.isLoading" :loading="loadingStore.isLoading" class="w-50" color="primary" rounded size="x-large">
             Mängi
           </v-btn>
@@ -165,9 +162,9 @@ const getButtonColor = (value) => {
 
 .controls-col {
   flex-direction: column;
-  align-items: center; /* Center horizontally */
-  justify-content: center; /* Center vertically */
-  width: 100%; /* Ensure it takes full space */
+  align-items: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .control-panel {

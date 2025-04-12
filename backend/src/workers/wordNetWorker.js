@@ -292,7 +292,7 @@ function autocomplete(
   return wordnet.trie.searchPrefix(query, 10);
 }
 
-// Trie data-structure implementation for faster prefix-based lemma autocomplete search
+// Prefix-tree data-structure implementation for faster prefix-based lemma autocomplete search
 class TrieNode {
   constructor() {
     this.children = {};

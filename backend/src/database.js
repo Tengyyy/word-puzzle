@@ -1,18 +1,27 @@
+import path from "path";
+import {fileURLToPath} from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import dotenv from "dotenv";
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
 import pkg from "pg";
 
 const { Pool } = pkg;
 const pool = new Pool({
-  user: "postgres",
-  password: "password",
-  database: "word-puzzle-db",
-  host: "localhost",
-  port: "5432",
+  user: process.env.PG_USER,
+  password: process.env.PG_PASSWORD,
+  database: process.env.PG_DATABASE,
+  host: process.env.PG_HOST,
+  port: process.env.PG_PORT,
 });
 
 const execute = async (query) => {
   try {
-    await pool.connect(); // create a connection
-    await pool.query(query); // executes a query
+    await pool.connect();
+    await pool.query(query);
     return true;
   } catch (error) {
     console.error(error.stack);

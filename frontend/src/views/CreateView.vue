@@ -498,10 +498,10 @@ onMounted(() => {
 
 .generate-button {
   max-width: 300px;
-  width: 100%; /* Ensures it doesn't shrink too much */
-  margin: 0 auto; /* Centers it horizontally */
-  display: flex; /* Ensures proper width behavior */
-  justify-content: center; /* Centers text inside */
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
 }
 
 .title-container {

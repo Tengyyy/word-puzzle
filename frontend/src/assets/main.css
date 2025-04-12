@@ -34,10 +34,8 @@ html {
   }
 
   * {
-    -webkit-print-color-adjust: exact;
-    /* For Chrome, Safari */
-    print-color-adjust: exact;
-    /* Standard */
+    -webkit-print-color-adjust: exact; /* For Chrome, Safari */
+    print-color-adjust: exact; /* Standard */
     animation: none !important;
     transition: none !important;
   }

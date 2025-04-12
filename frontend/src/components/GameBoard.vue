@@ -542,7 +542,6 @@ const handleSelection = () => {
   background-image: linear-gradient(to right, #000 1px, transparent 1px),
     linear-gradient(to bottom, #000000 1px, transparent 1px) !important;
   background-repeat: repeat;
-  /* Match grid cell size exactly */
   background-position: 0 0;
   /* Start at top-left corner */
   z-index: 0;
@@ -556,7 +555,6 @@ const handleSelection = () => {
   display: grid;
   background-color: transparent;
   gap: 0;
-  /* Remove spacing between grid cells */
 }
 
 .grid-outline {
@@ -574,6 +572,5 @@ const handleSelection = () => {
   font-weight: bold;
   background-color: transparent;
   transition: background-color 0.2s ease;
-  /* Letters on top */
 }
 </style>

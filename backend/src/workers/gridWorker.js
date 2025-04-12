@@ -173,7 +173,6 @@ class Grid {
 
     const totalWeight = weights.reduce((sum, w) => sum + w, 0);
 
-    // Function to pick a weighted random letter
     function weightedRandom() {
       let rand = Math.random() * totalWeight;
       for (let i = 0; i < letters.length; i++) {
@@ -238,7 +237,6 @@ class Puzzle {
   }
 
   _setSeed(seed) {
-    // Simple implementation of seeded random number generator
     Math.random = () => {
       seed = (seed * 9301 + 49297) % 233280;
       return seed / 233280;
@@ -288,7 +286,6 @@ class Puzzle {
     // Calculate 90% threshold for filled characters
     const targetFilled = Math.ceil(grid.rows * grid.columns * 0.9);
 
-    // Place as many vocabulary words as possible until 90% is filled
     let placedChars = this.chosenWords.reduce((sum, w) => sum + w.word.length, 0);
 
 
@@ -333,7 +330,7 @@ class Puzzle {
       if (rand < 0) return word;
     }
 
-    return words[words.length - 1]; // Fallback (should never be reached)
+    return words[words.length - 1];
   }
 
   _tryToPlaceWord(grid, word, positions, directions) {

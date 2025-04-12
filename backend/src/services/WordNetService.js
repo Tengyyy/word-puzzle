@@ -3,7 +3,7 @@ import {join} from "path";
 import path from "path";
 import {ServerException, TimeoutException} from "../controller/Exceptions.js";
 import {fileURLToPath} from "url";
-import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+import { v4 as uuidv4 } from 'uuid';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -26,6 +26,15 @@ export default class WordNetService {
     this.worker = new Worker(join(__dirname, "../workers/wordNetWorker.js"));
     this.ready = false;
 
+    this.worker.on("error", (err) => {
+      console.error("WordNetWorker error:", err);
+      this.activeTasks.forEach(task => {
+        clearTimeout(task.timeout);
+        task.reject(new ServerException(`Ootamatu süsteemiviga: ${err.message}`));
+      });
+      this.activeTasks = [];
+    });
+
     this.worker.on("message", (msg) => {
       if (msg.status === "ready") {
         this.ready = true;
@@ -33,7 +42,6 @@ export default class WordNetService {
         return;
       }
 
-      // Handle responses based on task type and ID
       const task = this.activeTasks.find(t => t.id === msg.id);
       if (task) {
         clearTimeout(task.timeout);
@@ -121,55 +129,38 @@ export default class WordNetService {
     });
   }
 
-  // Process tasks in the queue
   static #processQueue() {
-    if (this.queue.length > 0) {  // Only process if no active task
+    if (this.queue.length > 0) {
       const task = this.queue.shift();
-      this.#runWorker(task)
-        .then(task.resolve)
-        .catch(task.reject)
-        .finally(() => {
-          this.#processQueue(); // Trigger next task in the queue
-        });
-
       this.activeTasks.push(task);
+
+      this.#runWorker(task);
+      this.#processQueue(); // recursively process queue again
     }
   }
 
-  // Run worker for a task
   static #runWorker(task) {
-    return new Promise((resolve, reject) => {
-
-      this.worker.once("error", (err) => {
-        clearTimeout(task.timeout);
-        console.error("WordNetWorker error:", err);
-        reject(new ServerException(`Ootamatu süsteemiviga: ${err.message}`));
+    if (task.type === "getWords") {
+      this.worker.postMessage({
+        id: task.id,
+        type: task.type,
+        topic: task.topic,
+        inputLanguage: task.inputLanguage,
+        outputLanguage: task.outputLanguage,
+        mode: task.mode,
+        width: task.width,
+        height: task.height,
+        nonAlphaAllowed: task.nonAlphaAllowed,
       });
-
-      // Send message to worker based on task type
-      if (task.type === "getWords") {
-        this.worker.postMessage({
-          id: task.id,
-          type: task.type,
-          topic: task.topic,
-          inputLanguage: task.inputLanguage,
-          outputLanguage: task.outputLanguage,
-          mode: task.mode,
-          width: task.width,
-          height: task.height,
-          nonAlphaAllowed: task.nonAlphaAllowed,
-        });
-      } else if (task.type === "autocomplete") {
-        this.worker.postMessage({
-          id: task.id,
-          type: task.type,
-          query: task.query,
-          language: task.language,
-        });
-      }
-    });
+    } else if (task.type === "autocomplete") {
+      this.worker.postMessage({
+        id: task.id,
+        type: task.type,
+        query: task.query,
+        language: task.language,
+      });
+    }
   }
 }
 
-// Initialize worker when the module is loaded
 WordNetService.init();

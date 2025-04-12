@@ -19,7 +19,6 @@ function applyCasing(wordHints, wordListCasing) {
         hint = hint.toLowerCase();
         break;
       case Constants.CASING.MAINTAIN_CASING.value:
-        // Do nothing, keep the original casing
         break;
       default:
         throw new ValidationException(
@@ -123,8 +122,6 @@ export async function createGame(req, res) {
       options.rows,
       false
     );
-
-    console.log(wordNetResult);
 
     options.language = outputLanguage;
 

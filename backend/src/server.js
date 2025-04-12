@@ -1,15 +1,19 @@
+import path from "path";
+import {fileURLToPath} from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import dotenv from "dotenv";
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
 import express, {json, urlencoded} from "express";
 import cors from "cors";
 import morgan from "morgan";
 import {port, host} from "./config/config.js";
 import WordNetService from "./services/WordNetService.js";
-import path from "path";
-import {fileURLToPath} from "url";
 import routes from "./routes.js";
 import GridGeneratorService from "./services/GridGeneratorService.js";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(morgan("combined"));
@@ -23,7 +27,7 @@ routes(app);
 const publicPath = path.join(__dirname, "../public");
 app.use(express.static(publicPath));
 
-// Catch-all route to serve Vue frontend (must be **after** API routes)
+// Catch-all route to serve Vue frontend (must be after API routes)
 app.get(/^(?!\/api).*$/, (req, res) => {
   res.sendFile(path.join(publicPath, "index.html"));
 });
@@ -39,7 +43,7 @@ function shutdown() {
   setTimeout(() => {
     console.log("Server shutdown complete.");
     process.exit(0);
-  }, 1000); // Wait for 1 second before exiting (adjust if needed)
+  }, 1000); // Wait for 1 second before exiting
 }
 
 process.on("SIGINT", shutdown);  // For Ctrl+C termination
@@ -57,4 +61,4 @@ async function startServer() {
   });
 }
 
-startServer();
+await startServer();
