@@ -1,12 +1,5 @@
 import path from "path";
 import {fileURLToPath} from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-import dotenv from "dotenv";
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
-
 import express, {json, urlencoded} from "express";
 import cors from "cors";
 import morgan from "morgan";
@@ -14,6 +7,9 @@ import {port, host} from "./config/config.js";
 import WordNetService from "./services/WordNetService.js";
 import routes from "./routes.js";
 import GridGeneratorService from "./services/GridGeneratorService.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(morgan("combined"));
