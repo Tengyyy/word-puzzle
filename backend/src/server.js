@@ -7,6 +7,8 @@ import {port, host} from "./config/config.js";
 import WordNetService from "./services/WordNetService.js";
 import routes from "./routes.js";
 import GridGeneratorService from "./services/GridGeneratorService.js";
+import logger from './logger.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,13 +33,13 @@ app.get(/^(?!\/api).*$/, (req, res) => {
 // Graceful shutdown method
 function shutdown() {
 
-  console.log("Shutting down server...");
+  logger.info("Shutting down server...");
 
   WordNetService.shutdown();
   GridGeneratorService.shutdown();
 
   setTimeout(() => {
-    console.log("Server shutdown complete.");
+    logger.info("Server shutdown complete.");
     process.exit(0);
   }, 1000); // Wait for 1 second before exiting
 }
@@ -47,13 +49,13 @@ process.on("SIGTERM", shutdown); // For other termination signals
 
 
 async function startServer() {
-  console.log("Waiting for WordNet to load...");
+  logger.info("Waiting for WordNet to load...");
   while (!WordNetService.ready) {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   app.listen(port, host, () => {
-    console.log(`Server running at http://${host}:${port}/`);
+    logger.info(`Server running at http://${host}:${port}/`);
   });
 }
 

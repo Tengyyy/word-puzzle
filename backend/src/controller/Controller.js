@@ -6,6 +6,8 @@ import pool from "../database.js";
 import {randomUUID} from "crypto";
 import GridGeneratorService from "../services/GridGeneratorService.js";
 import WordNetService from "../services/WordNetService.js";
+import logger from '../logger.js';
+
 
 function applyCasing(wordHints, wordListCasing) {
   return wordHints.map((hintObj) => {
@@ -94,7 +96,7 @@ export async function autocomplete(req, res) {
     const result = await WordNetService.autocomplete(query, language);
     res.json(result).end();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
 
     res
       .status(err.statusCode || 500)
@@ -164,7 +166,7 @@ export async function createGame(req, res) {
 
     res.json(data).end();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
 
     res
       .status(err.statusCode || 500)
@@ -210,7 +212,7 @@ export async function loadGame(req, res) {
       })
       .end();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res
       .status(err.statusCode || 500)
       .json({ message: err.message || "Midagi läks valesti" });
@@ -297,7 +299,7 @@ export async function createCustomGame(req, res) {
 
     res.json({ words: processedWords, grid: grid, answers: processedAnswers }).end();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res
       .status(err.statusCode || 500)
       .json({ message: err.message || "Midagi läks valesti" });
@@ -342,7 +344,7 @@ export async function persistGame(req, res) {
 
     res.json({ id: id }).end();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res
       .status(err.statusCode || 500)
       .json({ message: err.message || "Midagi läks valesti" });
@@ -375,7 +377,7 @@ export async function saveGame(req, res) {
 
     res.json({ id: id }).end();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     res
       .status(err.statusCode || 500)
       .json({ message: err.message || "Midagi läks valesti" });

@@ -4,6 +4,8 @@ import path from "path";
 import {ServerException, TimeoutException} from "../controller/Exceptions.js";
 import {fileURLToPath} from "url";
 import { v4 as uuidv4 } from 'uuid';
+import logger from '../logger.js';
+
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,7 +21,7 @@ export default class WordNetService {
   static init() {
 
     if (this.worker) {
-      console.log('Worker already initialized');
+      logger.info('Worker already initialized');
       return;
     }
 
@@ -27,7 +29,7 @@ export default class WordNetService {
     this.ready = false;
 
     this.worker.on("error", (err) => {
-      console.error("WordNetWorker error:", err);
+      logger.error("WordNetWorker error:", err);
       this.activeTasks.forEach(task => {
         clearTimeout(task.timeout);
         task.reject(new ServerException(`Ootamatu süsteemiviga: ${err.message}`));
@@ -38,7 +40,7 @@ export default class WordNetService {
     this.worker.on("message", (msg) => {
       if (msg.status === "ready") {
         this.ready = true;
-        console.log("WordNet loaded in worker!");
+        logger.info("WordNet loaded in worker!");
         return;
       }
 
@@ -66,10 +68,10 @@ export default class WordNetService {
     if (this.worker) {
       this.worker.terminate()
         .then(() => {
-          console.log("Wordnet worker terminated successfully.");
+          logger.info("Wordnet worker terminated successfully.");
         })
         .catch(err => {
-          console.error("Error terminating wordnet worker:", err);
+          logger.error("Error terminating wordnet worker:", err);
         });
     }
 

@@ -1,4 +1,6 @@
 import pkg from "pg";
+import logger from './logger.js';
+
 
 const { Pool } = pkg;
 const pool = new Pool({
@@ -15,7 +17,7 @@ const execute = async (query) => {
     await pool.query(query);
     return true;
   } catch (error) {
-    console.error(error.stack);
+    logger.error(error.stack);
     return false;
   }
 };
@@ -43,7 +45,7 @@ const createTablesQuery = `
 
 execute(createTablesQuery).then((result) => {
   if (result) {
-    console.log('Table "games" is ready');
+    logger.info('Table "games" is ready');
   }
 });
 

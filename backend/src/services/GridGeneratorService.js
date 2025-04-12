@@ -3,6 +3,8 @@ import { Worker } from "worker_threads";
 import { resolve as _resolve } from "path";
 import path from "path";
 import { fileURLToPath } from "url";
+import logger from '../logger.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,7 +70,7 @@ export default class GridGeneratorService {
         clearTimeout(timeout);
         worker.terminate();
         this.workers = this.workers.filter(w => w !== worker);
-        console.error("GridWorker error:", err);
+        logger.error("GridWorker error:", err);
         reject(new ServerException("Sõnarägastiku genereerimine ebaõnnestus"));
       });
 
@@ -77,7 +79,7 @@ export default class GridGeneratorService {
   }
 
   static shutdown() {
-    console.log("GridGeneratorService: Shutting down workers...");
+    logger.info("GridGeneratorService: Shutting down workers...");
 
     // Terminate all active workers
     this.workers.forEach(worker => worker.terminate());
