@@ -137,9 +137,11 @@ export async function createGame(req, res) {
 
     const words = chosenWords.sort((a, b) => a.hint.localeCompare(b.hint));
 
-    const game = await pool.query(
-      "INSERT INTO games (topic, title, grid, words, answers, metadata) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+    const id = randomUUID();
+    await pool.query(
+      "INSERT INTO games (id, topic, title, grid, words, answers, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
       [
+        id,
         topic,
         Utils.capitalizeFirstLetter(topic),
         grid,
@@ -154,7 +156,6 @@ export async function createGame(req, res) {
       ]
     );
 
-    const id = game.rows[0].id;
     const data = {
       id: id,
       grid: grid,
@@ -320,9 +321,12 @@ export async function persistGame(req, res) {
     const answers = Validation.validateAnswers(data.answers, grid, words);
     const title = Validation.validateTitle(data.title);
 
-    const game = await pool.query(
-      "INSERT INTO games (topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+    const id = randomUUID();
+
+    await pool.query(
+      "INSERT INTO games (id, topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
       [
+        id,
         "custom",
         title,
         grid,
@@ -331,7 +335,6 @@ export async function persistGame(req, res) {
       ]
     );
 
-    const id = game.rows[0].id;
     const gameData = {
       id: id,
       grid: grid,

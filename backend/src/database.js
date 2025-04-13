@@ -1,6 +1,5 @@
 import pkg from "pg";
 import logger from './logger.js';
-import { v4 as uuidv4 } from 'uuid';
 
 
 const { Pool } = pkg;
@@ -26,7 +25,7 @@ const execute = async (query) => {
 const createTablesQuery = `
     CREATE TABLE IF NOT EXISTS "games"
     (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        id UUID PRIMARY KEY NOT NULL,
         topic TEXT NOT NULL,
         title TEXT NOT NULL,
         grid TEXT[][] NOT NULL,
