@@ -32,7 +32,7 @@ export default class WordNetService {
       logger.error("WordNetWorker error:", err);
       this.activeTasks.forEach(task => {
         clearTimeout(task.timeout);
-        task.reject(new ServerException(`Ootamatu süsteemiviga: ${err.message}`));
+        task.reject(new ServerException(`Ootamatu süsteemiviga`));
       });
       this.activeTasks = [];
     });
@@ -76,8 +76,8 @@ export default class WordNetService {
     }
 
     // Clean up remaining tasks in the queue and active tasks
-    this.queue.forEach(task => task.reject(new ServerException("Server shutting down")));
-    this.activeTasks.forEach(task => task.reject(new ServerException("Server shutting down")));
+    this.queue.forEach(task => task.reject(new ServerException("Server sulgub")));
+    this.activeTasks.forEach(task => task.reject(new ServerException("Server sulgub")));
 
     this.queue = [];
     this.activeTasks = [];

@@ -1,7 +1,7 @@
 import {Constants} from "../../../shared/Constants.js";
 import * as Validation from "./Validation.js";
 import * as Utils from "../../../shared/Utils.js";
-import {ValidationException} from "./Exceptions.js";
+import {ServerException, TimeoutException, ValidationException} from "./Exceptions.js";
 import pool from "../database.js";
 import {randomUUID} from "crypto";
 import GridGeneratorService from "../services/GridGeneratorService.js";
@@ -98,9 +98,15 @@ export async function autocomplete(req, res) {
   } catch (err) {
     logger.error(err);
 
-    res
-      .status(err.statusCode || 500)
-      .json({ message: err.message || "Midagi läks valesti" });
+    if (err instanceof ValidationException ||
+      err instanceof ServerException ||
+      err instanceof TimeoutException) {
+      // For custom exceptions, send the specific error message
+      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+    } else {
+      // For other errors, send a generic error message
+      res.status(500).json({ message: "Midagi läks valesti" });
+    }
   }
 }
 
@@ -169,9 +175,15 @@ export async function createGame(req, res) {
   } catch (err) {
     logger.error(err);
 
-    res
-      .status(err.statusCode || 500)
-      .json({ message: err.message || "Midagi läks valesti" });
+    if (err instanceof ValidationException ||
+      err instanceof ServerException ||
+      err instanceof TimeoutException) {
+      // For custom exceptions, send the specific error message
+      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+    } else {
+      // For other errors, send a generic error message
+      res.status(500).json({ message: "Midagi läks valesti" });
+    }
   }
 }
 
@@ -214,9 +226,16 @@ export async function loadGame(req, res) {
       .end();
   } catch (err) {
     logger.error(err);
-    res
-      .status(err.statusCode || 500)
-      .json({ message: err.message || "Midagi läks valesti" });
+
+    if (err instanceof ValidationException ||
+      err instanceof ServerException ||
+      err instanceof TimeoutException) {
+      // For custom exceptions, send the specific error message
+      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+    } else {
+      // For other errors, send a generic error message
+      res.status(500).json({ message: "Midagi läks valesti" });
+    }
   }
 }
 
@@ -301,9 +320,16 @@ export async function createCustomGame(req, res) {
     res.json({ words: processedWords, grid: grid, answers: processedAnswers }).end();
   } catch (err) {
     logger.error(err);
-    res
-      .status(err.statusCode || 500)
-      .json({ message: err.message || "Midagi läks valesti" });
+
+    if (err instanceof ValidationException ||
+      err instanceof ServerException ||
+      err instanceof TimeoutException) {
+      // For custom exceptions, send the specific error message
+      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+    } else {
+      // For other errors, send a generic error message
+      res.status(500).json({ message: "Midagi läks valesti" });
+    }
   }
 }
 
@@ -348,9 +374,16 @@ export async function persistGame(req, res) {
     res.json({ id: id }).end();
   } catch (err) {
     logger.error(err);
-    res
-      .status(err.statusCode || 500)
-      .json({ message: err.message || "Midagi läks valesti" });
+
+    if (err instanceof ValidationException ||
+      err instanceof ServerException ||
+      err instanceof TimeoutException) {
+      // For custom exceptions, send the specific error message
+      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+    } else {
+      // For other errors, send a generic error message
+      res.status(500).json({ message: "Midagi läks valesti" });
+    }
   }
 }
 
@@ -381,8 +414,15 @@ export async function saveGame(req, res) {
     res.json({ id: id }).end();
   } catch (err) {
     logger.error(err);
-    res
-      .status(err.statusCode || 500)
-      .json({ message: err.message || "Midagi läks valesti" });
+
+    if (err instanceof ValidationException ||
+      err instanceof ServerException ||
+      err instanceof TimeoutException) {
+      // For custom exceptions, send the specific error message
+      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+    } else {
+      // For other errors, send a generic error message
+      res.status(500).json({ message: "Midagi läks valesti" });
+    }
   }
 }

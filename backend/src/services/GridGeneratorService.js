@@ -85,7 +85,7 @@ export default class GridGeneratorService {
     this.workers.forEach(worker => worker.terminate());
 
     // Reject any pending tasks in the queue
-    this.queue.forEach(task => task.reject(new ServerException("Server shutting down")));
+    this.queue.forEach(task => task.reject(new ServerException("Server sulgub")));
 
     this.queue = [];
     this.activeTasks = 0;
