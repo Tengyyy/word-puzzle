@@ -3,7 +3,6 @@ import {fileURLToPath} from "url";
 import express, {json, urlencoded} from "express";
 import cors from "cors";
 import morgan from "morgan";
-import {port, host} from "./config/config.js";
 import WordNetService from "./services/WordNetService.js";
 import routes from "./routes.js";
 import GridGeneratorService from "./services/GridGeneratorService.js";
@@ -54,9 +53,9 @@ async function startServer() {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
-  app.listen(port, host, () => {
-    logger.info(`Server running at http://${host}:${port}/`);
+  app.listen(process.env.PORT, () => {
+    logger.info(`Server running on port ${process.env.PORT}`);
   });
 }
 
-await startServer();
+startServer();
