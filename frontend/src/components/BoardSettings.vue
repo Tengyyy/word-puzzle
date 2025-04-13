@@ -22,7 +22,7 @@ Mõõtmed peavad jääma vahemikku 5 - 30<br />
     <div class="size-settings mt-4">
       <div class="sub-setting-title pl-4" style="color: rgba(0, 0, 0, 0.6)">
         <span>Sõnarägastiku mõõtmed</span>
-        <InfoTooltip :text="tooltips.dimensions" />
+        <info-tooltip :text="tooltips.dimensions" id="dimensions-tooltip" />
       </div>
 
       <div class="settings-container mt-4">

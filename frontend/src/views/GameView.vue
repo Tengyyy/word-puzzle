@@ -144,6 +144,10 @@ const stackedLayout = computed(() => {
 
 const wordListWidth = computed(() => {
   if (stackedLayout.value) {
+    if (window.innerWidth < 960) {
+      return availableWidth.value
+    }
+
     return gridWidth.value
   }
 
@@ -165,6 +169,10 @@ const columnCount = computed(() => {
   }
 
   if (stackedLayout.value) {
+    if (window.innerWidth < 960) {
+      return Math.min(totalWords.value, Math.floor(availableWidth.value / estimatedWordItemWidth.value))
+    }
+
     return Math.min(totalWords.value, Math.floor(gridWidth.value / estimatedWordItemWidth.value))
   }
 
@@ -219,12 +227,33 @@ onMounted(() => {
     <main-card
         :width="cardWidth"
     >
-      <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
+      <v-card-title
+          :class="{ 'justify-center': $vuetify.display.mdAndUp }"
+          class="text-h5 font-weight-bold d-flex align-center position-relative"
+      >
         {{ gameStore.title }}
-        <v-btn @click="print" color="primary" rounded class="print-button">
-          <v-icon class="mr-2">mdi-printer</v-icon>
-          Prindi mäng
-        </v-btn>
+        <template v-if="$vuetify.display.smAndDown">
+          <v-tooltip location="bottom">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                  v-bind="props"
+                  icon
+                  class="print-button"
+                  color="primary"
+                  @click="print"
+              >
+                <v-icon>mdi-printer</v-icon>
+              </v-btn>
+            </template>
+            <span>Prindi mäng</span>
+          </v-tooltip>
+        </template>
+        <template v-else>
+          <v-btn @click="print" color="primary" rounded class="print-button">
+            <v-icon class="mr-2">mdi-printer</v-icon>
+            Prindi mäng
+          </v-btn>
+        </template>
       </v-card-title>
 
       <v-divider class="mb-6" />

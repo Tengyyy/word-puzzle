@@ -475,13 +475,37 @@ const handleSelection = () => {
 
   emit('select', str)
 }
+
+const handlePointerMove = (event) => {
+  if (!store.getGrid?.length) return
+
+  const rect = event.currentTarget.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+
+  const col = Math.floor(x / props.cellSize)
+  const row = Math.floor(y / props.cellSize)
+
+  // Make sure we're within bounds
+  if (
+      row >= 0 &&
+      col >= 0 &&
+      row < store.getGrid.length &&
+      col < store.getGrid[0].length
+  ) {
+    handleMouseEnter(row, col)
+  }
+}
+
 </script>
 
 <template>
   <div
     class="grid-container"
-    @mouseup="handleMouseUp"
-    @mouseleave="handleMouseUp"
+    @pointerup="handleMouseUp"
+    @pointerleave="handleMouseUp"
+    @pointercancel="handleMouseUp"
+    @pointermove="handlePointerMove"
     :style="{
       backgroundSize: `${props.cellSize}px ${props.cellSize}px`,
       width: props.width + 'px',
@@ -516,8 +540,8 @@ const handleSelection = () => {
             class="grid-cell"
             v-for="(char, colIndex) in row"
             :key="`cell-${rowIndex}-${colIndex}`"
-            @mousedown="handleMouseDown(rowIndex, colIndex)"
-            @mouseenter="handleMouseEnter(rowIndex, colIndex)"
+            @pointerdown="handleMouseDown(rowIndex, colIndex)"
+            @pointerenter="handleMouseEnter(rowIndex, colIndex)"
             :style="{
               width: `${props.cellSize}px`,
               height: `${props.cellSize}px`,
@@ -548,6 +572,7 @@ const handleSelection = () => {
   /* Ensure grid lines are beneath everything */
   border: solid #000000;
   border-width: 0 1px 1px 0;
+  touch-action: none;
 }
 
 .grid {
@@ -572,5 +597,6 @@ const handleSelection = () => {
   font-weight: bold;
   background-color: transparent;
   transition: background-color 0.2s ease;
+  touch-action: none;
 }
 </style>

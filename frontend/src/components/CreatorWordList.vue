@@ -70,6 +70,7 @@ const addWord = () => {
               class="input-field"
               variant="outlined"
               dense
+              hide-details
           />
           <v-text-field
               label="Sõna"
@@ -78,15 +79,13 @@ const addWord = () => {
               class="input-field"
               variant="outlined"
               dense
+              hide-details
           />
         </div>
-        <div class="add-button-container">
-          <v-btn @click="addWord" color="blue" class="add-button" :disabled="!wordInput" rounded>
-            <v-icon class="pr-4">mdi-plus</v-icon>
-            Lisa
-          </v-btn>
-        </div>
-
+        <v-btn @click="addWord" color="blue" class="add-button" :disabled="!wordInput" rounded>
+          <v-icon class="pr-4">mdi-plus</v-icon>
+          Lisa
+        </v-btn>
       </div>
     </div>
   </v-container>
@@ -114,18 +113,6 @@ const addWord = () => {
 .input-field {
   min-width: 250px;
   max-width: 600px;
-}
-
-.add-button-container {
-  flex-shrink: 0;
-  flex-grow: 1;
-  align-items: center;
-}
-
-.add-button {
-  min-width: 120px;
-  translate: 0 -10px;
-  padding: 20px 0 35px 0;
 }
 
 .word-list {

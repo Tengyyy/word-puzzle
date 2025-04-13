@@ -233,7 +233,11 @@ const stackedLayout = computed(() => {
 
 const wordListWidth = computed(() => {
   if (stackedLayout.value) {
-    return Math.max(gridWidth.value, 500)
+    if (window.innerWidth < 960) {
+      return availableWidth.value
+    }
+
+    return gridWidth.value
   }
 
   return hintMode.value ? minHintModeListWidth + 24 + 36 : estimatedWordListWidth.value + 24 + 36
@@ -241,7 +245,7 @@ const wordListWidth = computed(() => {
 
 const cardWidth = computed(() => {
   if (stackedLayout.value) {
-    return Math.max(gridWidth.value, 500) + 48
+    return Math.min(availableWidth.value, Math.max(gridWidth.value, 500) + 48)
   }
 
   // add 48 because of card padding
@@ -254,6 +258,10 @@ const columnCount = computed(() => {
   }
 
   if (stackedLayout.value) {
+    if (window.innerWidth < 960) {
+      return Math.min(totalWords.value, Math.floor(availableWidth.value / estimatedWordItemWidth.value))
+    }
+
     return Math.min(totalWords.value, Math.floor(gridWidth.value / estimatedWordItemWidth.value))
   }
 
@@ -327,25 +335,27 @@ onMounted(() => {
     </v-card>
   </v-dialog>
   <v-container
-      :class="{ 'd-flex': generated, 'align-center': generated, 'justify-center': generated }"
+      :class="{
+        'd-flex': generated,
+        'align-center': generated,
+        'justify-center': generated,
+        'pa-0': generated && $vuetify.display.smAndDown,
+        'ma-0': generated && $vuetify.display.smAndDown
+      }"
       class="mt-16"
       ref="mainContainer"
       :fluid="generated"
   >
     <main-card :width="generated ? cardWidth : undefined">
-      <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
+      <v-card-title class="title-bar">
         <template v-if="!generated">
-          Loo oma sõnarägastik
+          <div class="title-text">Loo oma sõnarägastik</div>
         </template>
         <template v-else>
-          <v-tooltip text="Tagasi">
-            <template #activator="{ props }">
-              <v-btn icon v-bind="props" size="large" variant="text" class="back-button" @click="generated = false">
-                <v-icon>mdi-arrow-left</v-icon>
-              </v-btn>
-            </template>
-          </v-tooltip>
-          {{ creatorStore.title }}
+          <v-btn icon size="large" variant="text" class="back-button" @click="generated = false">
+            <v-icon>mdi-arrow-left</v-icon>
+          </v-btn>
+          <div class="title-text">{{ creatorStore.title }}</div>
         </template>
       </v-card-title>
 
@@ -382,12 +392,19 @@ onMounted(() => {
         <div class="title-container py-4">
           <div class="font-weight-bold py-4 text-h6">
             4. Sõnad
-            <InfoTooltip :text="tooltips.words" />
+            <info-tooltip :text="tooltips.words" id="words-tooltip" />
           </div>
 
-          <v-btn @click="removeAllWords" color="red" rounded :disabled="!creatorStore.getWords || creatorStore.getWords.length === 0">
-            Eemalda kõik sõnad
-          </v-btn>
+          <template v-if="$vuetify.display.smAndUp">
+            <v-btn @click="removeAllWords" color="red" rounded :disabled="!creatorStore.getWords || creatorStore.getWords.length === 0">
+              Eemalda kõik sõnad
+            </v-btn>
+          </template>
+          <template v-else>
+            <v-btn @click="removeAllWords" color="red" variant="outlined" icon :disabled="!creatorStore.getWords || creatorStore.getWords.length === 0">
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+          </template>
         </div>
         <CreatorWordList class="mb-4" />
 
@@ -454,21 +471,56 @@ onMounted(() => {
               :loading="loadingStore.isLoading"
               :class="{
                 'mr-16': $vuetify.display.mdAndUp,
-                'mr-8': $vuetify.display.smAndDown
+                'mr-8': $vuetify.display.sm,
+                'mr-4': $vuetify.display.xs
               }"
           >
             Genereeri uuesti
           </v-btn>
 
-          <v-btn @click="print" color="primary" rounded variant="outlined" :disabled="loadingStore.isLoading">
-            <v-icon class="mr-2">mdi-printer</v-icon>
-            Prindi
-          </v-btn>
+          <template v-if="$vuetify.display.smAndUp">
+            <v-btn @click="print" color="primary" rounded variant="outlined" :disabled="loadingStore.isLoading">
+              <v-icon class="mr-2">mdi-printer</v-icon>
+              Prindi
+            </v-btn>
 
-          <v-btn @click="share" color="primary" rounded variant="outlined" :disabled="loadingStore.isLoading">
-            <v-icon class="mr-2">mdi-share</v-icon>
-            Jaga
-          </v-btn>
+            <v-btn @click="share" color="primary" rounded variant="outlined" :disabled="loadingStore.isLoading">
+              <v-icon class="mr-2">mdi-share</v-icon>
+              Jaga
+            </v-btn>
+          </template>
+          <template v-else>
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{ props }">
+                <v-btn
+                    v-bind="props"
+                    icon
+                    variant="outlined"
+                    color="primary"
+                    @click="print"
+                    :disabled="loadingStore.isLoading"
+                >
+                  <v-icon>mdi-printer</v-icon>
+                </v-btn>
+              </template>
+              <span>Prindi</span>
+            </v-tooltip>
+            <v-tooltip location="bottom">
+              <template v-slot:activator="{ props }">
+                <v-btn
+                    v-bind="props"
+                    icon
+                    variant="outlined"
+                    color="primary"
+                    @click="share"
+                    :disabled="loadingStore.isLoading"
+                >
+                  <v-icon>mdi-share</v-icon>
+                </v-btn>
+              </template>
+              <span>Jaga</span>
+            </v-tooltip>
+          </template>
         </div>
       </template>
 
@@ -487,6 +539,7 @@ onMounted(() => {
 .button-container {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: 10px;
   margin-top: 20px;
 }
@@ -510,12 +563,29 @@ onMounted(() => {
   align-items: center;
 }
 
-.position-relative {
+.title-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
+  flex-wrap: wrap;
+  min-height: 56px;
+  text-align: center;
+  padding: 0 32px; /* leaves room for back button */
 }
 
 .back-button {
   position: absolute;
   left: 0;
+}
+
+.title-text {
+  flex: 1 1 auto;
+  max-width: 100%;
+  font-weight: bold;
+  font-size: 1.25rem; /* matches text-h5 */
+  text-align: center;
+  word-break: break-word;
+  padding: 0 16px;
 }
 </style>

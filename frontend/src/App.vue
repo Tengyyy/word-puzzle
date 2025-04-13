@@ -106,7 +106,6 @@ const isNotFound = computed(() => route.name === "NotFound")
                       : { href: button.href, target: '_blank' }),
                   }"
                   class="nav-button mx-2"
-                  rounded
                   icon
                 >
                   <v-icon>{{ button.icon }}</v-icon>

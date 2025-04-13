@@ -52,8 +52,8 @@ export default class GridGeneratorService {
       const timeout = setTimeout(() => {
         worker.terminate();
         this.workers = this.workers.filter(w => w !== worker);
-        reject(new TimeoutException("Sõnarägastiku genereerimine aegus peale 5 sekundit"));
-      }, 5000);
+        reject(new TimeoutException("Sõnarägastiku genereerimine aegus peale 10 sekundit"));
+      }, 10_000);
 
       worker.once("message", (msg) => {
         clearTimeout(timeout);

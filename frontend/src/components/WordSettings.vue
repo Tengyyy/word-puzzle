@@ -60,17 +60,26 @@ const fetchSuggestions = async () => {
 
 <template>
   <div>
-    <v-switch v-model="creatorStore.generateWordList" dense class="pl-2">
-      <template #label>
-        <span>Genereeri automaatselt sisendteema põhjal sõnade nimekiri</span>
-        <InfoTooltip :text="tooltips.generateWordList" />
-      </template>
-    </v-switch>
+
+    <div class="d-flex align-center pl-2 py-2">
+
+      <v-switch
+          v-model="creatorStore.generateWordList"
+          dense
+          class="mr-4"
+          hide-details
+          :label="null"
+      />
+      <span class="d-flex align-center">
+        Genereeri automaatselt sisendteema põhjal sõnade nimekiri
+        <info-tooltip :text="tooltips.generateWordList" id="generate-word-list-tooltip" />
+      </span>
+    </div>
 
     <div class="topic-container">
       <div class="sub-setting-title pl-4" style="color: rgba(0, 0, 0, 0.6)">
         <span>Sõnarägastiku teema</span>
-        <InfoTooltip :text="tooltips.topic" />
+        <info-tooltip :text="tooltips.topic" id="topic-tooltip" />
       </div>
     </div>
     <v-combobox
@@ -90,7 +99,7 @@ const fetchSuggestions = async () => {
     <div class="mt-4">
       <div class="sub-setting-title pl-4" style="color: rgba(0, 0, 0, 0.6)">
         <span>Sõnarägastiku keel</span>
-        <InfoTooltip :text="tooltips.language" />
+        <info-tooltip :text="tooltips.language" id="language-tooltip" />
       </div>
       <div class="language-controls mt-4">
         <v-select
@@ -120,7 +129,7 @@ const fetchSuggestions = async () => {
     <v-radio-group class="mt-4" v-model="creatorStore.mode" dense>
       <template #label>
         <span>Kuva sõnarägastiku kõrval</span>
-        <InfoTooltip :text="tooltips.mode" />
+        <info-tooltip :text="tooltips.mode" id="mode-tooltip" />
       </template>
       <template v-for="mode in Constants.MODE" :key="mode.value">
         <v-radio :value="mode.value" :label="mode.text" />
@@ -137,17 +146,20 @@ const fetchSuggestions = async () => {
       </template>
     </v-radio-group>
 
-    <v-checkbox
-      label="Luba mitte-tähestikulised märgid sõnedes"
-      class="pl-2"
-      v-model="creatorStore.nonAlphaAllowed"
-      dense
-    >
-      <template #label>
-        <span>Luba mitte-tähestikulised märgid sõnedes</span>
-        <InfoTooltip :text="tooltips.nonAlphaAllowed" />
-      </template>
-    </v-checkbox>
+    <div class="d-flex align-center pl-2 py-2">
+      <v-checkbox
+          v-model="creatorStore.nonAlphaAllowed"
+          density="compact"
+          class="mr-4"
+          hide-details
+          :label="null"
+      />
+      <span class="d-flex align-center">
+        Luba mitte-tähestikulised märgid sõnedes
+        <info-tooltip class="ml-1" :text="tooltips.nonAlphaAllowed" id="non-alpha-allowed-tooltip" />
+      </span>
+    </div>
+
     <v-switch
       label="Kuva sõnad tähestikulises järjekorras"
       class="pl-2"
