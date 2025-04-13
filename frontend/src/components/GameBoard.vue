@@ -318,29 +318,25 @@ const calculateOutline = (highlightedCells, direction) => {
       startY += OFFSETS.value.S.y
       break
     case DIRECTION.SOUTH_EAST: {
-      const distance = calculateDiagonalLength(startCell, endCell)
-      width = distance + props.cellSize
+      width = calculateDiagonalLength(startCell, endCell)
       startX += OFFSETS.value.SE.x
       startY += OFFSETS.value.SE.y
       break
     }
     case DIRECTION.SOUTH_WEST: {
-      const distance = calculateDiagonalLength(startCell, endCell)
-      width = distance + props.cellSize
+      width = calculateDiagonalLength(startCell, endCell)
       startX += OFFSETS.value.SW.x
       startY += OFFSETS.value.SW.y
       break
     }
     case DIRECTION.NORTH_WEST: {
-      const distance = calculateDiagonalLength(startCell, endCell)
-      width = distance + props.cellSize
+      width = calculateDiagonalLength(startCell, endCell)
       startX += OFFSETS.value.NW.x
       startY += OFFSETS.value.NW.y
       break
     }
     case DIRECTION.NORTH_EAST: {
-      const distance = calculateDiagonalLength(startCell, endCell)
-      width = distance + props.cellSize
+      width = calculateDiagonalLength(startCell, endCell)
       startX += OFFSETS.value.NE.x
       startY += OFFSETS.value.NE.y
       break
