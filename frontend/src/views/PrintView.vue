@@ -91,9 +91,12 @@ const gridHeight = computed(() => {
   return gridRowCount.value * gridCellSize.value;
 })
 
-
 const estimatedWordItemWidth = computed(() => {
-  return calculateWordItemWidth(printStore.getWords)
+  return calculateWordItemWidth(printStore.getWords, false)
+})
+
+const estimatedAnswerItemWidth = computed(() => {
+  return calculateWordItemWidth(printStore.getWords, hintMode.value)
 })
 
 const mainContainer = ref(null)
@@ -107,20 +110,28 @@ const cardWidth = computed(() => {
   return Math.max(gridWidth.value, 500) + 48
 })
 
-const columnCount = computed(() => {
-  if (hintMode.value) {
-    return 1
-  }
-
-  return Math.min(totalWords.value, Math.floor(gridWidth.value / estimatedWordItemWidth.value))
+const realWordItemWidth = computed(() => {
+  return Math.min(estimatedWordItemWidth.value, cardWidth.value - 48)
 })
 
-const columnSize = computed(() => {
-  if (hintMode.value) {
-    return totalWords.value
-  }
+const realAnswerItemWidth = computed(() => {
+  return Math.min(estimatedAnswerItemWidth.value, cardWidth.value - 48)
+})
 
-  return Math.ceil(totalWords.value / columnCount.value)
+const wordColumnCount = computed(() => {
+  return Math.min(totalWords.value, Math.floor(gridWidth.value / realWordItemWidth.value))
+})
+
+const answerColumnCount = computed(() => {
+  return Math.min(totalWords.value, Math.floor(gridWidth.value / realAnswerItemWidth.value))
+})
+
+const wordColumnSize = computed(() => {
+  return Math.ceil(totalWords.value / wordColumnCount.value)
+})
+
+const answerColumnSize = computed(() => {
+  return Math.ceil(totalWords.value / answerColumnCount.value)
 })
 
 </script>
@@ -128,16 +139,16 @@ const columnSize = computed(() => {
 <template>
 
   <v-container
-      class="d-flex flex-column justify-center align-center ga-10 full-page"
+      class="d-flex flex-column justify-center align-center full-page"
       ref="mainContainer"
   >
-    <div class="ma-0 mt-16 pa-0 pt-8 no-print d-flex align-center justify-center ga-4" :class="{ 'flex-column': $vuetify.display.xs }">
-      <v-btn @click="printPuzzle" color="primary" rounded class="print-button no-print">
+    <div class="ma-0 mt-16 pa-0 pt-8 hide-on-print d-flex align-center justify-center ga-4" :class="{ 'flex-column': $vuetify.display.xs }">
+      <v-btn @click="printPuzzle" color="primary" rounded class="print-button">
         <v-icon class="mr-2">mdi-printer</v-icon>
         Prindi ülesanne
       </v-btn>
 
-      <v-btn v-if="mode === MODE.CREATE" @click="printSolutions" color="primary" variant="outlined" rounded class="print-button no-print">
+      <v-btn v-if="mode === MODE.CREATE" @click="printSolutions" color="primary" variant="outlined" rounded class="print-button">
         <v-icon class="mr-2">mdi-printer-check</v-icon>
         Prindi vastused
       </v-btn>
@@ -147,7 +158,6 @@ const columnSize = computed(() => {
         :width="cardWidth"
         class="elevation-0 print-section"
         :class="printMode === 'answers' ? 'hide-on-print' : ''"
-        print-view
     >
       <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
         {{ printStore.title }}
@@ -173,11 +183,12 @@ const columnSize = computed(() => {
           <WordList
               :mode="mode"
               :print-view="true"
-              :hintMode="hintMode"
-              :column-count="columnCount"
-              :column-size="columnSize"
-              :word-item-width="estimatedWordItemWidth"
+              :hintMode="estimatedWordItemWidth > 1000"
+              :column-count="wordColumnCount"
+              :column-size="wordColumnSize"
+              :word-item-width="realWordItemWidth"
               stacked-layout
+              :width="cardWidth - 48"
           />
         </v-col>
       </v-row>
@@ -187,9 +198,8 @@ const columnSize = computed(() => {
     <main-card
         v-if="printStore.isCreateView"
         :width="cardWidth"
-        class="print-section elevation-0"
+        class="elevation-0 print-section "
         :class="printMode === 'puzzle' ? 'hide-on-print' : ''"
-        print-view
     >
       <v-card-title class="text-h5 font-weight-bold d-flex align-center justify-center position-relative">
         {{ printStore.title }}
@@ -216,12 +226,13 @@ const columnSize = computed(() => {
           <WordList
               :mode="mode"
               :print-view="true"
-              :hintMode="hintMode"
-              :column-count="columnCount"
-              :column-size="columnSize"
+              :hintMode="estimatedAnswerItemWidth > 1000"
+              :column-count="answerColumnCount"
+              :column-size="answerColumnSize"
               stacked-layout
-              :word-item-width="estimatedWordItemWidth"
+              :word-item-width="realAnswerItemWidth"
               :answer-list="true"
+              :width="cardWidth - 48"
           />
         </v-col>
       </v-row>

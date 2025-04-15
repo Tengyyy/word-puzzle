@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import {Constants} from "../../../shared/Constants.js";
 
 export const useGameStore = defineStore('game', () => {
   const id = ref(null)
@@ -12,6 +13,7 @@ export const useGameStore = defineStore('game', () => {
   const highlightColors = ref([]);
   const gameEnded = ref(false)
   const gameInProgress = ref(false)
+  const difficulty = ref(Constants.DIFFICULTY.MEDIUM.value)
 
   const getGrid = computed(() => {
     return grid.value
@@ -30,6 +32,7 @@ export const useGameStore = defineStore('game', () => {
     wordsToFind.value = [...data.words]
     foundWords.value = []
     highlightColors.value = []
+    difficulty.value = data.difficulty || Constants.DIFFICULTY.MEDIUM.value
   }
 
   function clearGameData() {
@@ -41,6 +44,7 @@ export const useGameStore = defineStore('game', () => {
     wordsToFind.value = []
     foundWords.value = []
     highlightColors.value = []
+    difficulty.value = Constants.DIFFICULTY.MEDIUM.value
   }
 
   function resetGame() {
@@ -100,6 +104,7 @@ export const useGameStore = defineStore('game', () => {
     gameInProgress,
     getGrid,
     getWords,
+    difficulty,
     setGameData,
     clearGameData,
     startGame,

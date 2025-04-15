@@ -4,6 +4,7 @@ import { useCreatorStore } from '@/stores/creatorStore.js'
 import { useGameStore } from '@/stores/gameStore.js'
 import { usePrintStore } from '@/stores/printStore.js'
 import { getRandomColor } from "../../../shared/Utils.js";
+import {Constants} from "../../../shared/Constants.js";
 
 const props = defineProps({
   mode: {
@@ -197,6 +198,10 @@ const calculateDirection = (startRow, startCol, currentRow, currentCol) => {
       return null
     }
   }
+
+  if (playable.value && store.difficulty === Constants.DIFFICULTY.EASY.value) // No diagonal words in easy mode
+    return null
+
   if (Math.abs(currentRow - startRow) === Math.abs(currentCol - startCol)) {
     if (startRow < currentRow) {
       return startCol < currentCol ? DIRECTION.SOUTH_EAST : DIRECTION.SOUTH_WEST

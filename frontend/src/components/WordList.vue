@@ -104,10 +104,20 @@ const getColorForWord = (word, idx) => {
   }
 }
 
+const sortedWords = computed(() => {
+
+  // chosen words at the end
+  if (props.mode === MODE.GAME && !props.printView) {
+    return [...store.wordsToFind, ...store.foundWords]
+  }
+
+  return store.getWords
+})
+
 const columns = computed(() => {
 
   return Array.from({ length: props.columnCount }, (_, colIdx) =>
-      store.getWords.slice(colIdx * props.columnSize, (colIdx + 1) * props.columnSize)
+      sortedWords.value.slice(colIdx * props.columnSize, (colIdx + 1) * props.columnSize)
   )
 })
 
@@ -117,8 +127,8 @@ const columns = computed(() => {
 
 
   <div
-      :style="{ minWidth: stackedLayout && width ? width + 'px' : undefined }"
-      :class="{ 'ml-6': !stackedLayout, 'mt-6': stackedLayout }"
+      :style="{ minWidth: width + 'px', maxWidth: width + 'px' }"
+      :class="{ 'pl-6': !stackedLayout, 'pt-6': stackedLayout }"
       class="d-flex flex-row word-list-wrap pa-0 justify-center"
   >
     <div
@@ -132,10 +142,10 @@ const columns = computed(() => {
           :class="{ 'my-2': hintMode }"
           :style="{
           color: getColorForWord(word, colIdx * columnSize + index),
-          height: hintMode ? {} : '40px',
-          width: hintMode ? '100%' : wordItemWidth + 'px',
-          whiteSpace: hintMode ? 'normal' : 'nowrap',
-          wordBreak: hintMode ? 'break-word' : 'normal',
+          minHeight: '40px',
+          width: stackedLayout ? Math.min(width, wordItemWidth) + 'px' : wordItemWidth + 'px',
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
         }"
       >
       <span
@@ -162,6 +172,17 @@ const columns = computed(() => {
 
 .word-list-wrap {
   flex-wrap: wrap;
+}
+
+@media print {
+  .word-list-wrap span {
+    display: block;
+    height: auto !important;
+    min-height: 40px;
+    padding: 4px 0;
+    white-space: normal;
+    word-break: break-word;
+  }
 }
 
 </style>

@@ -31,6 +31,7 @@ const createTablesQuery = `
         grid TEXT[][] NOT NULL,
         words JSON NOT NULL,
         answers JSON NOT NULL,
+        difficulty TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         metadata JSON
         );

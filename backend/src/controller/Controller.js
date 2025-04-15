@@ -145,7 +145,7 @@ export async function createGame(req, res) {
 
     const id = randomUUID();
     await pool.query(
-      "INSERT INTO games (id, topic, title, grid, words, answers, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
+      "INSERT INTO games (id, topic, title, grid, words, answers, difficulty, metadata) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *",
       [
         id,
         topic,
@@ -153,6 +153,7 @@ export async function createGame(req, res) {
         grid,
         JSON.stringify(words),
         JSON.stringify(answers),
+        diff,
         JSON.stringify({
           inputLanguage: inputLanguage,
           outputLanguage: outputLanguage,
@@ -168,6 +169,7 @@ export async function createGame(req, res) {
       words: words,
       title: Utils.capitalizeFirstLetter(topic),
       answers: answers,
+      difficulty: diff,
     };
     storeData(id, data);
 
@@ -346,11 +348,12 @@ export async function persistGame(req, res) {
     const words = wordHints.map((wordHint) => wordHint.word);
     const answers = Validation.validateAnswers(data.answers, grid, words);
     const title = Validation.validateTitle(data.title);
+    const difficulty = Validation.validateDifficulty(data.difficulty);
 
     const id = randomUUID();
 
     await pool.query(
-      "INSERT INTO games (id, topic, title, grid, words, answers) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      "INSERT INTO games (id, topic, title, grid, words, answers, difficulty) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *",
       [
         id,
         "custom",
@@ -358,6 +361,7 @@ export async function persistGame(req, res) {
         grid,
         JSON.stringify(wordHints),
         JSON.stringify(answers),
+        difficulty,
       ]
     );
 
@@ -367,6 +371,7 @@ export async function persistGame(req, res) {
       title: title,
       words: wordHints,
       answers: answers,
+      difficulty: difficulty,
     };
 
     storeData(id, gameData);
@@ -400,6 +405,7 @@ export async function saveGame(req, res) {
     const words = wordHints.map((wordHint) => wordHint.word);
     const answers = Validation.validateAnswers(data.answers, grid, words);
     const title = Validation.validateTitle(data.title);
+    const difficulty = Validation.validateDifficulty(data.difficulty);
 
     const id = randomUUID();
     const game = {
@@ -408,6 +414,7 @@ export async function saveGame(req, res) {
       title: title,
       words: wordHints,
       answers: answers,
+      difficulty: difficulty,
     };
     storeData(id, game);
 

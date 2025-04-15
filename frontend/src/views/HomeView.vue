@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import {computed, ref} from 'vue'
 import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore.js'
 import { Constants } from '../../../shared/Constants.js'
@@ -8,9 +8,6 @@ import { apiRequest } from '@/api.js'
 import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { useLoadingStore } from '@/stores/loadingStore.js'
 import logo from '@/assets/logo_large.svg'
-
-
-const topic = ref('')
 
 const difficulty = ref(Constants.DIFFICULTY.MEDIUM.value)
 
@@ -25,7 +22,14 @@ const alertStore = useAlertStore()
 
 const loadingStore = useLoadingStore()
 
+const topic = ref('')
+const searchText = ref('')
 const suggestions = ref([])
+
+const onSearch = (val) => {
+  searchText.value = val
+  fetchSuggestions(val)
+}
 
 const fetchSuggestions = async () => {
   if (!topic.value) {
@@ -46,6 +50,10 @@ const fetchSuggestions = async () => {
     /* empty */
   }
 }
+
+const computedNoDataText = computed(() =>
+    searchText.value.trim() === '' ? 'Sisesta teema' : 'Lemma puudub'
+);
 
 const startGame = async () => {
   if (!topic.value) {
@@ -106,11 +114,11 @@ const getButtonColor = (value) => {
               class="w-75"
               rounded
               variant="solo"
-              @update:search="fetchSuggestions"
+              @update:search="onSearch"
               :items="suggestions"
               auto-select-first
               :hide-no-data="false"
-              no-data-text="Lemma puudub"
+              :no-data-text="computedNoDataText"
           />
 
           <v-select
