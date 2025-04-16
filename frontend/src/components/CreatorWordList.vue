@@ -3,6 +3,32 @@ import { useAlertStore } from '@/stores/alertStore.js'
 import { useCreatorStore } from '@/stores/creatorStore.js'
 import {computed, ref} from 'vue'
 import {Constants} from "../../../shared/Constants.js";
+import {useLanguageStore} from "@/stores/languageStore.js";
+
+const languageStore = useLanguageStore()
+const selectedLanguage = computed({
+  get: () => languageStore.currentLanguage,
+  set: val => languageStore.setLanguage(val),
+})
+
+const text = {
+  removeWord: {
+    et: 'Eemalda sõne',
+    en: 'Remove word',
+  },
+  hint: {
+    et: 'Vihje',
+    en: 'Hint',
+  },
+  word: {
+    et: 'Sõna',
+    en: 'Word',
+  },
+  add: {
+    et: 'Lisa',
+    en: 'Add',
+  }
+}
 
 const creatorStore = useCreatorStore()
 
@@ -49,7 +75,7 @@ const addWord = () => {
               <template #activator="{ props }">
                 <v-btn v-bind="props" icon="mdi-close" color="black" @click="creatorStore.removeWord(word)" variant="text"></v-btn>
               </template>
-              Eemalda sõna
+              {{ text.removeWord[selectedLanguage] }}
             </v-tooltip>
           </v-card>
         </v-col>
@@ -64,7 +90,7 @@ const addWord = () => {
         >
           <v-text-field
               v-if="isHintMode"
-              label="Vihje"
+              :label="text.hint[selectedLanguage]"
               v-model="hintInput"
               @keyup.enter="addWord"
               class="input-field"
@@ -73,7 +99,7 @@ const addWord = () => {
               hide-details
           />
           <v-text-field
-              label="Sõna"
+              :label="text.word[selectedLanguage]"
               v-model="wordInput"
               @keyup.enter="addWord"
               class="input-field"
@@ -84,7 +110,7 @@ const addWord = () => {
         </div>
         <v-btn @click="addWord" color="blue" class="add-button" :disabled="!wordInput" rounded>
           <v-icon class="pr-4">mdi-plus</v-icon>
-          Lisa
+          {{ text.add[selectedLanguage] }}
         </v-btn>
       </div>
     </div>

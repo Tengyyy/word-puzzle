@@ -8,6 +8,7 @@ import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { useDialogStore } from '@/stores/dialogStore.js'
 import MainCard from '@/components/MainCard.vue'
 import { calculateWordItemWidth } from '../../../shared/Utils.js'
+import {useLanguageStore} from "@/stores/languageStore.js";
 
 const boardRef = ref(null)
 
@@ -15,6 +16,27 @@ const gameStore = useGameStore()
 const router = useRouter()
 
 const dialogStore = useDialogStore()
+
+const text = {
+  gameOverTitle: {
+    et: 'Kõik sõnad leitud!',
+    en: 'All words found!',
+  },
+  gameOverSubtitle: {
+    et: 'Oled sõnarägastiku lahendanud',
+    en: 'You’ve completed the word search',
+  },
+  print: {
+    et: 'Prindi mäng',
+    en: 'Print puzzle',
+  }
+}
+
+const languageStore = useLanguageStore()
+const selectedLanguage = computed({
+  get: () => languageStore.currentLanguage,
+  set: val => languageStore.setLanguage(val),
+})
 
 const victory_audio = new Audio(
   new URL('@/assets/sounds/victory.wav', import.meta.url).href,
@@ -35,8 +57,8 @@ const handleSelect = async selectedWord => {
   if (gameStore.gameEnded) {
     victory_audio.play()
     dialogStore.showDialog(
-      'Leidsid kõik sõnad!',
-      'Sõnarägastik lahendatud',
+      text.gameOverTitle[selectedLanguage.value],
+      text.gameOverSubtitle[selectedLanguage.value],
       () => goHome(),
       () => {},
     )
@@ -314,13 +336,13 @@ onMounted(() => {
                 <v-icon>mdi-printer</v-icon>
               </v-btn>
             </template>
-            <span>Prindi mäng</span>
+            <span>{{ text.print[selectedLanguage] }}</span>
           </v-tooltip>
         </template>
         <template v-else>
           <v-btn @click="print" color="primary" rounded class="print-button">
             <v-icon class="mr-2">mdi-printer</v-icon>
-            Prindi mäng
+            {{ text.print[selectedLanguage] }}
           </v-btn>
         </template>
       </v-card-title>

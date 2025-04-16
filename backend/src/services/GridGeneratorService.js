@@ -4,6 +4,7 @@ import { resolve as _resolve } from "path";
 import path from "path";
 import { fileURLToPath } from "url";
 import logger from '../logger.js';
+import {getMessage} from "./LocalizationService.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,13 +18,13 @@ export default class GridGeneratorService {
   static queue = [];
   static workers = [];
 
-  static async generateGrid(customWords, words, options) {
+  static async generateGrid(customWords, words, options, clientLanguage) {
     if (this.queue.length >= this.maxQueueSize) {
-      throw new ServerException("Server on hõivatud. Palun proovi hiljem uuesti.");
+      throw new ServerException( getMessage('serverBusy', clientLanguage) );
     }
 
     return new Promise((resolve, reject) => {
-      this.queue.push({ customWords, words, options, resolve, reject });
+      this.queue.push({ customWords, words, options, clientLanguage, resolve, reject });
       this.#processQueue();
     });
   }
@@ -31,7 +32,7 @@ export default class GridGeneratorService {
   static #processQueue() {
     while (this.activeTasks < this.maxParallelWorkers && this.queue.length > 0) {
       const task = this.queue.shift();
-      this.#runWorker(task.customWords, task.words, task.options)
+      this.#runWorker(task.customWords, task.words, task.options, task.clientLanguage)
         .then(task.resolve)
         .catch(task.reject)
         .finally(() => {
@@ -43,7 +44,7 @@ export default class GridGeneratorService {
     }
   }
 
-  static #runWorker(customWords, words, options) {
+  static #runWorker(customWords, words, options, clientLanguage) {
     return new Promise((resolve, reject) => {
       const worker = new Worker(gridWorkerPath);
 
@@ -52,7 +53,7 @@ export default class GridGeneratorService {
       const timeout = setTimeout(() => {
         worker.terminate();
         this.workers = this.workers.filter(w => w !== worker);
-        reject(new TimeoutException("Sõnarägastiku genereerimine aegus peale 10 sekundit"));
+        reject(new TimeoutException(getMessage('gridGenerationTimeout', clientLanguage)));
       }, 10_000);
 
       worker.once("message", (msg) => {
@@ -62,7 +63,7 @@ export default class GridGeneratorService {
         if (msg.status === "success") {
           resolve(msg.data);
         } else {
-          reject(new ServerException("Sõnarägastiku genereerimine ebaõnnestus: " + msg.message));
+          reject(new ServerException( getMessage('gridGenerationFailure', clientLanguage, msg.message) ));
         }
       });
 
@@ -71,10 +72,10 @@ export default class GridGeneratorService {
         worker.terminate();
         this.workers = this.workers.filter(w => w !== worker);
         logger.error("GridWorker error:", err);
-        reject(new ServerException("Sõnarägastiku genereerimine ebaõnnestus"));
+        reject(new ServerException( getMessage('gridGenerationFailure', clientLanguage) ));
       });
 
-      worker.postMessage({ customWords, words, options });
+      worker.postMessage({ customWords, words, options, clientLanguage });
     });
   }
 
@@ -85,7 +86,7 @@ export default class GridGeneratorService {
     this.workers.forEach(worker => worker.terminate());
 
     // Reject any pending tasks in the queue
-    this.queue.forEach(task => task.reject(new ServerException("Server sulgub")));
+    this.queue.forEach(task => task.reject(new ServerException( getMessage('serverClosing', task.clientLanguage) )));
 
     this.queue = [];
     this.activeTasks = 0;

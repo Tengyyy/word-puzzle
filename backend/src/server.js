@@ -7,6 +7,7 @@ import WordNetService from "./services/WordNetService.js";
 import routes from "./routes.js";
 import GridGeneratorService from "./services/GridGeneratorService.js";
 import logger from './logger.js';
+import {detectLanguage} from "./middleware/language.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -17,6 +18,8 @@ app.use(morgan("combined"));
 app.use(cors());
 app.use(json());
 app.use(urlencoded({ extended: true }));
+
+app.use(detectLanguage)
 
 // API routes
 routes(app);

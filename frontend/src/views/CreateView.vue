@@ -12,19 +12,91 @@ import CreatorWordList from '@/components/CreatorWordList.vue'
 import InfoTooltip from '@/components/InfoTooltip.vue'
 import MainCard from '@/components/MainCard.vue'
 import { calculateWordItemWidth } from '../../../shared/Utils.js'
-import {Constants} from "../../../shared/Constants.js";
+import { Constants } from '../../../shared/Constants.js'
+import { useLanguageStore } from '@/stores/languageStore.js'
 
-const tooltips = ref({
-  words: `
-Kui valisid eelnevalt sisendteema põhjal sõnade nimekirja genereerimise, siis ei pea siia ühtegi sõna lisama,<br>
-kuid kõik lisatud sõnad peidetakse siiski lisaks automaatselt genereeritud sõnadele ka sõnarägastikku.<br>
-Kui sa ei valinud sisendteema põhjal sõnade nimekirja genereerimist, siis peab siia lisama kõik sõnad,<br>
-mida sa soovid sõnarägastikku peita.
+const tooltips = {
+  words: {
+    et: `
+Kui valisid eelnevalt sõnade automaatse genereerimise sisendteema põhjal, siis ei pea siia sõnu lisama.<br>
+Kuid kõik käsitsi lisatud sõnad lisatakse siiski sõnarägastikku automaatselt genereeritud sõnadele lisaks.<br>
+Kui automaatset genereerimist ei valitud, siis tuleb siia lisada kõik sõnad, mida soovid sõnarägastikus peita.
 `,
-})
+    en: `
+If you chose to automatically generate a word list based on the input topic, you don’t need to add any words here.<br>
+However, any words you do add manually will also be hidden in the puzzle alongside the generated ones.<br>
+If you didn’t enable automatic word list generation, you must add all the words you want hidden in the puzzle here.
+`,
+  },
+}
+
+const text = {
+  copy: {
+    et: 'Kopeeri',
+    en: 'Copy',
+  },
+  copied: {
+    et: 'Link on kopeeritud',
+    en: 'Link copied',
+  },
+  share: {
+    et: 'Jaga',
+    en: 'Share',
+  },
+  close: {
+    et: 'Sulge',
+    en: 'Close',
+  },
+  customPuzzle: {
+    et: 'Loo oma sõnarägastik',
+    en: 'Word-search creator',
+  },
+  title: {
+    et: 'Pealkiri',
+    en: 'Title',
+  },
+  boardSettings: {
+    et: 'Sõnarägastiku seaded',
+    en: 'Puzzle settings',
+  },
+  wordSettings: {
+    et: 'Sõnade seaded',
+    en: 'Word settings',
+  },
+  words: {
+    et: 'Sõnad',
+    en: 'Words',
+  },
+  removeAllWords: {
+    et: 'Eemalda kõik sõnad',
+    en: 'Remove all words',
+  },
+  generate: {
+    et: 'Genereeri sõnarägastik',
+    en: 'Generate word search',
+  },
+  toggleHighlights: {
+    et: 'Kuva peidetud sõnu',
+    en: 'Show hidden words',
+  },
+  regenerate: {
+    et: 'Genereeri uuesti',
+    en: 'Regenerate',
+  },
+  print: {
+    et: 'Prindi',
+    en: 'Print',
+  },
+}
 
 const creatorStore = useCreatorStore()
 const loadingStore = useLoadingStore()
+
+const languageStore = useLanguageStore()
+const selectedLanguage = computed({
+  get: () => languageStore.currentLanguage,
+  set: val => languageStore.setLanguage(val),
+})
 
 const boardRef = ref(null)
 const id = ref(null)
@@ -87,7 +159,9 @@ const share = async () => {
       words: creatorStore.getWords,
       title: creatorStore.title,
       answers: creatorStore.answers,
-      difficulty: creatorStore.diagonalsEnabled ? Constants.DIFFICULTY.MEDIUM.value : Constants.DIFFICULTY.EASY.value,
+      difficulty: creatorStore.diagonalsEnabled
+        ? Constants.DIFFICULTY.MEDIUM.value
+        : Constants.DIFFICULTY.EASY.value,
     })
 
     id.value = response.id
@@ -99,17 +173,17 @@ const share = async () => {
   }
 }
 
-const copyTooltipText = ref('Kopeeri')
+const copyTooltipText = ref(text.copy[selectedLanguage.value])
 
 const copyLink = () => {
   if (!link.value) return
   navigator.clipboard.writeText(link.value).then(() => {
     linkCopied.value = true
-    copyTooltipText.value = 'Link kopeeritud'
+    copyTooltipText.value = text.copied[selectedLanguage.value]
 
     setTimeout(() => {
       linkCopied.value = false
-      copyTooltipText.value = 'Kopeeri'
+      copyTooltipText.value = text.copy[selectedLanguage.value]
     }, 2000)
   })
 }
@@ -127,7 +201,9 @@ const print = async () => {
         words: creatorStore.getWords,
         title: creatorStore.title,
         answers: creatorStore.answers,
-        difficulty: creatorStore.diagonalsEnabled ? Constants.DIFFICULTY.MEDIUM.value : Constants.DIFFICULTY.EASY.value,
+        difficulty: creatorStore.diagonalsEnabled
+          ? Constants.DIFFICULTY.MEDIUM.value
+          : Constants.DIFFICULTY.EASY.value,
       })
 
       id.value = response.id
@@ -224,7 +300,7 @@ const totalWords = computed(() => {
 
 const preferredColumnCount = computed(() => {
   return Math.ceil(
-      (totalWords.value * estimateWordItemHeight) / gridHeight.value,
+    (totalWords.value * estimateWordItemHeight) / gridHeight.value,
   )
 })
 
@@ -249,22 +325,22 @@ const columnCount = computed(() => {
   if (stackedLayout.value) {
     if (window.innerWidth < 960) {
       return Math.max(
-          1,
-          Math.min(
-              totalWords.value,
-              Math.floor(
-                  (availableWidth.value - 48) / estimatedWordItemWidth.value,
-              ),
+        1,
+        Math.min(
+          totalWords.value,
+          Math.floor(
+            (availableWidth.value - 48) / estimatedWordItemWidth.value,
           ),
+        ),
       )
     }
 
     return Math.max(
-        1,
-        Math.min(
-            totalWords.value,
-            Math.floor(gridWidth.value / estimatedWordItemWidth.value),
-        ),
+      1,
+      Math.min(
+        totalWords.value,
+        Math.floor(gridWidth.value / estimatedWordItemWidth.value),
+      ),
     )
   }
 
@@ -275,14 +351,14 @@ const columnCount = computed(() => {
 
   // fit as many columns as we can
   return Math.max(
-      1,
-      Math.min(
-          totalWords.value,
-          Math.floor(
-              (widthAvailableForWordlist.value - 24) /
-              Math.min(maxItemWidth, estimatedWordItemWidth.value),
-          ),
+    1,
+    Math.min(
+      totalWords.value,
+      Math.floor(
+        (widthAvailableForWordlist.value - 24) /
+          Math.min(maxItemWidth, estimatedWordItemWidth.value),
       ),
+    ),
   )
 })
 
@@ -303,7 +379,10 @@ const realWordItemWidth = computed(() => {
     return estimatedWordItemWidth.value
   }
 
-  const adjustedTargetWordItemWidth = Math.min(maxItemWidth, estimatedWordItemWidth.value);
+  const adjustedTargetWordItemWidth = Math.min(
+    maxItemWidth,
+    estimatedWordItemWidth.value,
+  )
 
   if (widthAvailableForWordlist.value < adjustedTargetWordItemWidth + 24) {
     return widthAvailableForWordlist.value - 24
@@ -325,22 +404,27 @@ const wordListWidth = computed(() => {
     return gridWidth.value
   }
 
-  return (
-      columnCount.value * realWordItemWidth.value +
-      24
-  )
+  return columnCount.value * realWordItemWidth.value + 24
 })
 
 const cardWidth = computed(() => {
   if (stackedLayout.value) {
     return Math.min(
-        availableWidth.value,
-        Math.max(window.innerWidth > 600 ? 550 : 400, Math.max(gridWidth.value, wordListWidth.value)) + 48,
+      availableWidth.value,
+      Math.max(
+        window.innerWidth > 600 ? 550 : 400,
+        Math.max(gridWidth.value, wordListWidth.value),
+      ) + 48,
     )
   }
 
   // add 48 because of card padding
-  return Math.max(window.innerWidth > 600 ? 550 : 400, gridWidth.value + wordListWidth.value) + 48
+  return (
+    Math.max(
+      window.innerWidth > 600 ? 550 : 400,
+      gridWidth.value + wordListWidth.value,
+    ) + 48
+  )
 })
 
 onMounted(() => {
@@ -375,7 +459,9 @@ onMounted(() => {
 <template>
   <v-dialog v-model="shareDialog" max-width="700">
     <v-card class="py-4 px-2">
-      <v-card-title class="text-h5">Jaga</v-card-title>
+      <v-card-title class="text-h5">{{
+        text.share[selectedLanguage]
+      }}</v-card-title>
       <v-card-text>
         <v-text-field
           v-model="link"
@@ -407,7 +493,7 @@ onMounted(() => {
           rounded
           variant="flat"
           class="px-4"
-          >Sulge</v-btn
+          >{{ text.close[selectedLanguage] }}</v-btn
         >
       </v-card-actions>
     </v-card>
@@ -419,8 +505,8 @@ onMounted(() => {
       'justify-center': generated,
       'pa-0': generated,
       'ma-0': generated,
-      'py-4': $vuetify.display.mdAndUp
-  }"
+      'py-4': $vuetify.display.mdAndUp,
+    }"
     class="mt-16"
     ref="mainContainer"
     :fluid="generated"
@@ -428,7 +514,9 @@ onMounted(() => {
     <main-card :width="generated ? cardWidth : undefined">
       <v-card-title class="title-bar">
         <template v-if="!generated">
-          <div class="title-text">Loo oma sõnarägastik</div>
+          <div class="title-text">
+            {{ text.customPuzzle[selectedLanguage] }}
+          </div>
         </template>
         <template v-else>
           <v-btn
@@ -448,9 +536,11 @@ onMounted(() => {
 
       <template v-if="!generated">
         <!-- Step 1: Title -->
-        <div class="font-weight-bold py-4 text-h6">1. Pealkiri</div>
+        <div class="font-weight-bold py-4 text-h6">
+          1. {{ text.title[selectedLanguage] }}
+        </div>
         <v-text-field
-          placeholder="Pealkiri"
+          :placeholder="text.title[selectedLanguage]"
           v-model="creatorStore.title"
           variant="outlined"
           class="mt-2 mb-4"
@@ -461,13 +551,17 @@ onMounted(() => {
         <v-divider class="my-4" />
 
         <!-- Step 2: Board Settings -->
-        <div class="font-weight-bold py-4 text-h6">2. Sõnarägastiku sätted</div>
+        <div class="font-weight-bold py-4 text-h6">
+          2. {{ text.boardSettings[selectedLanguage] }}
+        </div>
         <BoardSettings class="mb-4" />
 
         <v-divider class="my-4" />
 
         <!-- Step 3: Word Settings -->
-        <div class="font-weight-bold py-4 text-h6">3. Sõnade sätted</div>
+        <div class="font-weight-bold py-4 text-h6">
+          3. {{ text.wordSettings[selectedLanguage] }}
+        </div>
         <WordSettings class="mb-4" />
 
         <v-divider class="my-4" />
@@ -475,8 +569,11 @@ onMounted(() => {
         <!-- Step 4: Word List -->
         <div class="title-container py-4">
           <div class="font-weight-bold py-4 text-h6">
-            4. Sõnad
-            <info-tooltip :text="tooltips.words" id="words-tooltip" />
+            4. {{ text.words[selectedLanguage] }}
+            <info-tooltip
+              :text="tooltips.words[selectedLanguage]"
+              id="words-tooltip"
+            />
           </div>
 
           <template v-if="$vuetify.display.smAndUp">
@@ -488,7 +585,7 @@ onMounted(() => {
                 !creatorStore.getWords || creatorStore.getWords.length === 0
               "
             >
-              Eemalda kõik sõnad
+              {{ text.removeAllWords[selectedLanguage] }}
             </v-btn>
           </template>
           <template v-else>
@@ -518,7 +615,7 @@ onMounted(() => {
           :disabled="loadingStore.isLoading"
           :loading="loadingStore.isLoading"
         >
-          Genereeri sõnarägastik
+          {{ text.generate[selectedLanguage] }}
         </v-btn>
       </template>
 
@@ -543,7 +640,7 @@ onMounted(() => {
               />
 
               <v-switch
-                label="Kuva peidetud sõnad"
+                :label="text.toggleHighlights[selectedLanguage]"
                 v-model="creatorStore.highlight"
                 @change="boardRef.toggleHighlights()"
                 class="highlight-toggle"
@@ -585,7 +682,7 @@ onMounted(() => {
               'mr-4': $vuetify.display.xs,
             }"
           >
-            Genereeri uuesti
+            {{ text.regenerate[selectedLanguage] }}
           </v-btn>
 
           <template v-if="$vuetify.display.smAndUp">
@@ -597,7 +694,7 @@ onMounted(() => {
               :disabled="loadingStore.isLoading"
             >
               <v-icon class="mr-2">mdi-printer</v-icon>
-              Prindi
+              {{ text.print[selectedLanguage] }}
             </v-btn>
 
             <v-btn
@@ -608,7 +705,7 @@ onMounted(() => {
               :disabled="loadingStore.isLoading"
             >
               <v-icon class="mr-2">mdi-share</v-icon>
-              Jaga
+              {{ text.share[selectedLanguage] }}
             </v-btn>
           </template>
           <template v-else>
@@ -625,7 +722,7 @@ onMounted(() => {
                   <v-icon>mdi-printer</v-icon>
                 </v-btn>
               </template>
-              <span>Prindi</span>
+              <span>{{ text.print[selectedLanguage] }}</span>
             </v-tooltip>
             <v-tooltip location="bottom">
               <template v-slot:activator="{ props }">
@@ -640,7 +737,7 @@ onMounted(() => {
                   <v-icon>mdi-share</v-icon>
                 </v-btn>
               </template>
-              <span>Jaga</span>
+              <span>{{ text.share[selectedLanguage] }}</span>
             </v-tooltip>
           </template>
         </div>

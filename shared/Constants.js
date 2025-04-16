@@ -1,39 +1,114 @@
 export const Constants = Object.freeze({
   OVERLAP: {
-    NO_OVERLAP: { text: "Sõnad ei kattu", value: "no-overlap" },
+    NO_OVERLAP: {
+      text: {
+        et: "Sõnad ei kattu",
+        en: "Words don't overlap",
+      },
+      value: "no-overlap"
+    },
     POSSIBLE_OVERLAP: {
-      text: "Sõnad võivad kattuda",
+      text: {
+        et: "Sõnad võivad kattuda",
+        en: "Words can overlap",
+      },
       value: "possible-overlap",
     },
     FORCE_OVERLAP: {
-      text: "Sõnad kattuvad võimalikult palju",
+      text: {
+        et: "Sõnad kattuvad võimalikult palju",
+        en: "Words overlap as much as possible",
+      },
       value: "force-overlap",
     },
   },
 
   DIFFICULTY: {
-    EASY: { text: "Lihtne", value: "easy" },
-    MEDIUM: { text: "Keskmine", value: "medium" },
-    HARD: { text: "Raske", value: "hard" },
+    EASY: {
+      text: {
+        et: "Lihtne",
+        en: "Easy",
+      },
+      value: "easy"
+    },
+    MEDIUM: {
+      text: {
+        et: "Keskmine",
+        en: "Medium",
+      },
+      value: "medium"
+    },
+    HARD: {
+      text: {
+        et: "Raske",
+        en: "Hard",
+      },
+      value: "hard"
+    },
   },
 
   CASING: {
-    UPPERCASE: { text: "Suurtähed", value: "uppercase" },
-    LOWERCASE: { text: "Väiketähed", value: "lowercase" },
+    UPPERCASE: {
+      text: {
+        et: "Suurtähed",
+        en: "Capital letters",
+      },
+      value: "uppercase"
+    },
+    LOWERCASE: {
+      text: {
+        et: "Väiketähed",
+        en: "Lowercase letters",
+      },
+      value: "lowercase"
+    },
     MAINTAIN_CASING: {
-      text: "Säilita sisestatud sõnade kirjapilt",
+      text: {
+        et: "Säilita sisestatud sõnade kirjapilt",
+        en: "Maintain original casing of inserted words",
+      },
       value: "maintain-casing",
     },
   },
 
   LANGUAGE: {
-    ESTONIAN: { text: "Eesti keel", value: "et" },
-    ENGLISH: { text: "Inglise keel", value: "en" },
-    GERMAN: { text: "Saksa keel", value: "de" },
+    ESTONIAN: {
+      text: {
+        et: "Eesti keel",
+        en: "Estonian",
+      },
+      value: "et"
+    },
+    ENGLISH: {
+      text: {
+        et: "Inglise keel",
+        en: "English",
+      },
+      value: "en"
+    },
+    GERMAN: {
+      text: {
+        et: "Saksa keel",
+        en: "German",
+      },
+      value: "de"
+    },
   },
 
   MODE: {
-    WORDS: { text: "Otsitavad sõnad", value: "words" },
-    HINTS: { text: "Vihjed ja definitsioonid", value: "hints" },
+    WORDS: {
+      text: {
+        et: "Otsitavad sõnad",
+        en: "Hidden words",
+      },
+      value: "words"
+    },
+    HINTS: {
+      text: {
+        et: "Vihjed ja definitsioonid",
+        en: "Hints and definitions",
+      },
+      value: "hints"
+    },
   },
 });

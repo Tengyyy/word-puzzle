@@ -7,6 +7,7 @@ import {randomUUID} from "crypto";
 import GridGeneratorService from "../services/GridGeneratorService.js";
 import WordNetService from "../services/WordNetService.js";
 import logger from '../logger.js';
+import {getMessage} from "../services/LocalizationService.js";
 
 
 function applyCasing(wordHints, wordListCasing) {
@@ -21,11 +22,8 @@ function applyCasing(wordHints, wordListCasing) {
         hint = hint.toLowerCase();
         break;
       case Constants.CASING.MAINTAIN_CASING.value:
-        break;
       default:
-        throw new ValidationException(
-          `Ebasobiv sõnade suuruse valik: ${wordListCasing}`
-        );
+        break;
     }
 
     return { ...hintObj, hint };
@@ -88,12 +86,12 @@ setInterval(cleanupExpiredEntries, 60 * 1000);
 export async function autocomplete(req, res) {
   try {
     const query = req.query.query?.toLowerCase();
-    const language = Validation.validateLanguage(req.query.language);
+    const language = Validation.validateLanguage(req.query.language, res);
     if (!query) {
       res.json([]).end();
     }
 
-    const result = await WordNetService.autocomplete(query, language);
+    const result = await WordNetService.autocomplete(query, language, res.locals.language);
     res.json(result).end();
   } catch (err) {
     logger.error(err);
@@ -102,22 +100,20 @@ export async function autocomplete(req, res) {
       err instanceof ServerException ||
       err instanceof TimeoutException) {
       // For custom exceptions, send the specific error message
-      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+      res.status(err.statusCode || 500).json({ message: err.message || getMessage('genericError', res.locals.language) });
     } else {
       // For other errors, send a generic error message
-      res.status(500).json({ message: "Midagi läks valesti" });
+      res.status(500).json({ message: getMessage('genericError', res.locals.language) });
     }
   }
 }
 
 export async function createGame(req, res) {
   try {
-    const topic = Validation.validateString(req.query.topic, "sisendteema");
-    const diff = Validation.validateDifficulty(req.query.difficulty);
-    const inputLanguage = Validation.validateLanguage(req.query.inputLanguage);
-    const outputLanguage = Validation.validateLanguage(
-      req.query.outputLanguage
-    );
+    const topic = Validation.validateString(req.query.topic, "inputTopic", res);
+    const diff = Validation.validateDifficulty(req.query.difficulty, res);
+    const inputLanguage = Validation.validateLanguage(req.query.inputLanguage, res);
+    const outputLanguage = Validation.validateLanguage(req.query.outputLanguage, res);
 
     let options = optionsFromDifficulty(diff);
 
@@ -128,7 +124,8 @@ export async function createGame(req, res) {
       options.mode,
       options.columns,
       options.rows,
-      false
+      false,
+      res.locals.language,
     );
 
     options.language = outputLanguage;
@@ -138,7 +135,8 @@ export async function createGame(req, res) {
     const { chosenWords, grid, answers } = await GridGeneratorService.generateGrid(
       [],
       wordNetResult,
-      gridOptions
+      gridOptions,
+      res.locals.language
     );
 
     const words = chosenWords.sort((a, b) => a.hint.localeCompare(b.hint));
@@ -181,10 +179,10 @@ export async function createGame(req, res) {
       err instanceof ServerException ||
       err instanceof TimeoutException) {
       // For custom exceptions, send the specific error message
-      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+      res.status(err.statusCode || 500).json({ message: err.message || getMessage('genericError', res.locals.language) });
     } else {
       // For other errors, send a generic error message
-      res.status(500).json({ message: "Midagi läks valesti" });
+      res.status(500).json({ message: getMessage('genericError', res.locals.language) });
     }
   }
 }
@@ -195,7 +193,7 @@ export async function loadGame(req, res) {
     req.query.showAnswers === "true" || req.query.showAnswers === "1";
 
   if (!id) {
-    res.status(400).json({ message: "Vigane päring. Mängu ID on puudu." });
+    res.status(400).json({ message: getMessage('invalidQuery', res.locals.language) });
   }
 
   try {
@@ -211,7 +209,7 @@ export async function loadGame(req, res) {
       if (result.rows.length === 0) {
         return res
           .status(404)
-          .json({ message: `Ei leidnud mängi ID-ga ${id}` });
+          .json({ message: getMessage('gameNotFound', res.locals.language, id) });
       }
 
       data = result.rows[0];
@@ -233,10 +231,10 @@ export async function loadGame(req, res) {
       err instanceof ServerException ||
       err instanceof TimeoutException) {
       // For custom exceptions, send the specific error message
-      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+      res.status(err.statusCode || 500).json({ message: err.message || getMessage('genericError', res.locals.language) });
     } else {
       // For other errors, send a generic error message
-      res.status(500).json({ message: "Midagi läks valesti" });
+      res.status(500).json({ message: getMessage('genericError', res.locals.language) });
     }
   }
 }
@@ -244,38 +242,41 @@ export async function loadGame(req, res) {
 export async function createCustomGame(req, res) {
   const data = req.body;
   try {
-    const width = Validation.validateDimension(data.width);
-    const height = Validation.validateDimension(data.height);
-    const overlap = Validation.validateOverlap(data.overlap);
+    const width = Validation.validateDimension(data.width, res);
+    const height = Validation.validateDimension(data.height, res);
+    const overlap = Validation.validateOverlap(data.overlap, res);
     const backwardsEnabled = Validation.validateBool(
       data.backwardsEnabled,
-      "tagurpidi sõnad lubatud",
-      false
+      "backwardsEnabled",
+      false,
+      res,
     );
     const diagonalsEnabled = Validation.validateBool(
       data.diagonalsEnabled,
-      "diagonaalis sõnad lubatud",
-      false
+      "diagonalsEnabled",
+      false,
+      res,
     );
-    const casing = Validation.validateCasing(data.casing, true);
-    const wordListCasing = Validation.validateCasing(data.wordListCasing, false);
-    const customWords = Validation.validateWordHints(data.words, width, height, true) || [];
+    const casing = Validation.validateCasing(data.casing, true, res);
+    const wordListCasing = Validation.validateCasing(data.wordListCasing, false, res);
+    const customWords = Validation.validateWordHints(data.words, width, height, res, true) || [];
 
     let topic = null;
     if (data.topic) {
-      topic = Validation.validateString(data.topic, "sisendteema");
+      topic = Validation.validateString(data.topic, "inputTopic", res);
     }
-    const inputLanguage = Validation.validateLanguage(data.inputLanguage);
-    const outputLanguage = Validation.validateLanguage(data.outputLanguage);
+    const inputLanguage = Validation.validateLanguage(data.inputLanguage, res);
+    const outputLanguage = Validation.validateLanguage(data.outputLanguage, res);
 
     const nonAlphaAllowed = Validation.validateBool(
       data.nonAlphaAllowed,
-      "mitte-tähestikulised sümbolid lubatud",
-      false
+      "nonAlphaAllowed",
+      false,
+      res,
     );
-    const mode = Validation.validateMode(data.mode);
-    const alphabetize = Validation.validateBool(data.alphabetize, false);
-    Validation.validateTitle(data.title);
+    const mode = Validation.validateMode(data.mode, res);
+    const alphabetize = Validation.validateBool(data.alphabetize, 'alphabetize', false, res);
+    Validation.validateTitle(data.title, res);
 
     let wordNetResult = [];
 
@@ -288,11 +289,12 @@ export async function createCustomGame(req, res) {
         mode,
         width,
         height,
-        nonAlphaAllowed
+        nonAlphaAllowed,
+        res.locals.language
       );
     } else {
       if (customWords.length === 0) {
-        throw new ValidationException("Sõnade nimekiri ja sisendteema ei saa samaaegselt tühjad olla");
+        throw new ValidationException( getMessage('topicAndListBothEmpty', res.locals.language) );
       }
     }
 
@@ -306,7 +308,7 @@ export async function createCustomGame(req, res) {
       language: outputLanguage,
     };
 
-    const { chosenWords, grid, answers } = await GridGeneratorService.generateGrid(customWords, wordNetResult, options);
+    const { chosenWords, grid, answers } = await GridGeneratorService.generateGrid(customWords, wordNetResult, options, res.locals.language);
 
     let processedWords = applyCasing(chosenWords, wordListCasing);
     let processedAnswers = answers;
@@ -327,10 +329,10 @@ export async function createCustomGame(req, res) {
       err instanceof ServerException ||
       err instanceof TimeoutException) {
       // For custom exceptions, send the specific error message
-      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+      res.status(err.statusCode || 500).json({ message: err.message || getMessage('genericError', res.locals.language) });
     } else {
       // For other errors, send a generic error message
-      res.status(500).json({ message: "Midagi läks valesti" });
+      res.status(500).json({ message: getMessage('genericError', res.locals.language) });
     }
   }
 }
@@ -339,16 +341,18 @@ export async function persistGame(req, res) {
   const data = req.body;
 
   try {
-    const grid = Validation.validateGrid(data.grid);
+    const grid = Validation.validateGrid(data.grid, res);
     const wordHints = Validation.validateWordHints(
       data.words,
       grid.length,
-      grid[0].length
+      grid[0].length,
+      res,
+      false
     );
     const words = wordHints.map((wordHint) => wordHint.word);
-    const answers = Validation.validateAnswers(data.answers, grid, words);
-    const title = Validation.validateTitle(data.title);
-    const difficulty = Validation.validateDifficulty(data.difficulty);
+    const answers = Validation.validateAnswers(data.answers, grid, words, res);
+    const title = Validation.validateTitle(data.title, res);
+    const difficulty = Validation.validateDifficulty(data.difficulty, res);
 
     const id = randomUUID();
 
@@ -384,10 +388,10 @@ export async function persistGame(req, res) {
       err instanceof ServerException ||
       err instanceof TimeoutException) {
       // For custom exceptions, send the specific error message
-      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+      res.status(err.statusCode || 500).json({ message: err.message || getMessage('genericError', res.locals.language) });
     } else {
       // For other errors, send a generic error message
-      res.status(500).json({ message: "Midagi läks valesti" });
+      res.status(500).json({ message: getMessage('genericError', res.locals.language) });
     }
   }
 }
@@ -396,16 +400,18 @@ export async function saveGame(req, res) {
   const data = req.body;
 
   try {
-    const grid = Validation.validateGrid(data.grid);
+    const grid = Validation.validateGrid(data.grid, res);
     const wordHints = Validation.validateWordHints(
       data.words,
       grid.length,
-      grid[0].length
+      grid[0].length,
+      res,
+      false,
     );
     const words = wordHints.map((wordHint) => wordHint.word);
-    const answers = Validation.validateAnswers(data.answers, grid, words);
-    const title = Validation.validateTitle(data.title);
-    const difficulty = Validation.validateDifficulty(data.difficulty);
+    const answers = Validation.validateAnswers(data.answers, grid, words, res);
+    const title = Validation.validateTitle(data.title, res);
+    const difficulty = Validation.validateDifficulty(data.difficulty, res);
 
     const id = randomUUID();
     const game = {
@@ -426,10 +432,10 @@ export async function saveGame(req, res) {
       err instanceof ServerException ||
       err instanceof TimeoutException) {
       // For custom exceptions, send the specific error message
-      res.status(err.statusCode || 500).json({ message: err.message || "Midagi läks valesti" });
+      res.status(err.statusCode || 500).json({ message: err.message || getMessage('genericError', res.locals.language) });
     } else {
       // For other errors, send a generic error message
-      res.status(500).json({ message: "Midagi läks valesti" });
+      res.status(500).json({ message: getMessage('genericError', res.locals.language) });
     }
   }
 }

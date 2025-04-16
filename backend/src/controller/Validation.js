@@ -1,257 +1,244 @@
 import {Constants} from "../../../shared/Constants.js";
 import {ValidationException} from "./Exceptions.js";
+import { getMessage } from '../services/LocalizationService.js';
+
 
 function getValues(constants) {
   return Object.values(constants).map((constant) => constant.value);
 }
 
-export function validateLanguage(val) {
+function withLang(res) {
+  const lang = res.locals.language;
+  return (key, ...args) => getMessage(key, lang, ...args);
+}
+
+export function validateLanguage(val, res) {
   if (!val) {
     return Constants.LANGUAGE.ESTONIAN.value;
   }
 
+  const t = withLang(res);
+
   if (typeof val !== "string") {
-    throw new ValidationException("Keel peab olema sõne");
+    throw new ValidationException(t('invalidString', 'lang'));
   }
 
   const formatted = val.toLowerCase().trim();
   if (!getValues(Constants.LANGUAGE).includes(formatted)) {
-    throw new ValidationException(
-      `Keel peab olema üks järgnevatest väärtustest: ${getValues(
-        Constants.LANGUAGE
-      )}`
-    );
+    throw new ValidationException(t('mustBeInList', 'lang', getValues(Constants.LANGUAGE)));
   }
 
   return formatted;
 }
 
-export function validateMode(val) {
+export function validateMode(val, res) {
   if (!val) {
     return Constants.MODE.WORDS.value;
   }
 
+  const t = withLang(res);
+
   if (typeof val !== "string") {
-    throw new ValidationException("Mängurežiim peab olema sõne");
+    throw new ValidationException(t('invalidString', 'mode'));
   }
 
   const formatted = val.toLowerCase().trim();
   if (!getValues(Constants.MODE).includes(formatted)) {
-    throw new ValidationException(
-      `Mängurežiim peab olema üks järgnevatest väärtustest: ${getValues(
-        Constants.MODE
-      )}`
-    );
+    throw new ValidationException(t('mustBeInList', 'mode', getValues(Constants.MODE)));
   }
 
   return formatted;
 }
 
-export function validateDimension(val) {
+export function validateDimension(val, res) {
+  const t = withLang(res);
+
   if (!val) {
-    throw new ValidationException("Sõnarägastiku mõõtmed on puudu");
+    throw new ValidationException(t('dimensionsMissing'));
   }
 
   if (!Number.isInteger(val)) {
-    throw new ValidationException(
-      "Sõnarägastiku mõõtmed peavad olema täisarvud"
-    );
+    throw new ValidationException(t('dimensionsNotIntegers'));
   }
 
   if (val < 5 || val > 30) {
-    throw new ValidationException(
-      "Sõnarägastiku mõõtmed peavad olema vahemikus 5-30"
-    );
+    throw new ValidationException(t('dimensionsInvalidRange'));
   }
 
   return val;
 }
 
-export function validateCasing(val, isGrid) {
+export function validateCasing(val, isGrid, res) {
   if (!val) {
     return isGrid
       ? Constants.CASING.UPPERCASE.value
       : Constants.CASING.MAINTAIN_CASING.value;
   }
 
+  const t = withLang(res);
+
   if (typeof val !== "string") {
-    throw new ValidationException("Tähtede suurus peab olema sõne");
+    throw new ValidationException(t('invalidString', 'casing'));
   }
 
   const formatted = val.toLowerCase().trim();
   if (!getValues(Constants.CASING).includes(formatted)) {
-    throw new ValidationException(
-      `Tähtede suurus peab olema üks järgnevatest väärtustest: ${getValues(
-        Constants.CASING
-      )}`
-    );
+    throw new ValidationException(t('mustBeInList', 'casing', getValues(Constants.CASING)));
   }
 
   return formatted;
 }
 
-export function validateOverlap(val) {
+export function validateOverlap(val, res) {
   if (!val) {
     return Constants.OVERLAP.NO_OVERLAP.value;
   }
 
+  const t = withLang(res);
+
   if (typeof val !== "string") {
-    throw new ValidationException("Ülekattumine peab olema sõne");
+    throw new ValidationException(t('invalidString', 'overlap'));
   }
 
   const formatted = val.toLowerCase().trim();
   if (!getValues(Constants.OVERLAP).includes(formatted)) {
-    throw new ValidationException(
-      `Ülekattumine peab olema üks järgnevatest väärtustest: ${getValues(
-        Constants.OVERLAP
-      )}`
-    );
+    throw new ValidationException(t('mustBeInList', 'overlap', getValues(Constants.OVERLAP)));
   }
 
   return formatted;
 }
 
-export function validateDifficulty(val) {
+export function validateDifficulty(val, res) {
   if (!val) {
     return Constants.DIFFICULTY.MEDIUM.value;
   }
 
+  const t = withLang(res);
+
   if (typeof val !== "string") {
-    throw new ValidationException("Raskusaste peab olema sõne");
+    throw new ValidationException(t('invalidString', 'difficulty'));
   }
 
   const formatted = val.toLowerCase().trim();
   if (!getValues(Constants.DIFFICULTY).includes(formatted)) {
-    throw new ValidationException(
-      `Raskusaste peab olema üks järgnevatest väärtustest: ${getValues(
-        Constants.DIFFICULTY
-      )}`
-    );
+    throw new ValidationException(t('mustBeInList', 'difficulty', getValues(Constants.DIFFICULTY)));
   }
 
   return formatted;
 }
 
-export function validateString(val, fieldName, length = 100) {
+export function validateString(val, fieldName, res, length = 100) {
+  const t = withLang(res);
+
   if (typeof val !== "string") {
-    throw new ValidationException(`Väli '${fieldName}' peab olema sõne`);
+    throw new ValidationException(t('invalidString', fieldName));
   }
 
   if (val.length === 0 || val.length > length) {
-    throw new ValidationException(
-      `Välja '${fieldName}' pikkus peab olema 1-${length} tähte`
-    );
+    throw new ValidationException(t('stringLength', fieldName, length));
   }
 
   return val;
 }
 
-export function validateBool(val, fieldName, defaultVal) {
+export function validateBool(val, fieldName, defaultVal, res) {
   if (typeof val === "undefined") {
     return defaultVal;
   }
 
+  const t = withLang(res);
+
   if (typeof val !== "boolean") {
-    throw new ValidationException(
-      `Väli ${fieldName} peab olema tõeväärtus true/false`
-    );
+    throw new ValidationException(t('boolType', fieldName));
   }
 
   return val;
 }
 
-export function validateWords(words, width, height, allowEmpty = false) {
+export function validateWords(words, width, height, res, allowEmpty = false) {
+  const t = withLang(res);
+
   if (!words) {
     if (allowEmpty) return []
-    throw new ValidationException("Sõnade nimekiri on puudu");
+    throw new ValidationException(t('wordListMissing'));
   }
 
   if (!Array.isArray(words)) {
-    throw new ValidationException("Sõnade nimekiri peab olema massiiv");
+    throw new ValidationException(t('invalidArray', 'words'));
   }
 
   if (words.length === 0) {
     if (allowEmpty) return []
-    throw new ValidationException(
-      "Sõnade nimekiri peab sisaldama vähemalt ühte sõna"
-    );
+    throw new ValidationException(t('emptyArray', 'words'));
   }
 
   words.forEach((item) => {
     if (typeof item !== "string") {
-      throw new ValidationException(
-        "Sõnade nimekiri peab koosnema ainult sõnedest"
-      );
+      throw new ValidationException(t('wordListOnlyStrings'));
     }
 
     if (item.length < 2 || item.length > Math.max(width, height)) {
-      throw new ValidationException(
-        "Kõik sõnad peavad olema vähemalt kaks tähte pikad ning maksimaalselt sama pikad kui sõnarägastiku kõige suurem dimensioon"
-      );
+      throw new ValidationException(t('wordListWordLength'));
     }
   });
 
   return words;
 }
 
-export function validateWordHints(wordHints, width, height, allowEmpty = false) {
+export function validateWordHints(wordHints, width, height, res, allowEmpty = false) {
+  const t = withLang(res);
+
   if (!Array.isArray(wordHints)) {
     if (allowEmpty) return []
-    throw new ValidationException("Väli 'sõnavihje' peab olema massiiv");
+    throw new ValidationException(t('invalidArray', 'wordHints'));
   }
 
   if (wordHints.length === 0) {
     if (allowEmpty) return []
-    throw new ValidationException("Väli 'sõnavihjed' ei tohi olla tühi");
+    throw new ValidationException(t('emptyArray', 'wordHints'));
   }
 
   const words = wordHints.map((wordHint) => wordHint.word);
-  validateWords(words, width, height);
+  validateWords(words, width, height, res);
   wordHints.forEach((wordHint) => {
-    validateString(wordHint.hint, "sõna vihje", 1000);
+    validateString(wordHint.hint, "wordClue", res, 1000);
   });
 
   return wordHints;
 }
 
-export function validateGrid(grid) {
+export function validateGrid(grid, res) {
+  const t = withLang(res);
+
   if (!Array.isArray(grid)) {
-    throw new ValidationException("Sõnarägastik peab olema 2D massiiv");
+    throw new ValidationException(t('grid2D'));
   }
 
   if (grid.length === 0) {
-    throw new ValidationException("Sõnarägastik ei tohi olla tühi");
+    throw new ValidationException(t('emptyArray', 'grid'));
   }
 
   const width = grid[0].length;
 
   if (width === 0) {
-    throw new ValidationException("Sõnarägastik ei tohi olla tühi");
+    throw new ValidationException(t('emptyArray', 'grid'));
   }
 
   grid.forEach((row) => {
     if (!Array.isArray(row)) {
-      throw new ValidationException(
-        "Sõnarägastiku read peavad olema massiivid"
-      );
+      throw new ValidationException(t('gridRowsType'));
     }
 
     if (row.length !== width) {
-      throw new ValidationException(
-        "Sõnarägastiku read peavad olema sama pikad"
-      );
+      throw new ValidationException(t('gridRowsLength'));
     }
 
     row.forEach((item) => {
       if (typeof item !== "string") {
-        throw new ValidationException(
-          "Sõnarägastiku elemendid peavad olema 'sõne' tüüpi"
-        );
+        throw new ValidationException(t('gridElementsType'));
       }
       if (item.length !== 1) {
-        throw new ValidationException(
-          "Sõnarägastiku elemendid peavad olema üksikud tähed"
-        );
+        throw new ValidationException(t('gridElementsLength'));
       }
     });
   });
@@ -259,9 +246,11 @@ export function validateGrid(grid) {
   return grid;
 }
 
-export function validateAnswers(answers, grid, words) {
+export function validateAnswers(answers, grid, words, res) {
+  const t = withLang(res);
+
   if (!Array.isArray(answers)) {
-    throw new ValidationException("Väli 'vastused' peab olema massiiv");
+    throw new ValidationException(t('invalidArray', 'answers'));
   }
 
   const numRows = grid.length;
@@ -278,16 +267,14 @@ export function validateAnswers(answers, grid, words) {
       !("endRow" in answer) ||
       !("endCol" in answer)
     ) {
-      throw new ValidationException(
-        `Vastus indeksil ${index} ei ole sobival kujul`
-      );
+      throw new ValidationException(t('invalidAnswer', index));
     }
 
     const { word, startRow, startCol, endRow, endCol } = answer;
     const upperWord = word.toUpperCase();
 
     if (!normalizedWords.has(upperWord)) {
-      throw new ValidationException(`Sõna '${word}' ei ole sõnade nimekirjas`);
+      throw new ValidationException(t('wordNotInList', index));
     }
 
     if (
@@ -296,9 +283,7 @@ export function validateAnswers(answers, grid, words) {
       !Number.isInteger(endRow) ||
       !Number.isInteger(endCol)
     ) {
-      throw new ValidationException(
-        `Indeksil ${index} oleva vastuse koordinaadid ei ole korrektsel kujul`
-      );
+      throw new ValidationException(t('answerCoordinates', index));
     }
 
     if (
@@ -311,9 +296,7 @@ export function validateAnswers(answers, grid, words) {
       endCol < 0 ||
       endCol >= numCols
     ) {
-      throw new ValidationException(
-        `Indeksil ${index} oleva vastuse koordinaadid on rägastiku piiridest väljas.`
-      );
+      throw new ValidationException(t('answerCoordinatesOutOfBounds', index));
     }
 
     const rowStep = Math.sign(endRow - startRow);
@@ -324,9 +307,7 @@ export function validateAnswers(answers, grid, words) {
       Math.max(Math.abs(endRow - startRow), Math.abs(endCol - startCol)) + 1 !==
       wordLength
     ) {
-      throw new ValidationException(
-        `Indeksil ${index} oleva vastuse pikkus on vale`
-      );
+      throw new ValidationException(t('answerLength', index));
     }
 
     let extractedWord = "";
@@ -340,27 +321,13 @@ export function validateAnswers(answers, grid, words) {
     }
 
     if (extractedWord !== upperWord) {
-      throw new ValidationException(
-        `Indeksil ${index} olev vastus ei ole vastavuses rägastiku tähtedega`
-      );
+      throw new ValidationException(t('answerGridMismatch', index));
     }
   });
 
   return answers;
 }
 
-export function validateTitle(title) {
-  if (!title) {
-    throw new ValidationException("Pealkiri on puudu");
-  }
-
-  if (typeof title !== "string") {
-    throw new ValidationException("Pealkiri peab olema sõne tüüpi");
-  }
-
-  if (title.length < 1 || title.length > 50) {
-    throw new ValidationException("Pealkirja pikkus peab olema 1-50 tähemärki");
-  }
-
-  return title;
+export function validateTitle(title, res) {
+  return validateString(title, 'title', res, 50)
 }

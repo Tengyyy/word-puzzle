@@ -1,5 +1,13 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import {computed, ref} from 'vue'
+import {useLanguageStore} from "@/stores/languageStore.js";
+
+const text = {
+  defaultTitle: {
+    et: 'Hoiatus',
+    en: 'Warning',
+  }
+}
 
 export const useDialogStore = defineStore('dialog', () => {
   const visible = ref(false)
@@ -8,9 +16,15 @@ export const useDialogStore = defineStore('dialog', () => {
   const onConfirm = ref(null)
   const onClose = ref(null)
 
+  const languageStore = useLanguageStore()
+  const selectedLanguage = computed({
+    get: () => languageStore.currentLanguage,
+    set: val => languageStore.setLanguage(val),
+  })
+
   function showDialog(
     msg,
-    dialogTitle = 'Hoiatus',
+    dialogTitle = text.defaultTitle[selectedLanguage.value],
     onConfirmCallback = null,
     onCloseCallback = null,
   ) {

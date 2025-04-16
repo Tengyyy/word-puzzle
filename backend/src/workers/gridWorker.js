@@ -1,5 +1,7 @@
 import {parentPort} from "worker_threads";
 import {Constants} from "../../../shared/Constants.js";
+import {ServerException} from "../controller/Exceptions.js";
+import {getMessage} from "../services/LocalizationService.js";
 
 const letterDistribution = new Map([
   [
@@ -141,7 +143,7 @@ class Grid {
     } else if (args.length === 2) {
       [column, value] = args;
     } else {
-      throw new Error("Vale arv argumente");
+      throw new Error("Incorrect number of arguments"); // should not be reached, indicates invalid implementation
     }
 
     this.grid[this.index(rowOrPos, column)] = value;
@@ -216,7 +218,8 @@ class Puzzle {
       language = Constants.LANGUAGE.ESTONIAN.value,
       message = null,
       seed = Date.now(),
-    } = {}
+    } = {},
+    clientLanguage = 'et',
   ) {
     this.customVocabulary = customVocabulary; // { hint, word }
     this.vocabulary = vocabulary;  // { hint, word }
@@ -231,6 +234,7 @@ class Puzzle {
     this.seed = seed;
     this.answers = [];
     this.chosenWords = [];
+    this.clientLanguage = clientLanguage;
 
     this._setSeed(this.seed);
     this._generate();
@@ -275,7 +279,7 @@ class Puzzle {
       if (this.chosenWords.some(cw => cw.word === wordItem.word || cw.hint === wordItem.hint)) continue;
 
       if (!this._tryToPlaceWord(grid, wordItem.word, positions, directions)) {
-        throw new Error(`Ei suutnud paigutada sõna '${wordItem.word}' rägastikku. Palun suurenda sõnarägastiku mõõtmeid või vähenda sõnade arvu.`);
+        throw new ServerException( getMessage('wordPlacementFailed', this.clientLanguage, wordItem.word) )
       }
 
       this.chosenWords.push({ hint: wordItem.hint, word: wordItem.word });
@@ -453,8 +457,8 @@ class Puzzle {
 
 parentPort.on("message", (data) => {
   try {
-    const { customWords, words, options } = data;
-    const puzzle = new Puzzle(customWords, words, options);
+    const { customWords, words, options, clientLanguage } = data;
+    const puzzle = new Puzzle(customWords, words, options, clientLanguage);
     const grid = puzzle.to2DArray();
     const response = { chosenWords: puzzle.chosenWords, grid: grid, answers: puzzle.answers };
     parentPort.postMessage({ status: "success", data: response });

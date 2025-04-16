@@ -1,19 +1,69 @@
 <script setup>
 import { useCreatorStore } from '@/stores/creatorStore.js'
 import { Constants } from '../../../shared/Constants.js'
-import {ref} from "vue";
+import {computed} from "vue";
 import InfoTooltip from "@/components/InfoTooltip.vue";
+import {useLanguageStore} from "@/stores/languageStore.js";
 
 const creatorStore = useCreatorStore()
 
-const tooltips = ref({
-  dimensions: `
+const languageStore = useLanguageStore()
+const selectedLanguage = computed({
+  get: () => languageStore.currentLanguage,
+  set: val => languageStore.setLanguage(val),
+})
+
+const tooltips = {
+  dimensions: {
+    et: `
 <b>Laius</b> - Veergude arv sõnarägastikus<br />
 <b>Kõrgus</b> - Ridade arv sõnarägastikus<br />
 Mõõtmed peavad jääma vahemikku 5 - 30<br />
-<b>NB!</b> Sõnarägastikud suuremad kui <b>15 x 15</b> ei pruugi olla väljaprinditavad ega lahendatavad väiksematel ekraanidel (telefonidel)
+<b>NB!</b> Sõnarägastikud, mis on suuremad kui <b>15 × 15</b> ei pruugi olla hästi väljaprinditavad ega mugavalt lahendatavad väiksematel ekraanidel (nt telefonidel)
+`,
+    en: `
+<b>Width</b> – Number of columns in the word-search<br />
+<b>Height</b> – Number of rows in the word-search<br />
+Dimensions must be between 5 and 30<br />
+<b>Note:</b> Word-search grids larger than <b>15 × 15</b> may not print well or be easy to solve on smaller screens (like phones)
 `
-})
+  }
+}
+
+const text = {
+  dimensions: {
+    et: 'Sõnarägastiku mõõtmed',
+    en: 'Word search dimensions',
+  },
+  width: {
+    et: 'Laius',
+    en: 'Width',
+  },
+  height: {
+    et: 'Kõrgus',
+    en: 'Height',
+  },
+  overlap: {
+    et: 'Sõnade kattumine',
+    en: 'Word overlap',
+  },
+  direction: {
+    et: 'Sõnade suund',
+    en: 'Word directions',
+  },
+  backwards: {
+    et: 'Luba sõnade esinemine vastupidises suunas',
+    en: 'Allow words to appear backwards',
+  },
+  diagonal: {
+    et: 'Luba sõnade esinemine diagonaalis',
+    en: 'Allow words to appear diagonally',
+  },
+  letterSize: {
+    et: 'Tähtede suurus sõnarägastikus',
+    en: 'Letter casing in the grid',
+  }
+}
 
 </script>
 
@@ -21,13 +71,13 @@ Mõõtmed peavad jääma vahemikku 5 - 30<br />
   <div>
     <div class="size-settings mt-4">
       <div class="sub-setting-title pl-4" style="color: rgba(0, 0, 0, 0.6)">
-        <span>Sõnarägastiku mõõtmed</span>
-        <info-tooltip :text="tooltips.dimensions" id="dimensions-tooltip" />
+        <span>{{ text.dimensions[selectedLanguage] }}</span>
+        <info-tooltip :text="tooltips.dimensions[selectedLanguage]" id="dimensions-tooltip" />
       </div>
 
       <div class="settings-container mt-4">
         <v-number-input
-            label="Laius"
+            :label="text.width[selectedLanguage]"
             id="width-input"
             v-model="creatorStore.width"
             :min="5"
@@ -38,7 +88,7 @@ Mõõtmed peavad jääma vahemikku 5 - 30<br />
         />
 
         <v-number-input
-            label="Kõrgus"
+            :label="text.height[selectedLanguage]"
             id="height-input"
             v-model="creatorStore.height"
             :min="5"
@@ -50,37 +100,37 @@ Mõõtmed peavad jääma vahemikku 5 - 30<br />
       </div>
     </div>
 
-    <v-radio-group label="Sõnade kattumine" v-model="creatorStore.overlap" dense class="mt-4">
-      <template v-for="option in Constants.OVERLAP" :key="option.value">
-        <v-radio :value="option.value" :label="option.text" />
+    <v-radio-group :label="text.overlap[selectedLanguage]" v-model="creatorStore.overlap" dense class="mt-4">
+      <template v-for="option in Object.values(Constants.OVERLAP)" :key="option.value">
+        <v-radio :value="option.value" :label="option.text[selectedLanguage]" />
       </template>
     </v-radio-group>
 
     <div>
-      <span class="pl-4" style="color: rgba(0, 0, 0, 0.6)">Sõnade suund</span>
+      <span class="pl-4" style="color: rgba(0, 0, 0, 0.6)">{{ text.direction[selectedLanguage] }}</span>
       <div class="checkbox-group pl-2">
         <v-checkbox
-            label="Sõnad võivad esineda vastupidises suunas"
+            :label="text.backwards[selectedLanguage]"
             v-model="creatorStore.backwardsEnabled"
             dense
             class="mr-8"
         />
         <v-checkbox
-            label="Sõnad võivad esineda diagonaalis"
+            :label="text.diagonal[selectedLanguage]"
             v-model="creatorStore.diagonalsEnabled"
             dense
         />
       </div>
     </div>
 
-    <v-radio-group label="Tähtede suurus sõnarägastikus" v-model="creatorStore.casing" dense>
+    <v-radio-group :label="text.letterSize[selectedLanguage]" v-model="creatorStore.casing" dense>
       <template
           v-for="option in Object.values(Constants.CASING).filter(
         opt => opt.value !== 'maintain-casing',
       )"
           :key="option.value"
       >
-        <v-radio :value="option.value" :label="option.text" />
+        <v-radio :value="option.value" :label="option.text[selectedLanguage]" />
       </template>
     </v-radio-group>
   </div>

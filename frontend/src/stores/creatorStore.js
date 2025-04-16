@@ -2,8 +2,38 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { Constants } from '../../../shared/Constants.js'
 import {getRandomColor, isOnlyLetters} from "../../../shared/Utils.js";
+import {useLanguageStore} from "@/stores/languageStore.js";
+
+const text = {
+  empty: {
+    et: 'Tühja sõna ei saa nimekirja lisada',
+    en: 'You cannot add an empty word to the list',
+  },
+  addHint: {
+    et: 'Palun lisa sõnale ka vihje',
+    en: 'Please add a hint for the word',
+  },
+  alreadyInList: {
+    et: 'See sõna on juba nimekirjas',
+    en: 'This word is already in the list',
+  },
+  nonAlpha: {
+    et: 'Sõnad, mis sisaldavad numbreid või sümboleid, ei ole lubatud',
+    en: 'Words containing numbers or special characters are not allowed',
+  },
+  wordTooLong: {
+    et: 'Sõna on liiga pikk. Suurenda sõnarägastiku mõõtmeid',
+    en: 'The word is too long. Increase the size of the grid',
+  },
+}
 
 export const useCreatorStore = defineStore('creator', () => {
+  const languageStore = useLanguageStore()
+  const selectedLanguage = computed({
+    get: () => languageStore.currentLanguage,
+    set: val => languageStore.setLanguage(val),
+  })
+
   const width = ref(15)
   const height = ref(15)
   const overlap = ref(Constants.OVERLAP.NO_OVERLAP.value)
@@ -12,8 +42,8 @@ export const useCreatorStore = defineStore('creator', () => {
   const casing = ref(Constants.CASING.UPPERCASE.value)
   const grid = ref([])
   const topic = ref('')
-  const inputLanguage = ref(Constants.LANGUAGE.ESTONIAN.value)
-  const outputLanguage = ref(Constants.LANGUAGE.ESTONIAN.value)
+  const inputLanguage = ref(languageStore.initialLanguage === Constants.LANGUAGE.ENGLISH.value ? Constants.LANGUAGE.ENGLISH.value : Constants.LANGUAGE.ESTONIAN.value)
+  const outputLanguage = ref(languageStore.initialLanguage === Constants.LANGUAGE.ENGLISH.value ? Constants.LANGUAGE.ENGLISH.value : Constants.LANGUAGE.ESTONIAN.value)
   const mode = ref(Constants.MODE.WORDS.value)
   const words = ref([])
   const customWords = ref([])
@@ -74,12 +104,12 @@ export const useCreatorStore = defineStore('creator', () => {
   function addWord(input, validate) {
 
     if (!input.word) {
-      return { success: false, message: 'Tühja sõne ei saa lisada nimekirja' }
+      return { success: false, message: text.empty[selectedLanguage.value] }
     }
 
     if (mode.value === Constants.MODE.HINTS.value) {
       if (!input.hint) {
-        return { success: false, message: 'Palun lisa sõnale vihje' }
+        return { success: false, message: text.addHint[selectedLanguage.value] }
       }
     } else {
       input.hint = input.word
@@ -93,16 +123,16 @@ export const useCreatorStore = defineStore('creator', () => {
           word.hint.toUpperCase() === input.hint.toUpperCase(),
       )
     ) {
-      return { success: false, message: 'See sõna juba on nimekirjas' }
+      return { success: false, message: text.alreadyInList[selectedLanguage.value] }
     }
     if (validate && !nonAlphaAllowed.value && !isOnlyLetters(input.word)) {
       return {
         success: false,
-        message: 'Numbreid ja erisümboleid sisaldavad sõned pole lubatud',
+        message: text.nonAlpha[selectedLanguage.value],
       }
     }
     if (validate && input.word.length > Math.max(width.value, height.value)) {
-      return { success: false, message: 'Sõna on liiga pikk. Suurenda sõnarägastiku mõõtmeid' }
+      return { success: false, message: text.wordTooLong[selectedLanguage.value] }
     }
 
     customWords.value.push(input)
@@ -147,8 +177,8 @@ export const useCreatorStore = defineStore('creator', () => {
     casing.value = Constants.CASING.UPPERCASE.value
     grid.value = []
     topic.value = ''
-    inputLanguage.value = Constants.LANGUAGE.ESTONIAN.value
-    outputLanguage.value = Constants.LANGUAGE.ESTONIAN.value
+    inputLanguage.value = languageStore.initialLanguage === Constants.LANGUAGE.ENGLISH.value ? Constants.LANGUAGE.ENGLISH.value : Constants.LANGUAGE.ESTONIAN.value
+    outputLanguage.value = languageStore.initialLanguage === Constants.LANGUAGE.ENGLISH.value ? Constants.LANGUAGE.ENGLISH.value : Constants.LANGUAGE.ESTONIAN.value
     mode.value = Constants.MODE.WORDS.value
     words.value = []
     customWords.value = []

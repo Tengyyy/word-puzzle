@@ -39,6 +39,7 @@ import {
   VTooltip,
   VNavigationDrawer,
   VCombobox,
+  VMenu,
 } from 'vuetify/lib/components/index.mjs'
 import 'vuetify/styles'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
@@ -89,6 +90,7 @@ const vuetify = createVuetify({
     VTooltip,
     VNavigationDrawer,
     VCombobox,
+    VMenu,
   },
   defaults: {
     VCheckbox: {

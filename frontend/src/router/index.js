@@ -9,6 +9,15 @@ import { usePrintStore } from '@/stores/printStore.js'
 import { ENDPOINTS } from '../../../shared/ApiEndpoints.js'
 import { apiRequest } from '@/api.js'
 import {useErrorStore} from "@/stores/errorStore.js";
+import {useLanguageStore} from "@/stores/languageStore.js";
+import {computed} from "vue";
+
+const text = {
+  notFound: {
+    et: 'Antud ID-ga sõnarägastikku ei leitud andmebaasist',
+    en: 'No word-search puzzle found with the given ID in the database',
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,6 +40,12 @@ const router = createRouter({
         const gameId = to.params.id
         const errorStore = useErrorStore()
 
+        const languageStore = useLanguageStore()
+        const selectedLanguage = computed({
+          get: () => languageStore.currentLanguage,
+          set: val => languageStore.setLanguage(val),
+        })
+
         if (!gameStore.id || gameStore.id !== gameId) {
           try {
             const response = await apiRequest(
@@ -40,7 +55,7 @@ const router = createRouter({
             next()
             // eslint-disable-next-line no-unused-vars
           } catch (err) {
-            errorStore.setError("Antud ID-ga sõnarägastikku ei leitud andmebaasist")
+            errorStore.setError(text.notFound[selectedLanguage.value])
             next({ name: 'NotFound' })
           }
         } else {
@@ -63,6 +78,12 @@ const router = createRouter({
         const showAnswers = to.query.showAnswers
         const errorStore = useErrorStore()
 
+        const languageStore = useLanguageStore()
+        const selectedLanguage = computed({
+          get: () => languageStore.currentLanguage,
+          set: val => languageStore.setLanguage(val),
+        })
+
         if (!printStore.id || printStore.id !== gameId) {
           try {
             const response = await apiRequest(
@@ -72,7 +93,7 @@ const router = createRouter({
             next()
             // eslint-disable-next-line no-unused-vars
           } catch (err) {
-            errorStore.setError("Antud ID-ga sõnarägastikku ei leitud andmebaasist")
+            errorStore.setError(text.notFound[selectedLanguage.value])
             next({ name: 'NotFound' })
           }
         } else {

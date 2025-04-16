@@ -5,6 +5,7 @@ import {ServerException, TimeoutException} from "../controller/Exceptions.js";
 import {fileURLToPath} from "url";
 import { v4 as uuidv4 } from 'uuid';
 import logger from '../logger.js';
+import {getMessage} from "./LocalizationService.js";
 
 
 
@@ -32,7 +33,7 @@ export default class WordNetService {
       logger.error("WordNetWorker error:", err);
       this.activeTasks.forEach(task => {
         clearTimeout(task.timeout);
-        task.reject(new ServerException(`Ootamatu süsteemiviga`));
+        task.reject(new ServerException( getMessage('genericError', task.clientLanguage) ));
       });
       this.activeTasks = [];
     });
@@ -51,7 +52,7 @@ export default class WordNetService {
           if (msg.result && msg.result.length > 0) {
             task.resolve(msg.result);
           } else {
-            task.reject(new ServerException(`Sõnade nimekirja loomine sisendsõna ${task.topic} põhjal ebaõnnestus`));
+            task.reject(new ServerException( getMessage('wordListGenerationFailed', task.clientLanguage, task.topic) ));
           }
         } else if (msg.type === "autocompleteResult") {
           task.resolve(msg.result);
@@ -76,8 +77,8 @@ export default class WordNetService {
     }
 
     // Clean up remaining tasks in the queue and active tasks
-    this.queue.forEach(task => task.reject(new ServerException("Server sulgub")));
-    this.activeTasks.forEach(task => task.reject(new ServerException("Server sulgub")));
+    this.queue.forEach(task => task.reject(new ServerException( getMessage('serverClosing', task.clientLanguage) )));
+    this.activeTasks.forEach(task => task.reject(new ServerException( getMessage('serverClosing', task.clientLanguage) )));
 
     this.queue = [];
     this.activeTasks = [];
@@ -90,43 +91,44 @@ export default class WordNetService {
     mode,
     width,
     height,
-    nonAlphaAllowed
+    nonAlphaAllowed,
+    clientLanguage,
   ) {
     if (!this.ready) {
-      throw new ServerException("WordNet pole veel laetud");
+      throw new ServerException( getMessage('wordNetNotInitialized', clientLanguage) );
     }
 
     if (this.queue.length >= this.maxQueueSize || this.activeTasks.length > this.maxQueueSize) {
-      throw new ServerException("Server on hõivatud. Palun proovi hiljem uuesti.");
+      throw new ServerException( getMessage('serverBusy', clientLanguage) );
     }
 
     const taskId = uuidv4(); // Generate unique task ID
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new TimeoutException("Sõnade nimekirja loomine aegus peale 30 sekundit"));
+        reject(new TimeoutException( getMessage('wordListGenerationTimeout', clientLanguage) ));
       }, 30_000); // 30 seconds timeout
 
-      this.queue.push({ id: taskId, type: 'getWords', topic, inputLanguage, outputLanguage, mode, width, height, nonAlphaAllowed, resolve, reject, timeout });
+      this.queue.push({ id: taskId, type: 'getWords', topic, inputLanguage, outputLanguage, mode, width, height, nonAlphaAllowed, clientLanguage, resolve, reject, timeout });
       this.#processQueue();
     });
   }
 
-  static async autocomplete(query, language) {
+  static async autocomplete(query, language, clientLanguage) {
     if (!this.ready) {
-      throw new ServerException("WordNet pole veel laetud");
+      throw new ServerException( getMessage('wordNetNotInitialized', clientLanguage) );
     }
 
     if (this.queue.length >= this.maxQueueSize || this.activeTasks.length >= this.maxQueueSize) {
-      throw new ServerException("Server on hõivatud. Palun proovi hiljem uuesti.");
+      throw new ServerException( getMessage('serverBusy', clientLanguage) );
     }
 
     const taskId = uuidv4(); // Generate unique task ID
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        reject(new TimeoutException(`Lemmade nimekirja loomine prefiksi ${query} põhjal aegus peale 30 sekundit`));
+        reject(new TimeoutException( getMessage('autoCompleteTimeout', clientLanguage, query) ));
       }, 30_000); // 30 seconds timeout
 
-      this.queue.push({ id: taskId, type: 'autocomplete', query, language, resolve, reject, timeout });
+      this.queue.push({ id: taskId, type: 'autocomplete', query, language, clientLanguage, resolve, reject, timeout });
       this.#processQueue();
     });
   }

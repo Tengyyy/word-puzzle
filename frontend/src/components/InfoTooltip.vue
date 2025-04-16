@@ -19,6 +19,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  color: {
+    type: String,
+    default: 'rgba(0,0,0,0.3)',
+  }
 })
 
 const tooltipStore = useTooltipStore()
@@ -88,7 +92,7 @@ const isTooltipActive = computed(() => tooltipStore.activeTooltip === props.id)
           @mousedown.stop
           @mouseenter="hovering = true"
           @mouseleave="hovering = false"
-          :style="{ color: hovering || isTooltipActive || tooltipVisible ? primaryColor : 'rgba(0,0,0,0.3)' }"
+          :style="{ color: hovering || isTooltipActive || tooltipVisible ? primaryColor : color }"
       >
         mdi-help-circle
       </v-icon>

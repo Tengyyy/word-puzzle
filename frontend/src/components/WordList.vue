@@ -145,7 +145,7 @@ const columns = computed(() => {
           minHeight: '40px',
           width: stackedLayout ? Math.min(width, wordItemWidth) + 'px' : wordItemWidth + 'px',
           whiteSpace: 'normal',
-          wordBreak: 'break-word',
+          wordBreak: 'break-word'
         }"
       >
       <span

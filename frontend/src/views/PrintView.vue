@@ -5,11 +5,29 @@ import WordList from '@/components/WordList.vue'
 import { usePrintStore } from '@/stores/printStore.js'
 import MainCard from "@/components/MainCard.vue";
 import {calculateWordItemWidth} from "../../../shared/Utils.js";
+import {useLanguageStore} from "@/stores/languageStore.js";
 
 const MODE = Object.freeze({
   GAME: 'game',
   CREATE: 'create',
 })
+
+const languageStore = useLanguageStore()
+const selectedLanguage = computed({
+  get: () => languageStore.currentLanguage,
+  set: val => languageStore.setLanguage(val),
+})
+
+const text = {
+  printPuzzle: {
+    et: 'Prindi sõnarägastik',
+    en: 'Print puzzle',
+  },
+  printAnswers: {
+    et: 'Prindi vastused',
+    en: 'Print answers',
+  }
+}
 
 const answerBoard = ref(null)
 
@@ -145,12 +163,12 @@ const answerColumnSize = computed(() => {
     <div class="ma-0 mt-16 pa-0 pt-8 hide-on-print d-flex align-center justify-center ga-4" :class="{ 'flex-column': $vuetify.display.xs }">
       <v-btn @click="printPuzzle" color="primary" rounded class="print-button">
         <v-icon class="mr-2">mdi-printer</v-icon>
-        Prindi ülesanne
+        {{ text.printPuzzle[selectedLanguage] }}
       </v-btn>
 
       <v-btn v-if="mode === MODE.CREATE" @click="printSolutions" color="primary" variant="outlined" rounded class="print-button">
         <v-icon class="mr-2">mdi-printer-check</v-icon>
-        Prindi vastused
+        {{ text.printAnswers[selectedLanguage] }}
       </v-btn>
     </div>
 
