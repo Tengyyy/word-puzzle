@@ -68,7 +68,7 @@ const buttons = reactive([
     name: 'feedback',
     text: text.feedback[selectedLanguage.value],
     icon: 'mdi-comment-outline',
-    href: 'https://forms.gle/UrEyGyTHbNwTodwv5',
+    href: selectedLanguage.value === Constants.LANGUAGE.ESTONIAN.value ? 'https://forms.gle/UrEyGyTHbNwTodwv5' : 'https://forms.gle/XbMqCQEhjnAr6pCj7',
   },
 ])
 
