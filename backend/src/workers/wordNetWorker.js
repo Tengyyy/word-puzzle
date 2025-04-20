@@ -13,6 +13,70 @@ const __dirname = path.dirname(__filename);
 const wordNets = new Map(); // language -> { lemmaToSynsets, synsetToLemmas, synsetRelations, trie }
 const iliToSynsets = new Map(); // ili ID -> { lang: synsetID, ... }
 
+
+// Relations where A is a more general concept than B, for example A is a hypernym of B
+// Consider the word for the target wordlist and all its subrelations (recursively)
+const more_general_concepts_recursive = [
+  "hypernym", "instance_hypernym",         // broader category
+  "holonym", "holo_member", "holo_part", "holo_substance", "holo_location", "holo_portion",  // A contains B
+  "domain_topic", "domain_region",         // domain of B (e.g., "math" → "calculus")
+  "is_exemplified_by",                     // A is general concept, B is example
+  "classifies",                            // A classifies B → A is general
+  "causes",                                // A causes B (A is higher-level event)
+  "attribute",                             // B has attribute A (A is general property)
+  "is_subevent_of"                         // A is subevent of B → B is broader
+];
+
+// Consider the word itself but don't use in recursion
+const more_general_concepts_non_recursive = [
+  "has_diminutive", "has_feminine", "has_masculine", "has_young",
+  "augmentative",                          // morphological
+  "co_instrument_result",                  // peripheral context
+  "co_instrument_agent", "co_instrument_patient",
+  "domain",                                // vague / unclear usage
+];
+
+
+// Relations where A is a more narrow concept than B, for example A is a hyponym of B
+const more_narrow_concepts_recursive = [
+  "hyponym", "instance_hyponym",           // more specific terms
+  "meronym", "mero_member", "mero_part", "mero_substance", "mero_location", "mero_portion", // part-of
+  "has_domain_topic", "has_domain_region", // topic or field belongs to input
+  "exemplifies",                           // A is an example of B
+  "subevent",                              // A is part of B
+  "classified_by",                         // B classified by A → A more specific
+  "be_in_state",                           // B is qualified by A → A more specific
+  "diminutive", "feminine", "masculine", "young",
+  "is_caused_by",                          // effect → cause is more general
+  "constitutive", "derivation",            // derived from
+  "participle", "result", "involved_result",
+  "role", "state_of"
+];
+
+const more_narrow_concepts_non_recursive = [
+  "co_agent_instrument", "co_agent_patient", "co_agent_result", // narrow usage roles
+  "co_result_agent", "co_result_instrument",
+  "co_patient_agent", "co_patient_instrument",
+];
+
+// Not clear which concept is more general and which is more narrow, depends on context
+const other_concepts = [
+  "entails", "is_entailed_by",             // bidirectional logic; don't recurse
+  "similar", "also",                       // "see also" or similarity
+  "antonym", "anto_converse", "anto_gradable", "anto_simple",
+  "eq_synonym", "ir_synonym",              // synonyms (flatten)
+  "agent", "instrument", "involved", "involved_agent", "involved_instrument",
+  "involved_location", "involved_patient", "involved_direction",
+  "target_direction", "involved_target_direction", "involved_source_direction",
+  "direction", "location",                 // not always meaningful recursively
+  "in_manner", "manner_of",                // style or form
+  "other", "patient", "pertainym",         // relations exist but weak semantically
+  "restricts", "restricted_by",
+  "secondary_aspect_ip", "secondary_aspect_pi",
+  "simple_aspect_ip", "simple_aspect_pi",
+  "source_direction"
+];
+
 // Function to load and process a WordNet for a specific language
 async function loadWordNet(lang, filePath) {
   const xmlData = readFileSync(filePath, "utf8");
@@ -55,32 +119,23 @@ async function loadWordNet(lang, filePath) {
 
     if (!synsetID) return; // Invalid entry
 
-    const relations = {
-      hypernym: [],
-      hyponym: [],
-      similar: [],
-      is_subevent_of: [],
-      subevent: [],
-      mero_part: [],
-      mero_member: [],
-      mero_location: [],
-      mero_portion: [],
-      holo_part: [],
-      holo_member: [],
-      causes: [],
-      is_caused_by: [],
-      state_of: [],
-      role: [],
-      involved: [],
-      involved_agent: [],
-      involved_instrument: [],
-    };
+    const relations = {};
 
     (synset.SynsetRelation || []).forEach((relation) => {
       const relType = relation.$.relType;
       const targetSynset = relation.$.target;
 
-      if (Object.keys(relations).includes(relType)) {
+      if (
+        more_general_concepts_recursive.includes(relType)
+        || more_general_concepts_non_recursive.includes(relType)
+        || more_narrow_concepts_recursive.includes(relType)
+        || more_narrow_concepts_non_recursive.includes(relType)
+        || other_concepts.includes(relType)
+      ) {
+        if (!Object.keys(relations).includes(relType)) {
+          relations[relType] = [];
+        }
+
         relations[relType].push(targetSynset);
       }
     });
@@ -114,9 +169,32 @@ async function loadWordNet(lang, filePath) {
     }
   });
 
-  const trie = new Trie(
-    Array.from(lemmaToSynsets.keys())
-  );
+  const lemmaScores = new Map();
+  const acceptedLemmas = [];
+  for (const [lemma, synsetIds] of lemmaToSynsets.entries()) {
+    let score = 0;
+    let valid = false;
+
+    for (const synsetId of synsetIds) {
+      const relations = synsetRelations.get(synsetId);
+      if (!relations) continue;
+
+      for (const relType of more_narrow_concepts_recursive) {
+        const typeRelations = relations[relType];
+        if (typeRelations && typeRelations.length > 0) {
+          score+= typeRelations.length;
+          valid = true;
+        }
+      }
+    }
+
+    if (valid) {
+      lemmaScores.set(lemma, score);
+      acceptedLemmas.push(lemma);
+    }
+  }
+
+  const trie = new Trie(acceptedLemmas, lemmaScores);
 
   wordNets.set(lang, {
     lemmaToSynsets,
@@ -170,116 +248,185 @@ function getWords(
 
   const maxWordLength = Math.max(width, height);
   const maxCharacters = width * height * 3; // select words until we can roughly fill 3 word-search grids to get a decent randomized selection later
-  const maxDepth = 4;
+  const maxDepth = 3; // max depth for looking at narrowing concepts, after this we expand to more general concepts and then to other relations
 
-  let collectedSynsets = new Set();
-  let inputSet = new Set();
-  let outputSet = new Set();
-  let inputs = [];
-  let outputs = [];
-  let weights = []
+  const collectedSynsets = new Set();
+  const collectedSynsetsRecursive = new Set(); // synsets that we are allowed to expand from
+
+  const inputSet = new Set();
+  const outputSet = new Set();
+  const selectedItems = [];
   let totalCharacters = 0;
 
-  let queue = synsets.map((synsetID) => ({ synsetID, depth: 0 }));
-
-  while (queue.length > 0 && totalCharacters < maxCharacters) {
-    let nextQueue = [];
-
-    for (let { synsetID, depth } of queue) {
-      if (totalCharacters >= maxCharacters || depth > maxDepth) break;
-      if (collectedSynsets.has(synsetID)) continue;
+  const queue = []
+  synsets.forEach((synsetID) => {
+    if (!collectedSynsets.has(synsetID)) {
       collectedSynsets.add(synsetID);
+      collectedSynsetsRecursive.add(synsetID);
+      queue.push({ synsetID, depth: 0, recurse: true })
+    }
+  })
 
-      if (depth > 0) {
-        let input = null;
-        let output = null;
+  function addWord(synset, depth) {
+    let input = null;
+    let output = null;
 
-        if (mode === Constants.MODE.HINTS.value) {
-          input = synsetDefinitions.get(synsetID);
-        }
+    if (mode === Constants.MODE.HINTS.value) {
+      input = synsetDefinitions.get(synset);
+    }
 
-        if (mode === Constants.MODE.WORDS.value || inputLanguage === outputLanguage) {
-          const lemmas = synsetToLemmas.get(synsetID);
-          if (lemmas) {
-            for (const lemma of lemmas) {
-              if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
-              if (lemma.length > maxWordLength) continue;
-              if (inputSet.has(lemma)) continue;
+    if (mode === Constants.MODE.WORDS.value || inputLanguage === outputLanguage) {
+      const lemmas = synsetToLemmas.get(synset);
+      if (lemmas) {
+        for (const lemma of lemmas) {
+          if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
+          if (lemma.length > maxWordLength || lemma.length < 2) continue;
+          if (inputSet.has(lemma)) continue;
 
-              if (mode === Constants.MODE.WORDS.value) {
-                input = lemma;
-              }
-              if (inputLanguage === outputLanguage) {
-                output = lemma;
-              }
-              break;
-            }
+          if (mode === Constants.MODE.WORDS.value) {
+            input = lemma;
           }
-        }
-
-        if (outputLanguage !== inputLanguage) {
-          output = null;
-          const ili = synsetToIli.get(synsetID);
-          if (ili) {
-            const outputSynset = iliToSynsets.get(ili)[outputLanguage];
-            if (outputSynset) {
-              const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
-              if (outputLemmas) {
-                for (const lemma of outputLemmas) {
-                  if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
-                  if (lemma.length > maxWordLength) continue;
-                  if (outputSet.has(lemma)) continue;
-
-                  output = lemma;
-                  break;
-                }
-              }
-            }
+          if (inputLanguage === outputLanguage) {
+            output = lemma;
           }
+          break;
         }
-
-        if (input && output && totalCharacters + output.length <= maxCharacters && !inputSet.has(input)) {
-          inputs.push(input);
-          outputs.push(output);
-          weights.push(maxDepth + 1 - depth);
-          inputSet.add(input);
-          outputSet.add(output);
-          totalCharacters += output.length;
-        }
-
-        if (totalCharacters >= maxCharacters) break;
       }
+    }
 
-      // Explore related synsets dynamically based on depth
-      // (for depths 0, 1 and 2 we look at hyponyms and other presumably sub-words and other more narrows concepts,
-      // if we reach depths 3 and 4 and the target character count is still not reached,
-      // then we expand our search to hypernyms and more general words)
-      const priorityRelations = depth < 3 ?
-        ["hyponym", "subevent", "mero_part", "mero_member", "mero_location", "mero_portion", "similar"] :
-        ["hypernym", "holo_part", "holo_member", "causes", "is_caused_by", "role", "involved", "involved_agent", "involved_instrument", "is_subevent_of", "state_of"];
+    if (outputLanguage !== inputLanguage) {
+      output = null;
+      const ili = synsetToIli.get(synset);
+      if (ili) {
+        const outputSynset = iliToSynsets.get(ili)[outputLanguage];
+        if (outputSynset) {
+          const outputLemmas = outputWordNet.synsetToLemmas.get(outputSynset);
+          if (outputLemmas) {
+            for (const lemma of outputLemmas) {
+              if (!nonAlphaAllowed && !isOnlyLetters(lemma)) continue;
+              if (lemma.length > maxWordLength || lemma.length < 2) continue;
+              if (outputSet.has(lemma)) continue;
 
-      const relations = synsetRelations.get(synsetID);
-      if (relations) {
-        for (const relation of priorityRelations) {
-          if (relations[relation]) {
-            for (const relatedSynset of relations[relation]) {
-              if (!collectedSynsets.has(relatedSynset)) {
-                nextQueue.push({ synsetID: relatedSynset, depth: depth + 1 });
-              }
+              output = lemma;
+              break;
             }
           }
         }
       }
     }
 
-    queue = nextQueue; // Move to the next depth level
+    if (input && output && totalCharacters + output.length <= maxCharacters && !inputSet.has(input)) {
+      const weight = maxDepth + 3 - depth;
+      selectedItems.push({ hint: input, word: output, weight: weight * weight })
+      inputSet.add(input);
+      outputSet.add(output);
+      totalCharacters += output.length;
+    }
   }
 
-  return inputs.map((hint, index) => ({
-    hint: hint,
-    word: outputs[index],
-    weight: weights[index],
-  }));
+  while (queue.length > 0) {
+
+    if (totalCharacters >= maxCharacters) break;
+
+    const { synsetID, depth, recurse } = queue.shift();
+
+    if (depth > 0) {
+      addWord(synsetID, depth);
+      if (totalCharacters >= maxCharacters) break;
+    }
+
+    if (recurse && depth < maxDepth) {
+      const relations = synsetRelations.get(synsetID);
+      if (relations) {
+        for (const relType of more_narrow_concepts_recursive) {
+          if (relations[relType]) {
+            for (const relatedSynset of relations[relType]) {
+              if (!collectedSynsets.has(relatedSynset)) {
+                collectedSynsets.add(relatedSynset);
+                collectedSynsetsRecursive.add(relatedSynset);
+                queue.push({ synsetID: relatedSynset, depth: depth + 1, recurse: true });
+              }
+            }
+          }
+        }
+
+        for (const relType of more_narrow_concepts_non_recursive) {
+          if (relations[relType]) {
+            for (const relatedSynset of relations[relType]) {
+              if (!collectedSynsets.has(relatedSynset)) {
+                collectedSynsets.add(relatedSynset);
+                queue.push({ synsetID: relatedSynset, depth: depth + 1, recurse: false });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (totalCharacters >= maxCharacters) {
+    return selectedItems;
+  }
+
+  // expand search to more general concepts
+  for (const synsetID of collectedSynsetsRecursive) {
+    const relations = synsetRelations.get(synsetID);
+    if (relations) {
+      for (const relType of more_general_concepts_recursive) {
+        if (relations[relType]) {
+          for (const relatedSynset of relations[relType]) {
+            if (!collectedSynsets.has(relatedSynset)) {
+              collectedSynsets.add(relatedSynset);
+              collectedSynsetsRecursive.add(relatedSynset);
+              addWord(relatedSynset, 4);
+              if (totalCharacters >= maxCharacters) break;
+            }
+          }
+        }
+        if (totalCharacters >= maxCharacters) break;
+      }
+
+      for (const relType of more_general_concepts_non_recursive) {
+        if (relations[relType]) {
+          for (const relatedSynset of relations[relType]) {
+            if (!collectedSynsets.has(relatedSynset)) {
+              collectedSynsets.add(relatedSynset);
+              addWord(relatedSynset, 4);
+              if (totalCharacters >= maxCharacters) break;
+            }
+          }
+        }
+        if (totalCharacters >= maxCharacters) break;
+      }
+    }
+    if (totalCharacters >= maxCharacters) break;
+  }
+
+  if (totalCharacters >= maxCharacters) {
+    return selectedItems;
+  }
+
+  //expand search to other relations
+  for (const synsetID of collectedSynsetsRecursive) {
+    const relations = synsetRelations.get(synsetID);
+    if (relations) {
+      for (const relType of other_concepts) {
+        if (relations[relType]) {
+          for (const relatedSynset of relations[relType]) {
+            if (!collectedSynsets.has(relatedSynset)) {
+              collectedSynsets.add(relatedSynset);
+              addWord(relatedSynset, 5);
+              if (totalCharacters >= maxCharacters) break;
+            }
+          }
+        }
+        if (totalCharacters >= maxCharacters) break;
+      }
+    }
+    if (totalCharacters >= maxCharacters) break;
+  }
+
+  return selectedItems;
 }
 
 function autocomplete(
@@ -296,13 +443,14 @@ function autocomplete(
 class TrieNode {
   constructor() {
     this.children = {};
-    this.isWord = false;
+    this.words = new Set();
   }
 }
 
 class Trie {
-  constructor(words) {
+  constructor(words, lemmaScores) {
     this.root = new TrieNode();
+    this.lemmaScores = lemmaScores;
     words.forEach((word) => this.insert(word.toLowerCase())); // Convert words to lowercase
   }
 
@@ -311,26 +459,30 @@ class Trie {
     for (const char of word) {
       if (!node.children[char]) node.children[char] = new TrieNode();
       node = node.children[char];
+      node.words.add(word);
     }
-    node.isWord = true;
   }
 
   searchPrefix(prefix, limit = 10) {
+    // Traverse prefix tree to the end of the prefix
     let node = this.root;
     for (const char of prefix) {
       if (!node.children[char]) return []; // No matches
       node = node.children[char];
     }
-    return this._collectWords(node, prefix, [], limit);
-  }
 
-  _collectWords(node, prefix, results, limit) {
-    if (results.length >= limit) return results;
-    if (node.isWord) results.push(prefix);
-    for (const char in node.children) {
-      this._collectWords(node.children[char], prefix + char, results, limit);
+    const allMatches = [...node.words];
+    const exactMatch = allMatches.includes(prefix);
+
+    const sorted = allMatches
+      .filter(word => word !== prefix)
+      .sort((a, b) => (this.lemmaScores.get(b) ?? 0) - (this.lemmaScores.get(a) ?? 0));
+
+    if (exactMatch) {
+      sorted.unshift(prefix);
     }
-    return results;
+
+    return sorted.slice(0, limit);
   }
 }
 
